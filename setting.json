@@ -1,0 +1,31 @@
+{
+  "db": {
+    "dsn": "postgresql://typephoon:123@localhost:5432/typephoon"
+  },
+  "logger": {
+    "disable_existing_loggers": false,
+    "version": 1,
+    "handlers": {
+      "default": {
+        "class": "logging.StreamHandler",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(levelname)s %(name)s :: %(message)s"
+      }
+    },
+    "root": {
+      "level": "INFO",
+      "handlers": [
+        "default"
+      ]
+    },
+    "loggers": {
+      "typephoon_api": {
+        "level": "DEBUG"
+      }
+    }
+  }
+}
