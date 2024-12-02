@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 from os import getenv
 
-from sqlalchemy import MetaData, engine_from_config
+from sqlalchemy import BIGINT, MetaData, engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
@@ -52,6 +52,15 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def custom_compare_type(context, inspected_column, metadata_column,
+                        inspected_type, metadata_type):
+    # For BigSerial
+    if isinstance(inspected_type, BIGINT):
+        return False
+
+    return None
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -69,6 +78,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(connection=connection,
+                          compare_type=custom_compare_type,
                           target_metadata=target_metadata)
 
         with context.begin_transaction():

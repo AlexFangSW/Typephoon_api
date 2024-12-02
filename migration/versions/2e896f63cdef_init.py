@@ -1,18 +1,18 @@
 """init
 
-Revision ID: 71efd9951a2c
+Revision ID: 2e896f63cdef
 Revises: 
-Create Date: 2024-12-01 18:19:28.531941
+Create Date: 2024-12-02 23:15:47.441516
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from src.typephoon_api.models.util import BigSerial
 
+from typephoon_api.models.util import BigSerial
 # revision identifiers, used by Alembic.
-revision: str = '71efd9951a2c'
+revision: str = '2e896f63cdef'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
