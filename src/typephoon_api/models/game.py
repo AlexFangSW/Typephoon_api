@@ -1,6 +1,8 @@
 from datetime import datetime
 from sqlalchemy import DateTime, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .game_result import GameResult
 
 from .util import BigSerial
 from .base import Base
@@ -27,8 +29,14 @@ class Game(Base):
         server_default=func.current_timestamp(),
         nullable=False)
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
-                                               nullable=False)
-    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+                                               nullable=True)
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                             nullable=True)
     status: Mapped[int] = mapped_column(nullable=False)
-    invite_token: Mapped[str] = mapped_column(Text())
+    invite_token: Mapped[str] = mapped_column(Text(), nullable=True)
     type: Mapped[int] = mapped_column(nullable=False)
+
+    game_results = relationship("GameResult",
+                                back_populates="game",
+                                passive_deletes=True,
+                                uselist=True)
