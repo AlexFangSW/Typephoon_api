@@ -1,8 +1,8 @@
 """alter-nullable
 
-Revision ID: a98003368f20
+Revision ID: f7cbea688205
 Revises: 2e896f63cdef
-Create Date: 2024-12-05 18:13:20.268855
+Create Date: 2024-12-05 21:36:45.946373
 
 """
 from typing import Sequence, Union
@@ -12,14 +12,10 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'a98003368f20'
+revision: str = 'f7cbea688205'
 down_revision: Union[str, None] = '2e896f63cdef'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
-# sqlalchemy.exc.ProgrammingError: (psycopg2.errors.DuplicateObject) constraint "game_results_game_id_fkey" for relation "game_results" already exists
-#
-# [SQL: ALTER TABLE game_results ADD CONSTRAINT game_results_game_id_fkey FOREIGN KEY(game_id) REFERENCES games (id) ON DELETE CASCADE]
 
 
 def upgrade() -> None:
@@ -31,11 +27,11 @@ def upgrade() -> None:
                        type_='foreignkey')
     op.create_foreign_key("game_results_game_id_fkey",
                           'game_results',
-                          'users', ['user_id'], ['id'],
-                          ondelete='CASCADE')
-    op.create_foreign_key("game_results_game_id_fkey",
-                          'game_results',
                           'games', ['game_id'], ['id'],
+                          ondelete='CASCADE')
+    op.create_foreign_key("game_results_user_id_fkey",
+                          'game_results',
+                          'users', ['user_id'], ['id'],
                           ondelete='CASCADE')
     op.alter_column('games',
                     'start_at',
@@ -64,7 +60,7 @@ def downgrade() -> None:
                     'start_at',
                     existing_type=postgresql.TIMESTAMP(timezone=True),
                     nullable=False)
-    op.drop_constraint("game_results_game_id_fkey",
+    op.drop_constraint("game_results_user_id_fkey",
                        'game_results',
                        type_='foreignkey')
     op.drop_constraint("game_results_game_id_fkey",

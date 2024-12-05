@@ -24,15 +24,20 @@ class User(Base):
     """
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(Text(), primary_key=True)
-    name: Mapped[str] = mapped_column(Text(), nullable=False)
+    id: Mapped[str] = mapped_column(
+        Text(),
+        primary_key=True,
+    )
+    name: Mapped[str] = mapped_column(Text())
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.current_timestamp(),
-        nullable=False)
-    type: Mapped[int] = mapped_column(nullable=False)
+    )
+    type: Mapped[int] = mapped_column()
 
-    game_results = relationship("GameResult",
-                                back_populates="user",
-                                passive_deletes=True,
-                                uselist=True)
+    game_results = relationship(
+        "GameResult",
+        back_populates="user",
+        passive_deletes=True,
+        uselist=True,
+    )
