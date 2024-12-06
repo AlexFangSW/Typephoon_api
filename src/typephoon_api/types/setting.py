@@ -1,8 +1,5 @@
 from pydantic import BaseModel, Field
 
-# CUSTOM LOG LEVEL
-TRACE = 5
-
 
 class DBSetting(BaseModel):
     dsn: str = "postgresql://user:pwd@localhost:5432/db"

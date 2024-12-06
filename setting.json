@@ -24,7 +24,7 @@
     },
     "loggers": {
       "typephoon_api": {
-        "level": "DEBUG"
+        "level": 5
       }
     }
   }

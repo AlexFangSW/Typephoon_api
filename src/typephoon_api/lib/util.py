@@ -4,7 +4,8 @@ from alembic import command
 from alembic.config import Config
 from pydantic_core import Url
 
-from ..types.setting import TRACE, Setting
+from ..types.log import TRACE
+from ..types.setting import Setting
 
 logger = getLogger(__name__)
 
