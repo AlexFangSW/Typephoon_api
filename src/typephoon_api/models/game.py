@@ -6,7 +6,7 @@ from .util import BigSerial
 from .base import Base
 
 
-class Game(Base):
+class GameModel(Base):
     """
     Game model
 
@@ -36,7 +36,7 @@ class Game(Base):
     type: Mapped[int] = mapped_column()
 
     game_results = relationship(
-        "GameResult",
+        "GameResultModel",
         back_populates="game",
         passive_deletes=True,
         uselist=True,

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-class User(Base):
+class UserModel(Base):
     """
     User model
 
@@ -36,7 +36,7 @@ class User(Base):
     type: Mapped[int] = mapped_column()
 
     game_results = relationship(
-        "GameResult",
+        "GameResultModel",
         back_populates="user",
         passive_deletes=True,
         uselist=True,

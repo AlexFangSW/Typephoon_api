@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-class GameResult(Base):
+class GameResultModel(Base):
     """
     Game result model (per user)
 
@@ -40,12 +40,12 @@ class GameResult(Base):
     role: Mapped[int] = mapped_column()
 
     game = relationship(
-        "Game",
+        "GameModel",
         foreign_keys=game_id,
         back_populates="game_results",
     )
     user = relationship(
-        "User",
+        "UserModel",
         foreign_keys=user_id,
         back_populates="game_results",
     )
