@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-from typephoon_api.models.util import BigSerial
+from typephoon_api.models.custom import BigSerial
 # revision identifiers, used by Alembic.
 revision: str = '2e896f63cdef'
 down_revision: Union[str, None] = None
