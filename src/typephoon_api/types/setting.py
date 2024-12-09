@@ -35,6 +35,8 @@ class DBSetting(BaseModel):
     username: str = "user"
     password: str = "password"
 
+    pool_size: int = 5
+
     @property
     def dsn(self) -> str:
         return f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"

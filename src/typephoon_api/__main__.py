@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 
 import uvicorn
 
-from .lib.server import create_server
+from typephoon_api.lib.server_setup import create_server
 
 from .lib.util import db_migration, init_logger, load_setting
 from .types.cli import CLIArgs
