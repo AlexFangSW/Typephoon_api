@@ -2,11 +2,13 @@ from contextlib import asynccontextmanager
 from logging import getLogger
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext import asyncio
 from ..api.health_check import router as health_check_router
 from ..api.auth import router as auth_router
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from redis.asyncio import Redis
 
 from ..types.setting import Setting
-from ..api import auth
 
 logger = getLogger(__name__)
 
@@ -18,12 +20,27 @@ class TypephoonServer(FastAPI):
         self._setting = setting
 
     async def prepare(self):
-        # TODO: postgresql
-        # TODO: redis
-        ...
+        # database
+        self._engine = create_async_engine(url=self._setting.db.dsn,
+                                           isolation_level="READ COMMITTED")
+        self._sessionmaker = async_sessionmaker(self._engine)
+
+        # cache
+        self._redis_conn = Redis(host=self._setting.cache.host,
+                                 port=self._setting.cache.port,
+                                 db=self._setting.cache.db)
 
     async def cleanup(self):
-        ...
+        await self._engine.dispose()
+        await self._redis_conn.close()
+
+    @property
+    def sessionmaker(self) -> async_sessionmaker[AsyncSession]:
+        return self._sessionmaker
+
+    @property
+    def redis_conn(self) -> Redis:
+        return self._redis_conn
 
 
 @asynccontextmanager
