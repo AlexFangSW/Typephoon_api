@@ -1,7 +1,10 @@
 from argparse import ArgumentParser
 
-from .lib.util import db_migration, init_logger, load_setting
+import uvicorn
 
+from .lib.server import create_server
+
+from .lib.util import db_migration, init_logger, load_setting
 from .types.cli import CLIArgs
 
 
@@ -25,6 +28,13 @@ def main():
 
     if args.init:
         db_migration(setting)
+
+    # start the server
+    app = create_server(setting)
+    uvicorn.run(app,
+                host="0.0.0.0",
+                port=setting.server.port,
+                log_config=setting.logger)
 
 
 if __name__ == "__main__":

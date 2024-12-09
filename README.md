@@ -14,9 +14,9 @@ Install dependencies
 ```
 poetry install
 ```
-Start local PostgreSQL
+Start DB, cache...etc
 ```
-./scripts/pg.sh
+docker compose up -d
 ```
 ### Run
 ```

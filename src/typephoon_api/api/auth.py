@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket
 
-router = APIRouter(tags=["Auth"])
+router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
 @router.post("/login")
@@ -15,11 +15,6 @@ async def logout():
 
 @router.post("/token/refresh")
 async def token_refresh():
-    ...
-
-
-@router.post("/register")
-async def register():
     ...
 
 

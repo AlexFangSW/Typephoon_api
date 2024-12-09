@@ -2,6 +2,11 @@
   "db": {
     "dsn": "postgresql://typephoon:123@localhost:5432/typephoon"
   },
+  "cors": {
+    "allow_origins": [
+      "http://localhost:3000"
+    ]
+  },
   "logger": {
     "disable_existing_loggers": false,
     "version": 1,

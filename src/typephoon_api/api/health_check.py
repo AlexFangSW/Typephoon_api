@@ -3,11 +3,11 @@ from fastapi import APIRouter
 router = APIRouter(tags=["Health Check"])
 
 
-@router.post("/ready")
+@router.get("/ready")
 async def ready():
     ...
 
 
-@router.post("/alive")
+@router.get("/alive")
 async def alive():
     ...
