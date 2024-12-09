@@ -1,4 +1,4 @@
-from logging import getLogger
+from logging import Filter, LogRecord, getLogger
 
 from ..types.setting import Setting
 from .server import TypephoonServer
@@ -11,10 +11,18 @@ from ..api.auth import router as auth_router
 logger = getLogger(__name__)
 
 
+class HealthCheckFilter(Filter):
+    """disable access log for health check endpoints"""
+
+    def filter(self, record: LogRecord):
+        return record.getMessage().find("/healthcheck") == -1
+
+
 @asynccontextmanager
 async def lifespan(app: TypephoonServer):
     logger.info("lifespan startup")
     await app.prepare()
+    getLogger("uvicorn.access").addFilter(HealthCheckFilter())
 
     yield
 

@@ -4,7 +4,8 @@
     "port": 5432,
     "db": "typephoon",
     "username": "typephoon",
-    "password": "123"
+    "password": "123",
+    "echo": true
   },
   "redis": {
     "host": "localhost",

@@ -36,6 +36,7 @@ class DBSetting(BaseModel):
     password: str = "password"
 
     pool_size: int = 5
+    echo: bool = False
 
     @property
     def dsn(self) -> str:

@@ -3,14 +3,16 @@ from fastapi.responses import JSONResponse
 
 from ..lib.server import TypephoonServer
 
-router = APIRouter(tags=["Health Check"])
+router = APIRouter(tags=["Health Check"], prefix="/healthcheck")
 
 
 @router.get("/ready")
 async def ready(request: Request):
     app: TypephoonServer = request.app
-    await app.ready()
-    return JSONResponse({"ready": True})
+    ready = await app.ready()
+    if ready:
+        return JSONResponse({"ready": True})
+    return JSONResponse({"ready": False}, status_code=500)
 
 
 @router.get("/alive")
