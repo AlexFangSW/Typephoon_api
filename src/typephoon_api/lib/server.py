@@ -21,18 +21,23 @@ class TypephoonServer(FastAPI):
 
     async def prepare(self):
         # database
-        self._engine = create_async_engine(url=self._setting.db.dsn,
+        # TODO: pool size and connectivity
+        self._engine = create_async_engine(url=self._setting.db.async_dsn,
                                            isolation_level="READ COMMITTED")
         self._sessionmaker = async_sessionmaker(self._engine)
 
         # cache
-        self._redis_conn = Redis(host=self._setting.cache.host,
-                                 port=self._setting.cache.port,
-                                 db=self._setting.cache.db)
+        self._redis_conn = Redis(host=self._setting.redis.host,
+                                 port=self._setting.redis.port,
+                                 db=self._setting.redis.db)
 
     async def cleanup(self):
         await self._engine.dispose()
         await self._redis_conn.close()
+
+    async def ready(self):
+        # TODO: check connections
+        ...
 
     @property
     def sessionmaker(self) -> async_sessionmaker[AsyncSession]:

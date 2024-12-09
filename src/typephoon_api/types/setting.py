@@ -29,10 +29,22 @@ def default_logger() -> dict:
 
 
 class DBSetting(BaseModel):
-    dsn: str = "postgresql://user:pwd@localhost:5432/db"
+    host: str = "localhost"
+    port: int = 5432
+    db: str = "db"
+    username: str = "user"
+    password: str = "password"
+
+    @property
+    def dsn(self) -> str:
+        return f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"
+
+    @property
+    def async_dsn(self) -> str:
+        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"
 
 
-class CacheSetting(BaseModel):
+class RedisSetting(BaseModel):
     host: str = "localhost"
     port: int = 6379
     db: int = 0
@@ -49,7 +61,7 @@ class ServerSetting(BaseModel):
 
 class Setting(BaseModel):
     db: DBSetting = Field(default_factory=DBSetting)
-    cache: CacheSetting = Field(default_factory=CacheSetting)
+    redis: RedisSetting = Field(default_factory=RedisSetting)
     cors: CORSSetting = Field(default_factory=CORSSetting)
     server: ServerSetting = Field(default_factory=ServerSetting)
     logger: dict = Field(default_factory=default_logger)
