@@ -21,6 +21,8 @@ class UserModel(Base):
 
         type: User type
             - ex: "guest", "registered"
+        
+        refresh_token
     """
     __tablename__ = "users"
 
@@ -34,6 +36,7 @@ class UserModel(Base):
         server_default=func.current_timestamp(),
     )
     type: Mapped[int] = mapped_column()
+    refresh_token: Mapped[str | None] = mapped_column(Text())
 
     game_results = relationship(
         "GameResultModel",

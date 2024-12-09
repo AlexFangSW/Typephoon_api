@@ -7,3 +7,4 @@ class User(BaseModel):
     name: str
     registered_at: datetime
     type: int
+    refresh_token: str | None = None
