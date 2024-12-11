@@ -11,4 +11,3 @@ class CLIArgs:
     """
     setting: str
     init: bool
-    log_level: Literal["DEBUG", "INFO", "TRACE"]
