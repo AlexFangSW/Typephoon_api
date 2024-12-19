@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from ..lib.dependencies import create_health_check_service
@@ -12,35 +12,30 @@ router = APIRouter(tags=["Health Check"], prefix="/healthcheck")
 
 @router.get("/ready",
             responses={
-                status.HTTP_200_OK: {
+                200: {
                     "model": SuccessResponse
                 },
-                status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                500: {
                     "model": ErrorResponse
                 }
             })
 async def ready(health_check_service: HealthCheckService = Depends(
     create_health_check_service)):
+
     ready = await health_check_service.ready()
+
     if ready:
-        return JSONResponse(
-            SuccessResponse().model_dump(),
-            status_code=status.HTTP_200_OK,
-        )
-    return JSONResponse(
-        ErrorResponse().model_dump(),
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
+        msg = SuccessResponse().model_dump()
+        return JSONResponse(msg, status_code=200)
+
+    msg = ErrorResponse().model_dump()
+    return JSONResponse(msg, status_code=500)
 
 
-@router.get("/alive",
-            responses={status.HTTP_200_OK: {
-                "model": SuccessResponse
-            }})
+@router.get("/alive", responses={200: {"model": SuccessResponse}})
 async def alive(health_check_service: HealthCheckService = Depends(
     create_health_check_service)):
+
     if await health_check_service.alive():
-        return JSONResponse(
-            SuccessResponse().model_dump(),
-            status_code=status.HTTP_200_OK,
-        )
+        msg = SuccessResponse().model_dump()
+        return JSONResponse(msg, status_code=200)
