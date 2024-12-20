@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
-from ..types.setting import Setting
+from ..schemas.setting import Setting
 
 logger = getLogger(__name__)
 
@@ -57,3 +57,7 @@ class TypephoonServer(FastAPI):
     @property
     def redis_conn(self) -> Redis:
         return self._redis_conn
+
+    @property
+    def setting(self) -> Setting:
+        return self._setting

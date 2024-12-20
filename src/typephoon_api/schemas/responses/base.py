@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from ...types.enums import ErrorCode
+
+from ..enums import ErrorCode
 
 
 class SuccessResponse(BaseModel):

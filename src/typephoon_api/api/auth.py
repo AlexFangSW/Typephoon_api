@@ -1,23 +1,38 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, Depends
+from fastapi.responses import RedirectResponse
+
+from ..lib.dependencies import get_auth_service
+from ..services.auth import AuthService
+
+from ..lib.util import catch_error_async
 
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
-@router.post("/login")
-async def login():
+@router.get("/login")
+@catch_error_async
+async def login(auth_service: AuthService = Depends(get_auth_service)):
+    """
+    Set perams and redirect users to the login page
+    """
+    url = await auth_service.login()
+    return RedirectResponse(url)
+
+
+# TODO add query perams
+@router.get("/login-redirect")
+@catch_error_async
+async def login_redirect(auth_service: AuthService = Depends(get_auth_service)):
     ...
 
 
 @router.post("/logout")
-async def logout():
+@catch_error_async
+async def logout(auth_service: AuthService = Depends(get_auth_service)):
     ...
 
 
 @router.post("/token/refresh")
-async def token_refresh():
-    ...
-
-
-@router.websocket("/ws/token")
-async def ws_token(websocket: WebSocket):
+@catch_error_async
+async def token_refresh(auth_service: AuthService = Depends(get_auth_service)):
     ...

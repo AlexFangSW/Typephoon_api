@@ -1,6 +1,7 @@
 from logging import Filter, LogRecord, getLogger
 
-from ..types.setting import Setting
+from ..schemas.setting import Setting
+
 from .server import TypephoonServer
 from contextlib import asynccontextmanager
 from fastapi import APIRouter

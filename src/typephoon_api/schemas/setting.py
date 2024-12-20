@@ -62,9 +62,16 @@ class ServerSetting(BaseModel):
     port: int = 8080
 
 
+class GoogleSetting(BaseModel):
+    client_id: str = ""
+    client_secret: str = ""
+    redirect_url: str = "http://localhost:8080/api/v1/auth/login-redirect"
+
+
 class Setting(BaseModel):
     db: DBSetting = Field(default_factory=DBSetting)
     redis: RedisSetting = Field(default_factory=RedisSetting)
     cors: CORSSetting = Field(default_factory=CORSSetting)
     server: ServerSetting = Field(default_factory=ServerSetting)
     logger: dict = Field(default_factory=default_logger)
+    google: GoogleSetting = Field(default_factory=GoogleSetting)

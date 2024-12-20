@@ -1,11 +1,16 @@
+from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
+from typing import Callable
 from alembic import command
 from alembic.config import Config
+from fastapi.responses import JSONResponse
 from pydantic_core import Url
 
-from ..types.log import TRACE
-from ..types.setting import Setting
+from ..schemas.log import TRACE
+from ..schemas.setting import Setting
+
+from ..schemas.responses.base import ErrorContent, ErrorResponse
 
 logger = getLogger(__name__)
 
@@ -42,3 +47,37 @@ def init_logger(setting: Setting):
 def load_setting(path: str) -> Setting:
     with open(path, "r") as file:
         return Setting.model_validate_json(file.read())
+
+
+def catch_error_sync(func: Callable):
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as ex:
+            logger.exception("something went wrong")
+            error = ErrorContent(message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=500)
+
+    return wrapped
+
+
+def catch_error_async(func: Callable):
+
+    @wraps(func)
+    async def wrapped(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as ex:
+            logger.exception("something went wrong")
+            error = ErrorContent(message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=500)
+
+    return wrapped
+
+
+def get_state_key(inpt: str) -> str:
+    return f"login_state-{inpt}"
