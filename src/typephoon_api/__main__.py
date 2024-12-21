@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 
 import uvicorn
 
-from .schemas.cli import CLIArgs
+from .types.cli import CLIArgs
 
 from .lib.server_setup import create_server
 

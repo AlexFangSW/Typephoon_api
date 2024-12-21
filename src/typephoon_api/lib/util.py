@@ -7,10 +7,10 @@ from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
 
-from ..schemas.log import TRACE
-from ..schemas.setting import Setting
+from ..types.log import TRACE
+from ..types.setting import Setting
 
-from ..schemas.responses.base import ErrorContent, ErrorResponse
+from ..types.responses.base import ErrorContent, ErrorResponse
 
 logger = getLogger(__name__)
 

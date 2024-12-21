@@ -11,28 +11,29 @@ router = APIRouter(tags=["Auth"], prefix="/auth")
 
 @router.get("/login")
 @catch_error_async
-async def login(auth_service: AuthService = Depends(get_auth_service)):
+async def login(service: AuthService = Depends(get_auth_service)):
     """
     Set perams and redirect users to the login page
     """
-    url = await auth_service.login()
-    return RedirectResponse(url)
+    ret = await service.login()
+    assert ret.data
+    return RedirectResponse(ret.data)
 
 
 # TODO add query perams
 @router.get("/login-redirect")
 @catch_error_async
-async def login_redirect(auth_service: AuthService = Depends(get_auth_service)):
+async def login_redirect(service: AuthService = Depends(get_auth_service)):
     ...
 
 
 @router.post("/logout")
 @catch_error_async
-async def logout(auth_service: AuthService = Depends(get_auth_service)):
+async def logout(service: AuthService = Depends(get_auth_service)):
     ...
 
 
 @router.post("/token/refresh")
 @catch_error_async
-async def token_refresh(auth_service: AuthService = Depends(get_auth_service)):
+async def token_refresh(service: AuthService = Depends(get_auth_service)):
     ...

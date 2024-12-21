@@ -1,6 +1,8 @@
 from os import urandom
 from fastapi.datastructures import URL
 
+from ..types.services.base import ServiceRet
+
 from ..lib.util import get_state_key
 from ..lib.server import TypephoonServer
 from hashlib import sha256
@@ -11,7 +13,7 @@ class AuthService:
     def __init__(self, app: TypephoonServer) -> None:
         self._app = app
 
-    async def login(self) -> URL:
+    async def login(self) -> ServiceRet[URL]:
         # Set state in redis
         state = sha256(urandom(1024)).hexdigest()
         key = get_state_key(state)
@@ -34,7 +36,7 @@ class AuthService:
         url = URL("https://accounts.google.com/o/oauth2/v2/auth")
         url = url.include_query_params(**params)
 
-        return url
+        return ServiceRet(data=url)
 
     async def logout(self):
         ...

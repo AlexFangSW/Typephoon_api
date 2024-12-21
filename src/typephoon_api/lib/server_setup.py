@@ -1,12 +1,12 @@
 from logging import Filter, LogRecord, getLogger
 
-from ..schemas.setting import Setting
+from ..types.setting import Setting
 
 from .server import TypephoonServer
 from contextlib import asynccontextmanager
 from fastapi import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from ..api.health_check import router as health_check_router
+from ..api.healthcheck import router as healthcheck_router
 from ..api.auth import router as auth_router
 
 logger = getLogger(__name__)
@@ -44,7 +44,7 @@ def create_server(setting: Setting) -> TypephoonServer:
     v1_router = APIRouter(prefix="/api/v1")
     v1_router.include_router(auth_router)
 
-    app.include_router(health_check_router)
+    app.include_router(healthcheck_router)
     app.include_router(v1_router)
 
     return app

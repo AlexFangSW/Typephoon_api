@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
-from ..schemas.setting import Setting
+from ..types.setting import Setting
 
 logger = getLogger(__name__)
 
@@ -32,7 +32,7 @@ class TypephoonServer(FastAPI):
 
     async def cleanup(self):
         await self._engine.dispose()
-        await self._redis_conn.close()
+        await self._redis_conn.aclose()
 
     async def ready(self) -> bool:
         try:

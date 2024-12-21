@@ -1,0 +1,15 @@
+from httpx import AsyncClient
+import pytest
+
+from .helper import client, db_migration_for_tests
+
+
+@pytest.mark.asyncio
+async def test_api_healthcheck(client: AsyncClient):
+    ret = await client.get("/healthcheck/alive")
+    ret.raise_for_status()
+    assert ret.json() == {"result": True}
+
+    ret = await client.get("/healthcheck/ready")
+    ret.raise_for_status()
+    assert ret.json() == {"result": True}
