@@ -10,7 +10,7 @@ from pydantic_core import Url
 from ..types.log import TRACE
 from ..types.setting import Setting
 
-from ..types.responses.base import ErrorContent, ErrorResponse
+from ..types.responses.base import ErrorContext, ErrorResponse
 
 logger = getLogger(__name__)
 
@@ -57,7 +57,7 @@ def catch_error_sync(func: Callable):
             return func(*args, **kwargs)
         except Exception as ex:
             logger.exception("something went wrong")
-            error = ErrorContent(message=str(ex))
+            error = ErrorContext(message=str(ex))
             msg = ErrorResponse(error=error).model_dump()
             return JSONResponse(msg, status_code=500)
 
@@ -72,7 +72,7 @@ def catch_error_async(func: Callable):
             return await func(*args, **kwargs)
         except Exception as ex:
             logger.exception("something went wrong")
-            error = ErrorContent(message=str(ex))
+            error = ErrorContext(message=str(ex))
             msg = ErrorResponse(error=error).model_dump()
             return JSONResponse(msg, status_code=500)
 

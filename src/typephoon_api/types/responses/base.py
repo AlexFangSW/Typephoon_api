@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from ..common import ErrorContent
+from ..common import ErrorContext
 
 
 class SuccessResponse(BaseModel):
@@ -9,4 +9,4 @@ class SuccessResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     result: bool = False
-    error: ErrorContent = Field(default_factory=ErrorContent)
+    error: ErrorContext = Field(default_factory=ErrorContext)

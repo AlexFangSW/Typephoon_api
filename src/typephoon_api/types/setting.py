@@ -61,6 +61,15 @@ class CORSSetting(BaseModel):
 class ServerSetting(BaseModel):
     port: int = 8080
 
+    front_end_endpoint: str = "http://localhost:3000"
+    error_redirect: str = "http://localhost:3000/error"
+
+
+class TokenSetting(BaseModel):
+    public_key: str = ""
+    private_key: str = ""
+    refresh_endpoint: str = "/api/v1/auth/token_refresh"
+
 
 class GoogleSetting(BaseModel):
     client_id: str = ""
@@ -75,3 +84,4 @@ class Setting(BaseModel):
     server: ServerSetting = Field(default_factory=ServerSetting)
     logger: dict = Field(default_factory=default_logger)
     google: GoogleSetting = Field(default_factory=GoogleSetting)
+    token: TokenSetting = Field(default_factory=TokenSetting)
