@@ -6,10 +6,8 @@ from .custom import BigSerial
 from .base import Base
 
 
-class GameModel(Base):
+class Game(Base):
     """
-    Game model
-
     Attributes:
         id: Game ID
         created_at: Game created at

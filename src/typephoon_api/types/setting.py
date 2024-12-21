@@ -61,9 +61,6 @@ class CORSSetting(BaseModel):
 class ServerSetting(BaseModel):
     port: int = 8080
 
-    front_end_endpoint: str = "http://localhost:3000"
-    error_redirect: str = "http://localhost:3000/error"
-
 
 class TokenSetting(BaseModel):
     public_key: str = ""
@@ -85,3 +82,6 @@ class Setting(BaseModel):
     logger: dict = Field(default_factory=default_logger)
     google: GoogleSetting = Field(default_factory=GoogleSetting)
     token: TokenSetting = Field(default_factory=TokenSetting)
+
+    front_end_endpoint: str = "http://localhost:3000"
+    error_redirect: str = "http://localhost:3000/error"

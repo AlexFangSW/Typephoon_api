@@ -6,7 +6,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from typephoon_api.models import Base
+from typephoon_api.orm import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

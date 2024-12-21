@@ -1,4 +1,4 @@
-from ..types.services.base import ServiceRet
+from .base import ServiceRet
 from ..lib.server import TypephoonServer
 
 
@@ -8,8 +8,8 @@ class HealthCheckService:
         self._app = app
 
     async def alive(self) -> ServiceRet:
-        return ServiceRet()
+        return ServiceRet(ok=True)
 
     async def ready(self) -> ServiceRet:
         result = await self._app.ready()
-        return ServiceRet(success=result)
+        return ServiceRet(ok=result)

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from ..lib.util import catch_error_async
@@ -27,12 +28,12 @@ async def ready(
 
     result = await service.ready()
 
-    if result.success:
-        msg = SuccessResponse().model_dump()
+    if result.ok:
+        msg = jsonable_encoder(SuccessResponse())
         return JSONResponse(msg, status_code=200)
-
-    msg = ErrorResponse().model_dump()
-    return JSONResponse(msg, status_code=500)
+    else:
+        msg = jsonable_encoder(ErrorResponse())
+        return JSONResponse(msg, status_code=500)
 
 
 @router.get("/alive", responses={200: {"model": SuccessResponse}})
@@ -42,6 +43,8 @@ async def alive(
 
     result = await service.alive()
 
-    if result.success:
-        msg = SuccessResponse().model_dump()
+    if result.ok:
+        msg = jsonable_encoder(SuccessResponse())
         return JSONResponse(msg, status_code=200)
+    else:
+        raise ValueError("this should never happen !!")

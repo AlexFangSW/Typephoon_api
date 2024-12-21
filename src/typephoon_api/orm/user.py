@@ -4,10 +4,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-class UserModel(Base):
+class User(Base):
     """
-    User model
-
     Attributes:
         id: User ID 
             - {PREFIX}_{ID}_{TS}

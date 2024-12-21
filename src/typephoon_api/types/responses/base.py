@@ -4,9 +4,9 @@ from ..common import ErrorContext
 
 
 class SuccessResponse(BaseModel):
-    result: bool = True
+    ok: bool = True
 
 
 class ErrorResponse(BaseModel):
-    result: bool = False
+    ok: bool = False
     error: ErrorContext = Field(default_factory=ErrorContext)

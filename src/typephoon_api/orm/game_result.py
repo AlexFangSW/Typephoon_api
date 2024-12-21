@@ -5,9 +5,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-class GameResultModel(Base):
+class GameResult(Base):
     """
-    Game result model (per user)
+    Game result (per user)
 
     Attributes:
         game_id: Game ID

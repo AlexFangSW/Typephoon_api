@@ -16,11 +16,13 @@ async def login(service: AuthService = Depends(get_auth_service)):
     Set perams and redirect users to the login page
     """
     ret = await service.login()
-    if ret.success:
-        assert ret.data
-        return RedirectResponse(ret.data)
-    assert ret.error_redirect
-    return RedirectResponse(ret.error_redirect)
+
+    if not ret.ok:
+        assert ret.error_redirect_url
+        return RedirectResponse(ret.error_redirect_url)
+
+    assert ret.data
+    return RedirectResponse(ret.data.url)
 
 
 @router.get("/login-redirect")
@@ -30,28 +32,29 @@ async def login_redirect(state: str,
                          service: AuthService = Depends(get_auth_service)):
 
     ret = await service.login_redirect(state, code)
-    if ret.success:
-        assert ret.data
 
-        response = RedirectResponse(ret.data.url)
-        response.set_cookie("TP_AT",
-                            ret.data.access_token,
-                            path="/",
-                            httponly=True,
-                            samesite="strict")
-        response.set_cookie("TP_RT",
-                            ret.data.refresh_token,
-                            path=ret.data.refresh_endpoint,
-                            httponly=True,
-                            samesite="strict")
-        response.set_cookie("USERNAME",
-                            ret.data.username,
-                            httponly=True,
-                            samesite="strict")
-        return response
+    if not ret.ok:
+        assert ret.error_redirect_url
+        return RedirectResponse(ret.error_redirect_url)
 
-    assert ret.error_redirect
-    return RedirectResponse(ret.error_redirect)
+    assert ret.data
+
+    response = RedirectResponse(ret.data.url)
+    response.set_cookie("TP_AT",
+                        ret.data.access_token,
+                        path="/",
+                        httponly=True,
+                        samesite="strict")
+    response.set_cookie("TP_RT",
+                        ret.data.refresh_token,
+                        path=ret.data.refresh_endpoint,
+                        httponly=True,
+                        samesite="strict")
+    response.set_cookie("USERNAME",
+                        ret.data.username,
+                        httponly=True,
+                        samesite="strict")
+    return response
 
 
 @router.post("/logout")
