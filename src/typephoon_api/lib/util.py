@@ -83,3 +83,7 @@ def catch_error_async(func: Callable):
 
 def get_state_key(inpt: str) -> str:
     return f"login_state-{inpt}"
+
+
+def gen_user_id(google_id: str) -> str:
+    return f"google-{google_id}"

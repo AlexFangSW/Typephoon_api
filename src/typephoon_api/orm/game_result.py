@@ -40,12 +40,12 @@ class GameResult(Base):
     role: Mapped[int] = mapped_column()
 
     game = relationship(
-        "GameModel",
+        "Game",
         foreign_keys=game_id,
         back_populates="game_results",
     )
     user = relationship(
-        "UserModel",
+        "User",
         foreign_keys=user_id,
         back_populates="game_results",
     )

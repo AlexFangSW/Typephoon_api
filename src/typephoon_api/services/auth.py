@@ -8,6 +8,7 @@ from aiohttp import ClientSession
 import jwt
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from async_lru import alru_cache
 
 from ..repositories.user import UserRepo
 from ..types.enums import UserType
@@ -20,7 +21,7 @@ from .base import ServiceRet
 
 from ..types.external.google import TokenResponse
 
-from ..lib.util import get_state_key
+from ..lib.util import gen_user_id, get_state_key
 from hashlib import sha256
 
 logger = getLogger(__name__)
@@ -127,18 +128,22 @@ class AuthService:
 
         return data.id_token
 
+    @alru_cache(maxsize=1, ttl=60)
+    async def _get_google_public_key(self) -> dict:
+        async with ClientSession() as session:
+            async with session.get(
+                    "https://www.googleapis.com/oauth2/v3/certs") as resp:
+                return await resp.json()
+
     async def _verify_google_token(self, token: str) -> VerifyGoogleTokenRet:
 
         jwt_header_data = jwt.get_unverified_header(token)
 
-        async with ClientSession() as session:
-            async with session.get(
-                    "https://www.googleapis.com/oauth2/v3/certs") as resp:
-                jwks_data = await resp.json()
+        jwks_data = await self._get_google_public_key()
 
         public_key = None
         for key in jwks_data["keys"]:
-            if key["kid"] == jwt_header_data["kid"]:
+            if key["kid"] == jwt_header_data["kid"]:  # type: ignore
                 public_key = jwt.PyJWK.from_dict(key)
                 break
 
@@ -146,16 +151,16 @@ class AuthService:
             logger.warning("no matching public key found")
             return VerifyGoogleTokenRet(ok=False)
 
-        decoed_jwt = jwt.decode(jwt=token,
-                                key=public_key,
-                                options={
-                                    "verify_signature": True,
-                                    "verify_aud": False,
-                                    "verify_iss": False,
-                                })
+        decoded_jwt = jwt.decode(jwt=token,
+                                 key=public_key,
+                                 options={
+                                     "verify_signature": True,
+                                     "verify_aud": False,
+                                     "verify_iss": False,
+                                 })
 
-        user_id = decoed_jwt['sub']
-        username = decoed_jwt['name']
+        user_id = decoded_jwt['sub']
+        username = decoded_jwt['name']
 
         return VerifyGoogleTokenRet(ok=True, user_id=user_id, username=username)
 
@@ -181,9 +186,9 @@ class AuthService:
                                     exp=int(access_exp.timestamp()),
                                     nbf=int(nbf.timestamp()),
                                     iat=int(iat.timestamp()))
-        print(self._setting.token.private_key)
+
         access_token = jwt.encode(asdict(access_payload),
-                                  self._setting.token.private_key.encode(),
+                                  self._setting.token.private_key,
                                   algorithm="RS256")
 
         refresh_exp = iat + timedelta(
@@ -194,7 +199,7 @@ class AuthService:
                                      nbf=int(nbf.timestamp()),
                                      iat=int(iat.timestamp()))
         refresh_token = jwt.encode(asdict(refresh_payload),
-                                   self._setting.token.private_key.encode(),
+                                   self._setting.token.private_key,
                                    algorithm="RS256")
 
         return GenerateTokensRet(access_token=access_token,
@@ -208,7 +213,7 @@ class AuthService:
             await repo.token_upsert(id=user_id,
                                     name=username,
                                     refresh_token=refresh_token,
-                                    type=UserType.REGISTERED)
+                                    user_type=UserType.REGISTERED)
             await session.commit()
 
     async def login_redirect(self, state: str,
@@ -229,11 +234,13 @@ class AuthService:
 
             assert verify_ret.user_id
             assert verify_ret.username
-            new_tokens = self._generate_tokens(user_id=verify_ret.user_id,
+            user_id = gen_user_id(verify_ret.user_id)
+
+            new_tokens = self._generate_tokens(user_id=user_id,
                                                username=verify_ret.username)
 
             await self._update_user_refresh_token(
-                user_id=verify_ret.user_id,
+                user_id=user_id,
                 username=verify_ret.username,
                 refresh_token=new_tokens.refresh_token)
 

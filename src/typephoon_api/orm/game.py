@@ -15,7 +15,7 @@ class Game(Base):
         end_at: Game ended at
         status: Game status
         invite_token: Game invite token
-        type: Game type
+        game_type: Game type
     """
     __tablename__ = "games"
 
@@ -31,10 +31,10 @@ class Game(Base):
     end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[int] = mapped_column()
     invite_token: Mapped[str | None] = mapped_column(Text())
-    type: Mapped[int] = mapped_column()
+    game_type: Mapped[int] = mapped_column()
 
     game_results = relationship(
-        "GameResultModel",
+        "GameResult",
         back_populates="game",
         passive_deletes=True,
         uselist=True,

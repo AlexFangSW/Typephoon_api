@@ -21,12 +21,14 @@ httpx = "^0.28.1"
 pyjwt = "^2.10.1"
 pyyaml = "^6.0.2"
 cryptography = "^44.0.0"
+async-lru = "^2.0.4"
 
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
 asgi-lifespan = "^2.1.0"
+time-machine = "^2.16.0"
 
 [build-system]
 requires = ["poetry-core"]

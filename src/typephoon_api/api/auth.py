@@ -63,7 +63,7 @@ async def logout(service: AuthService = Depends(get_auth_service)):
     ...
 
 
-@router.post("/token/refresh")
+@router.post("/token-refresh")
 @catch_error_async
 async def token_refresh(service: AuthService = Depends(get_auth_service)):
     ...

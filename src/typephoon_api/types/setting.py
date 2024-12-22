@@ -73,7 +73,7 @@ class TokenSetting(BaseModel):
     """
     public_key: str = ""
     private_key: str = ""
-    refresh_endpoint: str = "/api/v1/auth/token_refresh"
+    refresh_endpoint: str = "/api/v1/auth/token-refresh"
     access_duration: int = int(timedelta(minutes=5).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
 
