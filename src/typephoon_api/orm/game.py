@@ -33,6 +33,10 @@ class Game(Base):
     invite_token: Mapped[str | None] = mapped_column(Text())
     game_type: Mapped[int] = mapped_column()
 
+    # TODO:
+    # - user_count int xxx current users in this game
+    # - finish_count int xxx finished users
+
     game_results = relationship(
         "GameResult",
         back_populates="game",
