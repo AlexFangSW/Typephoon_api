@@ -19,7 +19,7 @@ redis:
   db: 0
 cors:
   allow_origins:
-  - http: //localhost:3000
+  - http://localhost:3000
 logger:
   disable_existing_loggers: false
   version: 1

@@ -3,7 +3,7 @@ import pytest
 
 from ..types.responses.base import SuccessResponse
 
-from .helper import client, db_migration_for_tests
+from .helper import client, db_migration, setting
 
 
 @pytest.mark.asyncio

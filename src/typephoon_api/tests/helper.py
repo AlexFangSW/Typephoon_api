@@ -6,16 +6,24 @@ import pytest_asyncio
 from os import getenv
 from httpx import ASGITransport, AsyncClient
 from asgi_lifespan import LifespanManager
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+import yaml
 
 from ..lib.server_setup import create_server
 from ..types.setting import Setting
 
 DSN = getenv("DSN", "postgresql://typephoon:123@localhost/typephoon")
+
+REDIS_HOST = getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(getenv("REDIS_PORT", 6379))
+REDIS_DB = int(getenv("REDIS_DB", 0))
+
 API_PREFIX = "/api/v1"
 
 
 @pytest.fixture
-def db_migration_for_tests():
+def db_migration():
     config = Config()
     config.set_main_option("script_location", "migration")
     config.set_main_option("sqlalchemy.url", DSN)
@@ -26,12 +34,14 @@ def db_migration_for_tests():
     command.downgrade(config, "base")
 
 
-def dummy_setting() -> Setting:
-    with open("setting.json", "r") as f:
-        setting = Setting.model_validate_json(f.read())
+@pytest.fixture
+def setting() -> Setting:
+    with open("setting.yaml", "r") as f:
+        loaded = yaml.safe_load(f)
+        setting = Setting.model_validate(loaded)
 
+    # DATABASE
     dsn = Url(DSN)
-
     if dsn.host:
         setting.db.host = dsn.host
     if dsn.port:
@@ -43,12 +53,43 @@ def dummy_setting() -> Setting:
     if dsn.password:
         setting.db.password = dsn.password
 
+    # REDIS
+    setting.redis.host = REDIS_HOST
+    setting.redis.port = REDIS_PORT
+    setting.redis.db = REDIS_DB
+
     return setting
 
 
 @pytest_asyncio.fixture
-async def client(db_migration_for_tests):
-    setting = dummy_setting()
+async def sessionmaker(db_migration, setting):
+    engine = create_async_engine(url=setting.db.async_dsn,
+                                 echo=setting.db.echo,
+                                 pool_size=setting.db.pool_size,
+                                 pool_pre_ping=True,
+                                 pool_recycle=3600,
+                                 isolation_level="READ COMMITTED")
+    sessionmaker = async_sessionmaker(engine)
+
+    yield sessionmaker
+
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def redis_conn(setting: Setting):
+    redis_conn = Redis(host=setting.redis.host,
+                       port=setting.redis.port,
+                       db=setting.redis.db)
+
+    yield redis_conn
+
+    await redis_conn.flushdb()
+    await redis_conn.aclose()
+
+
+@pytest_asyncio.fixture
+async def client(db_migration, setting):
     app = create_server(setting)
 
     async with LifespanManager(app):

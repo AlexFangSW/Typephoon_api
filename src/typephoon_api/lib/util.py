@@ -6,6 +6,7 @@ from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
+import yaml
 
 from ..types.log import TRACE
 from ..types.setting import Setting
@@ -46,7 +47,8 @@ def init_logger(setting: Setting):
 
 def load_setting(path: str) -> Setting:
     with open(path, "r") as file:
-        return Setting.model_validate_json(file.read())
+        loaded = yaml.safe_load(file)
+        return Setting.model_validate(loaded)
 
 
 def catch_error_sync(func: Callable):

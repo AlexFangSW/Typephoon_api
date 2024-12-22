@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from os import urandom
 from typing import TypeVar
@@ -7,6 +8,9 @@ from aiohttp import ClientSession
 import jwt
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..repositories.user import UserRepo
+from ..types.enums import UserType
 
 from ..types.jwt import JWTPayload
 
@@ -165,16 +169,47 @@ class AuthService:
 
         return True
 
-    def _generate_tokens(self, user_id: str) -> GenerateTokensRet:
-        payload = asdict(JWTPayload(user_id=user_id))
-        access_token = jwt.encode(payload, "secret", algorithm="RS256")
-        refresh_token = jwt.encode(payload, "secret", algorithm="RS256")
+    def _generate_tokens(self, user_id: str,
+                         username: str) -> GenerateTokensRet:
+        iat = datetime.now(UTC)
+        nbf = (iat - timedelta(seconds=1))
+
+        access_exp = iat + timedelta(
+            seconds=self._setting.token.access_duration)
+        access_payload = JWTPayload(sub=user_id,
+                                    name=username,
+                                    exp=int(access_exp.timestamp()),
+                                    nbf=int(nbf.timestamp()),
+                                    iat=int(iat.timestamp()))
+        print(self._setting.token.private_key)
+        access_token = jwt.encode(asdict(access_payload),
+                                  self._setting.token.private_key.encode(),
+                                  algorithm="RS256")
+
+        refresh_exp = iat + timedelta(
+            seconds=self._setting.token.refresh_duration)
+        refresh_payload = JWTPayload(sub=user_id,
+                                     name=username,
+                                     exp=int(refresh_exp.timestamp()),
+                                     nbf=int(nbf.timestamp()),
+                                     iat=int(iat.timestamp()))
+        refresh_token = jwt.encode(asdict(refresh_payload),
+                                   self._setting.token.private_key.encode(),
+                                   algorithm="RS256")
+
         return GenerateTokensRet(access_token=access_token,
                                  refresh_token=refresh_token)
 
-    async def _update_user_refresh_token(self, user_id: str,
+    async def _update_user_refresh_token(self, user_id: str, username: str,
                                          refresh_token: str):
-        ...
+
+        async with self._sessionmaker() as session:
+            repo = UserRepo(session)
+            await repo.token_upsert(id=user_id,
+                                    name=username,
+                                    refresh_token=refresh_token,
+                                    type=UserType.REGISTERED)
+            await session.commit()
 
     async def login_redirect(self, state: str,
                              code: str) -> AuthServiceRet[LoginRedirectRet]:
@@ -199,6 +234,7 @@ class AuthService:
 
             await self._update_user_refresh_token(
                 user_id=verify_ret.user_id,
+                username=verify_ret.username,
                 refresh_token=new_tokens.refresh_token)
 
             data = LoginRedirectRet(

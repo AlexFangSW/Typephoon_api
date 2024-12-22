@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pydantic import BaseModel, Field
 
 
@@ -63,9 +64,18 @@ class ServerSetting(BaseModel):
 
 
 class TokenSetting(BaseModel):
+    """
+    JWT token
+    - access_duration: (seconds)
+        - duration for the access token
+    - refresh_duration: (seconds)
+        - duration for the refresh token
+    """
     public_key: str = ""
     private_key: str = ""
     refresh_endpoint: str = "/api/v1/auth/token_refresh"
+    access_duration: int = int(timedelta(minutes=5).total_seconds())
+    refresh_duration: int = int(timedelta(days=30).total_seconds())
 
 
 class GoogleSetting(BaseModel):

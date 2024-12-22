@@ -3,4 +3,8 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class JWTPayload:
-    user_id: str
+    sub: str
+    name: str
+    exp: int
+    nbf: int
+    iat: int
