@@ -85,3 +85,7 @@ class Setting(BaseModel):
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
+
+
+if __name__ == "__main__":
+    print(Setting().model_dump_json())

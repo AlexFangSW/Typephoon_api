@@ -1,14 +1,14 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from logging import getLogger
 from os import urandom
-import re
-from typing import Generic, TypeVar
+from typing import TypeVar
 from fastapi.datastructures import URL
 from aiohttp import ClientSession
 import jwt
 from redis.asyncio import Redis
-from sqlalchemy import exists
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..types.jwt import JWTPayload
 
 from ..types.setting import Setting
 
@@ -165,14 +165,10 @@ class AuthService:
 
         return True
 
-    def _generate_tokens(self, user_id: str,
-                         username: str) -> GenerateTokensRet:
-        access_token = jwt.encode({"some": "payload"},
-                                  "secret",
-                                  algorithm="RS256")
-        refresh_token = jwt.encode({"some": "payload"},
-                                   "secret",
-                                   algorithm="RS256")
+    def _generate_tokens(self, user_id: str) -> GenerateTokensRet:
+        payload = asdict(JWTPayload(user_id=user_id))
+        access_token = jwt.encode(payload, "secret", algorithm="RS256")
+        refresh_token = jwt.encode(payload, "secret", algorithm="RS256")
         return GenerateTokensRet(access_token=access_token,
                                  refresh_token=refresh_token)
 
@@ -184,32 +180,40 @@ class AuthService:
                              code: str) -> AuthServiceRet[LoginRedirectRet]:
         logger.debug("login_redirect")
 
-        exist = await self._check_state(state)
-        if not exist:
+        try:
+            exist = await self._check_state(state)
+            if not exist:
+                return AuthServiceRet(
+                    ok=False, error_redirect_url=self._setting.error_redirect)
+
+            token = await self._exchange_code_for_token(code)
+            verify_ret = await self._verify_google_token(token)
+            if not verify_ret.ok:
+                return AuthServiceRet(
+                    ok=False, error_redirect_url=self._setting.error_redirect)
+
+            assert verify_ret.user_id
+            assert verify_ret.username
+            new_tokens = self._generate_tokens(user_id=verify_ret.user_id,
+                                               username=verify_ret.username)
+
+            await self._update_user_refresh_token(
+                user_id=verify_ret.user_id,
+                refresh_token=new_tokens.refresh_token)
+
+            data = LoginRedirectRet(
+                url=self._setting.front_end_endpoint,
+                access_token=new_tokens.access_token,
+                refresh_token=new_tokens.refresh_token,
+                username=verify_ret.username,
+                refresh_endpoint=self._setting.token.refresh_endpoint,
+            )
+            return AuthServiceRet(ok=True, data=data)
+
+        except:
+            logger.exception("login redirect failed")
             return AuthServiceRet(
                 ok=False, error_redirect_url=self._setting.error_redirect)
-
-        token = await self._exchange_code_for_token(code)
-        verify_ret = await self._verify_google_token(token)
-        if not verify_ret.ok:
-            ...
-
-        assert verify_ret.user_id
-        assert verify_ret.username
-        new_tokens = self._generate_tokens(user_id=verify_ret.user_id,
-                                           username=verify_ret.username)
-
-        await self._update_user_refresh_token(
-            user_id=verify_ret.user_id, refresh_token=new_tokens.refresh_token)
-
-        data = LoginRedirectRet(
-            url=self._setting.front_end_endpoint,
-            access_token=new_tokens.access_token,
-            refresh_token=new_tokens.refresh_token,
-            username=verify_ret.username,
-            refresh_endpoint=self._setting.token.refresh_endpoint,
-        )
-        return AuthServiceRet(ok=True, data=data)
 
     async def logout(self):
         logger.debug("logout")
