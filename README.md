@@ -22,3 +22,8 @@ docker compose up -d
 ```
 python3 -m typephoon_api --help
 ```
+
+### Test
+```
+pytest -v
+```
