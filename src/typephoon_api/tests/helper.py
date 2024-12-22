@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from alembic import command
 from alembic.config import Config
 from pydantic_core import Url
@@ -20,6 +21,8 @@ REDIS_PORT = int(getenv("REDIS_PORT", 6379))
 REDIS_DB = int(getenv("REDIS_DB", 0))
 
 API_PREFIX = "/api/v1"
+
+NOW = datetime(year=2024, month=12, day=22, tzinfo=UTC)
 
 
 @pytest.fixture
