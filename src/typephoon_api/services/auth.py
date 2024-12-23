@@ -1,31 +1,25 @@
 from dataclasses import dataclass
 from logging import getLogger
-from os import urandom
 from typing import TypeVar
 from fastapi.datastructures import URL
 from aiohttp import ClientSession
 import jwt
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from async_lru import alru_cache
+
+from ..repositories.oauth_state import OAuthStateRepo
 
 from .token import TokenService
 
 from ..repositories.token import TokenRepo
 
 from ..repositories.user import UserRepo
-from ..types.enums import UserType
-
-from ..types.jwt import JWTPayload
 
 from ..types.setting import Setting
 
 from .base import ServiceRet
 
 from ..types.external.google import TokenResponse
-
-from ..lib.util import gen_user_id, get_state_key
-from hashlib import sha256
 
 logger = getLogger(__name__)
 
@@ -63,25 +57,14 @@ class AuthService:
     def __init__(
         self,
         setting: Setting,
-        redis_conn: Redis,
         sessionmaker: async_sessionmaker[AsyncSession],
         token_service: TokenService,
+        oauth_state_repo: OAuthStateRepo,
     ) -> None:
         self._setting = setting
-        self._redis_conn = redis_conn
         self._sessionmaker = sessionmaker
         self._token_service = token_service
-
-    async def _set_state_in_redis(self) -> str:
-        state = sha256(urandom(1024)).hexdigest()
-        key = get_state_key(state)
-        await self._redis_conn.set(
-            key,
-            1,
-            ex=self._setting.redis.expire_time,
-            nx=True,
-        )
-        return state
+        self._oauth_state_repo = oauth_state_repo
 
     def _generate_url_for_login_redirect(self, state: str) -> URL:
         params = {
@@ -100,7 +83,7 @@ class AuthService:
         logger.debug("login")
 
         try:
-            state = await self._set_state_in_redis()
+            state = await self._oauth_state_repo.set_state()
             url = self._generate_url_for_login_redirect(state)
             return AuthServiceRet(ok=True, data=LoginRet(url=url))
 
@@ -163,24 +146,12 @@ class AuthService:
 
         return VerifyGoogleTokenRet(ok=True, user_id=user_id, username=username)
 
-    async def _check_state(self, state: str) -> bool:
-        key = get_state_key(state)
-        exist = await self._redis_conn.getdel(key)
-
-        if not exist:
-            logger.warning("key not found, key: %s", key)
-            return False
-
-        return True
-
     async def login_redirect(self, state: str,
                              code: str) -> AuthServiceRet[LoginRedirectRet]:
         logger.debug("login_redirect")
 
         try:
-            # TODO: change to OAuthStateRepo
-            exist = await self._check_state(state)
-            if not exist:
+            if not await self._oauth_state_repo.state_exist(state):
                 return AuthServiceRet(
                     ok=False, error_redirect_url=self._setting.error_redirect)
 
@@ -192,20 +163,19 @@ class AuthService:
 
             assert verify_ret.user_id
             assert verify_ret.username
-            user_id = gen_user_id(verify_ret.user_id)
-
-            new_tokens = self._token_service.gen_token_pair(
-                user_id=user_id, username=verify_ret.username)
 
             async with self._sessionmaker() as session:
                 user_repo = UserRepo(session)
                 token_repo = TokenRepo(session)
 
-                await user_repo.register(id=user_id,
-                                         name=verify_ret.username,
-                                         user_type=UserType.REGISTERED)
+                user = await user_repo.register_with_google(
+                    id=verify_ret.user_id, name=verify_ret.username)
+
+                new_tokens = self._token_service.gen_token_pair(
+                    user_id=user.id, username=verify_ret.username)
+
                 await token_repo.set_refresh_token(
-                    user_id=user_id, refresh_token=new_tokens.refresh_token)
+                    user_id=user.id, refresh_token=new_tokens.refresh_token)
 
                 await session.commit()
 

@@ -4,6 +4,10 @@ from jwt.exceptions import ExpiredSignatureError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ...repositories.oauth_state import OAuthStateRepo
+
+from ...types.enums import LoginMethods
+
 from ...services.token import TokenService
 
 from ...repositories.user import UserRepo
@@ -28,14 +32,18 @@ async def test_auth_service_login_redirect(
 
     dummy_token = "token"
     dummy_google_user_id = "user_id"
-    dummy_user_id = gen_user_id(dummy_google_user_id)
+    dummy_user_id = gen_user_id(dummy_google_user_id, LoginMethods.GOOGLE)
     dummy_username = "username"
     dummy_state = "state"
     dummy_code = "code"
     dummy_state_key = get_state_key(dummy_state)
 
     token_service = TokenService(setting)
-    service = AuthService(setting, redis_conn, sessionmaker, token_service)
+    oauth_state_repo = OAuthStateRepo(setting, redis_conn)
+    service = AuthService(setting=setting,
+                          sessionmaker=sessionmaker,
+                          token_service=token_service,
+                          oauth_state_repo=oauth_state_repo)
 
     # mock access to google
     service._exchange_code_for_token = AsyncMock(return_value=dummy_token)

@@ -6,6 +6,6 @@ class ErrorCode(StrEnum):
     KEY_NOT_FOUND = "KEY_NOT_FOUND"
 
 
-class UserType(IntEnum):
-    GUEST = 0
-    REGISTERED = 1
+class LoginMethods(StrEnum):
+    GOOGLE = "google"
+    GUEST = "guest"

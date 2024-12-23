@@ -17,9 +17,6 @@ class User(Base):
         registered_at: User registered at
             - Default to current timestamp
 
-        user_type: User type
-            - ex: "guest", "registered"
-        
         refresh_token
     """
     __tablename__ = "users"
@@ -33,7 +30,6 @@ class User(Base):
         DateTime(timezone=True),
         server_default=func.current_timestamp(),
     )
-    user_type: Mapped[int] = mapped_column()
     refresh_token: Mapped[str | None] = mapped_column(Text())
 
     game_results = relationship(
