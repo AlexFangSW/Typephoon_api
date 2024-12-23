@@ -1,5 +1,4 @@
-from dataclasses import asdict, dataclass
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass
 from logging import getLogger
 from os import urandom
 from typing import TypeVar
@@ -9,6 +8,8 @@ import jwt
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from async_lru import alru_cache
+
+from .token import TokenService
 
 from ..repositories.token import TokenRepo
 
@@ -50,12 +51,6 @@ class VerifyGoogleTokenRet:
     username: str | None = None
 
 
-@dataclass(slots=True)
-class GenerateTokensRet:
-    access_token: str
-    refresh_token: str
-
-
 T = TypeVar("T")
 
 
@@ -70,10 +65,12 @@ class AuthService:
         setting: Setting,
         redis_conn: Redis,
         sessionmaker: async_sessionmaker[AsyncSession],
+        token_service: TokenService,
     ) -> None:
         self._setting = setting
         self._redis_conn = redis_conn
         self._sessionmaker = sessionmaker
+        self._token_service = token_service
 
     async def _set_state_in_redis(self) -> str:
         state = sha256(urandom(1024)).hexdigest()
@@ -176,58 +173,12 @@ class AuthService:
 
         return True
 
-    def _generate_tokens(self, user_id: str,
-                         username: str) -> GenerateTokensRet:
-        iat = datetime.now(UTC)
-        nbf = (iat - timedelta(seconds=1))
-
-        access_exp = iat + timedelta(
-            seconds=self._setting.token.access_duration)
-        access_payload = JWTPayload(sub=user_id,
-                                    name=username,
-                                    exp=int(access_exp.timestamp()),
-                                    nbf=int(nbf.timestamp()),
-                                    iat=int(iat.timestamp()))
-
-        access_token = jwt.encode(asdict(access_payload),
-                                  self._setting.token.private_key,
-                                  algorithm="RS256")
-
-        refresh_exp = iat + timedelta(
-            seconds=self._setting.token.refresh_duration)
-        refresh_payload = JWTPayload(sub=user_id,
-                                     name=username,
-                                     exp=int(refresh_exp.timestamp()),
-                                     nbf=int(nbf.timestamp()),
-                                     iat=int(iat.timestamp()))
-        refresh_token = jwt.encode(asdict(refresh_payload),
-                                   self._setting.token.private_key,
-                                   algorithm="RS256")
-
-        return GenerateTokensRet(access_token=access_token,
-                                 refresh_token=refresh_token)
-
-    async def _update_user_refresh_token(self, user_id: str,
-                                         refresh_token: str):
-        async with self._sessionmaker() as session:
-            repo = TokenRepo(session)
-            await repo.set_refresh_token(user_id=user_id,
-                                         refresh_token=refresh_token)
-            await session.commit()
-
-    async def _register_user(self, user_id: str, name: str):
-        async with self._sessionmaker() as session:
-            repo = UserRepo(session)
-            await repo.create(id=user_id,
-                              name=name,
-                              user_type=UserType.REGISTERED)
-            await session.commit()
-
     async def login_redirect(self, state: str,
                              code: str) -> AuthServiceRet[LoginRedirectRet]:
         logger.debug("login_redirect")
 
         try:
+            # TODO: change to OAuthStateRepo
             exist = await self._check_state(state)
             if not exist:
                 return AuthServiceRet(
@@ -243,11 +194,20 @@ class AuthService:
             assert verify_ret.username
             user_id = gen_user_id(verify_ret.user_id)
 
-            new_tokens = self._generate_tokens(user_id=user_id,
-                                               username=verify_ret.username)
-            await self._register_user(user_id=user_id, name=verify_ret.username)
-            await self._update_user_refresh_token(
-                user_id=user_id, refresh_token=new_tokens.refresh_token)
+            new_tokens = self._token_service.gen_token_pair(
+                user_id=user_id, username=verify_ret.username)
+
+            async with self._sessionmaker() as session:
+                user_repo = UserRepo(session)
+                token_repo = TokenRepo(session)
+
+                await user_repo.register(id=user_id,
+                                         name=verify_ret.username,
+                                         user_type=UserType.REGISTERED)
+                await token_repo.set_refresh_token(
+                    user_id=user_id, refresh_token=new_tokens.refresh_token)
+
+                await session.commit()
 
             data = LoginRedirectRet(
                 url=self._setting.front_end_endpoint,

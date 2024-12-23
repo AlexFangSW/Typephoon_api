@@ -12,7 +12,7 @@ class UserRepo:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create(self, id: str, name: str, user_type: UserType):
+    async def register(self, id: str, name: str, user_type: UserType):
         query = insert(User).values({
             "id": id,
             "name": name,

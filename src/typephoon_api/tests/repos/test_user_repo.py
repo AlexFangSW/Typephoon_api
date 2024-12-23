@@ -21,9 +21,9 @@ async def test_user_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
     # ----------------
     async with sessionmaker() as session:
         repo = UserRepo(session)
-        await repo.create(id=dummy_user_id,
-                          name=dummy_username,
-                          user_type=dummy_user_type)
+        await repo.register(id=dummy_user_id,
+                            name=dummy_username,
+                            user_type=dummy_user_type)
         await session.commit()
 
     # check
@@ -39,9 +39,9 @@ async def test_user_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
     # ----------------
     async with sessionmaker() as session:
         repo = UserRepo(session)
-        await repo.create(id=dummy_user_id,
-                          name=dummy_username,
-                          user_type=dummy_user_type)
+        await repo.register(id=dummy_user_id,
+                            name=dummy_username,
+                            user_type=dummy_user_type)
         await session.commit()
 
     # check
@@ -62,9 +62,9 @@ async def test_user_repo_get(sessionmaker: async_sessionmaker[AsyncSession]):
 
     async with sessionmaker() as session:
         repo = UserRepo(session)
-        await repo.create(id=dummy_user_id,
-                          name=dummy_username,
-                          user_type=dummy_user_type)
+        await repo.register(id=dummy_user_id,
+                            name=dummy_username,
+                            user_type=dummy_user_type)
         await session.commit()
 
     async with sessionmaker() as session:

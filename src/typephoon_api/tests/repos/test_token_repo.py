@@ -19,9 +19,9 @@ async def test_token_repo_set_refresh_token(
 
     async with sessionmaker() as session:
         repo = UserRepo(session)
-        await repo.create(id=dummy_user_id,
-                          name=dummy_username,
-                          user_type=dummy_user_type)
+        await repo.register(id=dummy_user_id,
+                            name=dummy_username,
+                            user_type=dummy_user_type)
         await session.commit()
 
     async with sessionmaker() as session:
