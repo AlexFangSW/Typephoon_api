@@ -63,22 +63,22 @@ class AuthService:
         logger.debug("login_redirect")
 
         try:
-            verify_ret = await self._oauth_provider.handle_authorization_response(
+            handle_auth_ret = await self._oauth_provider.handle_authorization_response(
                 state=state, code=code)
 
-            if not verify_ret.ok:
+            if not handle_auth_ret.ok:
                 return AuthServiceRet(
                     ok=False, error_redirect_url=self._setting.error_redirect)
 
-            assert verify_ret.user_id
-            assert verify_ret.username
+            assert handle_auth_ret.user_id
+            assert handle_auth_ret.username
 
             async with self._sessionmaker() as session:
                 user_repo = UserRepo(session)
                 token_repo = TokenRepo(session)
 
-                user = await user_repo.register(id=verify_ret.user_id,
-                                                name=verify_ret.username)
+                user = await user_repo.register(id=handle_auth_ret.user_id,
+                                                name=handle_auth_ret.username)
 
                 gen_token_ret = self._token_generator.gen_token_pair(
                     user_id=user.id, username=user.name)
@@ -87,12 +87,13 @@ class AuthService:
                     user_id=user.id, refresh_token=gen_token_ret.refresh_token)
 
                 await session.commit()
+                await session.refresh(user)
 
             data = LoginRedirectRet(
                 url=self._setting.front_end_endpoint,
                 access_token=gen_token_ret.access_token,
                 refresh_token=gen_token_ret.refresh_token,
-                username=verify_ret.username,
+                username=user.name,
                 refresh_endpoint=self._setting.token.refresh_endpoint,
             )
             return AuthServiceRet(ok=True, data=data)
