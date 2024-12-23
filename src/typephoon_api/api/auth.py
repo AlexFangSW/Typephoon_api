@@ -22,7 +22,7 @@ async def login(service: AuthService = Depends(get_auth_service)):
         return RedirectResponse(ret.error_redirect_url)
 
     assert ret.data
-    return RedirectResponse(ret.data.url)
+    return RedirectResponse(ret.data)
 
 
 @router.get("/login-redirect")

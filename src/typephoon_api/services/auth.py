@@ -25,11 +25,6 @@ logger = getLogger(__name__)
 
 
 @dataclass(slots=True)
-class LoginRet:
-    url: URL
-
-
-@dataclass(slots=True)
 class LoginRedirectRet:
     url: str
     access_token: str
@@ -79,13 +74,13 @@ class AuthService:
         url = url.include_query_params(**params)
         return url
 
-    async def login(self) -> AuthServiceRet[LoginRet]:
+    async def login(self) -> AuthServiceRet[URL]:
         logger.debug("login")
 
         try:
             state = await self._oauth_state_repo.set_state()
             url = self._generate_url_for_login_redirect(state)
-            return AuthServiceRet(ok=True, data=LoginRet(url=url))
+            return AuthServiceRet(ok=True, data=url)
 
         except:
             logger.exception("login redirect failed")
@@ -171,18 +166,21 @@ class AuthService:
                 user = await user_repo.register_with_google(
                     id=verify_ret.user_id, name=verify_ret.username)
 
-                new_tokens = self._token_service.gen_token_pair(
+                gen_token_ret = self._token_service.gen_token_pair(
                     user_id=user.id, username=verify_ret.username)
+                assert gen_token_ret.ok
+                assert gen_token_ret.data
 
                 await token_repo.set_refresh_token(
-                    user_id=user.id, refresh_token=new_tokens.refresh_token)
+                    user_id=user.id,
+                    refresh_token=gen_token_ret.data.refresh_token)
 
                 await session.commit()
 
             data = LoginRedirectRet(
                 url=self._setting.front_end_endpoint,
-                access_token=new_tokens.access_token,
-                refresh_token=new_tokens.refresh_token,
+                access_token=gen_token_ret.data.access_token,
+                refresh_token=gen_token_ret.data.refresh_token,
                 username=verify_ret.username,
                 refresh_endpoint=self._setting.token.refresh_endpoint,
             )
