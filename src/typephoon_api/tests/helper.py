@@ -39,9 +39,7 @@ def db_migration():
 
 @pytest.fixture
 def setting() -> Setting:
-    with open("setting.yaml", "r") as f:
-        loaded = yaml.safe_load(f)
-        setting = Setting.model_validate(loaded)
+    setting = Setting.from_file()
 
     # DATABASE
     dsn = Url(DSN)

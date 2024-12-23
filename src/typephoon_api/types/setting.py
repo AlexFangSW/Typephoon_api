@@ -1,5 +1,8 @@
+from __future__ import annotations
+from typing import Self
 from datetime import timedelta
 from pydantic import BaseModel, Field
+import yaml
 
 
 def default_logger() -> dict:
@@ -63,7 +66,15 @@ class ServerSetting(BaseModel):
     port: int = 8080
 
 
-class TokenSetting(BaseModel):
+class TokenPK(BaseModel):
+    """
+    Token public / private keys
+    """
+    public_key: str = ""
+    private_key: str = ""
+
+
+class TokenSetting(TokenPK):
     """
     JWT token
     - access_duration: (seconds)
@@ -71,17 +82,32 @@ class TokenSetting(BaseModel):
     - refresh_duration: (seconds)
         - duration for the refresh token
     """
-    public_key: str = ""
-    private_key: str = ""
     refresh_endpoint: str = "/api/v1/auth/token-refresh"
     access_duration: int = int(timedelta(minutes=5).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
 
+    def merge(self, inpt: TokenPK):
+        self.public_key = inpt.public_key
+        self.private_key = inpt.private_key
 
-class GoogleSetting(BaseModel):
+
+class GoogleCredentials(BaseModel):
     client_id: str = ""
     client_secret: str = ""
+
+
+class GoogleSetting(GoogleCredentials):
     redirect_url: str = "http://localhost:8080/api/v1/auth/login-redirect"
+
+    def merge(self, inpt: GoogleCredentials):
+        self.client_secret = inpt.client_secret
+        self.client_id = inpt.client_id
+
+
+class SecretSetting(BaseModel):
+    google_credential: GoogleCredentials = Field(
+        default_factory=GoogleCredentials)
+    token_pk: TokenPK = Field(default_factory=TokenPK)
 
 
 class Setting(BaseModel):
@@ -96,6 +122,28 @@ class Setting(BaseModel):
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
 
+    def merge(self, inpt: SecretSetting):
+        self.google.merge(inpt.google_credential)
+        self.token.merge(inpt.token_pk)
+
+    @classmethod
+    def from_file(cls,
+                  base: str = "setting.yaml",
+                  secret: str = "setting.secret.yaml") -> Self:
+
+        with open(base, "r") as f:
+            loaded = yaml.safe_load(f)
+            base_setting = cls.model_validate(loaded)
+
+        with open(secret, "r") as f:
+            loaded = yaml.safe_load(f)
+            secret_setting = SecretSetting.model_validate(loaded)
+
+        base_setting.merge(secret_setting)
+
+        return base_setting
+
 
 if __name__ == "__main__":
-    print(Setting().model_dump_json())
+    print(yaml.safe_dump(Setting().model_dump()))
+    print(yaml.safe_dump(SecretSetting().model_dump()))

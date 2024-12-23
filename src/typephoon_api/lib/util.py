@@ -45,10 +45,8 @@ def init_logger(setting: Setting):
     logger.log(TRACE, "trace level activated")
 
 
-def load_setting(path: str) -> Setting:
-    with open(path, "r") as file:
-        loaded = yaml.safe_load(file)
-        return Setting.model_validate(loaded)
+def load_setting(base: str, secret: str) -> Setting:
+    return Setting.from_file(base, secret)
 
 
 def catch_error_sync(func: Callable):

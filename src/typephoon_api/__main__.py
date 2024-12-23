@@ -15,16 +15,21 @@ def main():
                             description="The backend for Typephoon project")
     parser.add_argument("-c",
                         "--setting",
-                        help="Path to setting.json file",
+                        help="Path to setting.yaml file",
                         dest="setting",
-                        required=True)
+                        default="setting.yaml")
+    parser.add_argument("-sc",
+                        "--secret-setting",
+                        help="Path to setting.secret.yaml file",
+                        dest="secret_setting",
+                        default="setting.secret.yaml")
     parser.add_argument("--init",
                         help="Run init actions such as db migrations",
                         dest="init",
                         action="store_true")
     args = parser.parse_args(namespace=CLIArgs)
 
-    setting = load_setting(args.setting)
+    setting = load_setting(args.setting, args.secret_setting)
     init_logger(setting)
 
     if args.init:
