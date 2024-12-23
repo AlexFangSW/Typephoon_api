@@ -10,6 +10,8 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from async_lru import alru_cache
 
+from ..repositories.token import TokenRepo
+
 from ..repositories.user import UserRepo
 from ..types.enums import UserType
 
@@ -205,15 +207,20 @@ class AuthService:
         return GenerateTokensRet(access_token=access_token,
                                  refresh_token=refresh_token)
 
-    async def _update_user_refresh_token(self, user_id: str, username: str,
+    async def _update_user_refresh_token(self, user_id: str,
                                          refresh_token: str):
+        async with self._sessionmaker() as session:
+            repo = TokenRepo(session)
+            await repo.set_refresh_token(user_id=user_id,
+                                         refresh_token=refresh_token)
+            await session.commit()
 
+    async def _register_user(self, user_id: str, name: str):
         async with self._sessionmaker() as session:
             repo = UserRepo(session)
-            await repo.token_upsert(id=user_id,
-                                    name=username,
-                                    refresh_token=refresh_token,
-                                    user_type=UserType.REGISTERED)
+            await repo.create(id=user_id,
+                              name=name,
+                              user_type=UserType.REGISTERED)
             await session.commit()
 
     async def login_redirect(self, state: str,
@@ -238,11 +245,9 @@ class AuthService:
 
             new_tokens = self._generate_tokens(user_id=user_id,
                                                username=verify_ret.username)
-
+            await self._register_user(user_id=user_id, name=verify_ret.username)
             await self._update_user_refresh_token(
-                user_id=user_id,
-                username=verify_ret.username,
-                refresh_token=new_tokens.refresh_token)
+                user_id=user_id, refresh_token=new_tokens.refresh_token)
 
             data = LoginRedirectRet(
                 url=self._setting.front_end_endpoint,
@@ -258,10 +263,39 @@ class AuthService:
             return AuthServiceRet(
                 ok=False, error_redirect_url=self._setting.error_redirect)
 
-    async def logout(self):
+    async def logout(self) -> AuthServiceRet:
+        """
+        Removes refresh token from db
+        """
         logger.debug("logout")
-        ...
 
-    async def token_refresh(self):
+        try:
+            async with self._sessionmaker() as session:
+                ...
+                await session.commit()
+
+            return AuthServiceRet(ok=True)
+        except:
+            logger.exception("logout failed")
+            return AuthServiceRet(
+                ok=False, error_redirect_url=self._setting.error_redirect)
+
+    async def token_refresh(self) -> AuthServiceRet:
+        """
+        - 
+        - Generate new access token
+        """
         logger.debug("token_refresh")
+
+        try:
+            # get refresh token
+            async with self._sessionmaker() as session:
+                ...
+            # is the refresh token valid
+
+            # check if refresh token is the same in DB
+
+            # generate access token
+        except:
+            ...
         ...
