@@ -32,13 +32,15 @@ def default_logger() -> dict:
     }
 
 
-class DBSetting(BaseModel):
-    host: str = "localhost"
-    port: int = 5432
-    db: str = "db"
+class DBCredentialsSetting(BaseModel):
     username: str = "user"
     password: str = "password"
 
+
+class DBSetting(DBCredentialsSetting):
+    host: str = "localhost"
+    port: int = 5432
+    db: str = "db"
     pool_size: int = 5
     echo: bool = False
 
@@ -49,6 +51,10 @@ class DBSetting(BaseModel):
     @property
     def async_dsn(self) -> str:
         return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"
+
+    def merge(self, inpt: DBCredentialsSetting):
+        self.username = inpt.username
+        self.password = inpt.password
 
 
 class RedisSetting(BaseModel):
@@ -108,6 +114,7 @@ class SecretSetting(BaseModel):
     google_credential: GoogleCredentials = Field(
         default_factory=GoogleCredentials)
     token_pk: TokenPK = Field(default_factory=TokenPK)
+    db: DBCredentialsSetting = Field(default_factory=DBCredentialsSetting)
 
 
 class Setting(BaseModel):
@@ -125,6 +132,7 @@ class Setting(BaseModel):
     def merge(self, inpt: SecretSetting):
         self.google.merge(inpt.google_credential)
         self.token.merge(inpt.token_pk)
+        self.db.merge(inpt.db)
 
     @classmethod
     def from_file(cls,
