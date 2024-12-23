@@ -2,10 +2,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import select
 
-from ..lib.util import gen_user_id
-
-from ..types.enums import LoginMethods
-
 from ..orm.user import User
 
 
@@ -13,10 +9,6 @@ class UserRepo:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
-
-    async def register_with_google(self, id: str, name: str) -> User:
-        id = gen_user_id(id, LoginMethods.GOOGLE)
-        return await self.register(id=id, name=name)
 
     async def register(self, id: str, name: str) -> User:
         query = insert(User).values({

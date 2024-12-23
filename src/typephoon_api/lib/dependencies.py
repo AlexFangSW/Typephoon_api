@@ -1,9 +1,18 @@
+from logging import getLogger
 from fastapi import Request
 
-from ..services.token import TokenService
+from ..types.enums import OAuthProviders
+
+from ..oauth_providers.google import GoogleOAuthProvider
+from ..repositories.oauth_state import OAuthStateRepo
+
+from .token_generator import TokenGenerator
+
 from ..services.auth import AuthService
 from .server import TypephoonServer
 from ..services.health_check import HealthCheckService
+
+logger = getLogger(__name__)
 
 
 async def get_health_check_service(request: Request) -> HealthCheckService:
@@ -12,11 +21,21 @@ async def get_health_check_service(request: Request) -> HealthCheckService:
     return service
 
 
-async def get_auth_service(request: Request) -> AuthService:
+async def get_auth_service(request: Request,
+                           provider: OAuthProviders) -> AuthService:
     app: TypephoonServer = request.app
-    token_service = TokenService(app.setting)
+
+    token_generator = TokenGenerator(app.setting)
+    oauth_state_repo = OAuthStateRepo(setting=app.setting,
+                                      redis_conn=app.redis_conn)
+
+    if provider == OAuthProviders.GOOGLE:
+        oauth_provider = GoogleOAuthProvider(setting=app.setting,
+                                             redis_conn=app.redis_conn,
+                                             oauth_state_repo=oauth_state_repo)
+
     service = AuthService(setting=app.setting,
-                          redis_conn=app.redis_conn,
                           sessionmaker=app.sessionmaker,
-                          token_service=token_service)
+                          oauth_provider=oauth_provider,
+                          token_generator=token_generator)
     return service

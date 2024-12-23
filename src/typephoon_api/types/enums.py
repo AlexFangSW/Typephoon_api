@@ -6,6 +6,5 @@ class ErrorCode(StrEnum):
     KEY_NOT_FOUND = "KEY_NOT_FOUND"
 
 
-class LoginMethods(StrEnum):
+class OAuthProviders(StrEnum):
     GOOGLE = "google"
-    GUEST = "guest"

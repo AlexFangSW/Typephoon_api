@@ -6,9 +6,8 @@ from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
-import yaml
 
-from ..types.enums import LoginMethods
+from ..types.enums import OAuthProviders
 
 from ..types.log import TRACE
 from ..types.setting import Setting
@@ -85,5 +84,5 @@ def get_state_key(inpt: str) -> str:
     return f"login_state-{inpt}"
 
 
-def gen_user_id(base_id: str, login_method: LoginMethods) -> str:
-    return f"{login_method}-{base_id}"
+def gen_user_id(base_id: str, provider: OAuthProviders) -> str:
+    return f"{provider}-{base_id}"

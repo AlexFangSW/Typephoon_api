@@ -9,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 from asgi_lifespan import LifespanManager
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-import yaml
 
 from ..lib.server_setup import create_server
 from ..types.setting import Setting

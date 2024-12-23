@@ -6,7 +6,7 @@ db:
 token:
   refresh_endpoint: "/api/v1/auth/token_refresh"
 google:
-  redirect_url: http://localhost:8080/api/v1/auth/login-redirect
+  redirect_url: http://localhost:8080/api/v1/auth/google/login-redirect
 redis:
   host: localhost
   port: 6379

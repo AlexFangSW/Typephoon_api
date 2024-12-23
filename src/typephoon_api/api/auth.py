@@ -9,7 +9,7 @@ from ..lib.util import catch_error_async
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
-@router.get("/login")
+@router.get("/{provider}/login")
 @catch_error_async
 async def login(service: AuthService = Depends(get_auth_service)):
     """
@@ -25,7 +25,7 @@ async def login(service: AuthService = Depends(get_auth_service)):
     return RedirectResponse(ret.data)
 
 
-@router.get("/login-redirect")
+@router.get("/{provider}/login-redirect")
 @catch_error_async
 async def login_redirect(state: str,
                          code: str,
