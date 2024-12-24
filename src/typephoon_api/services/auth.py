@@ -4,8 +4,6 @@ from typing import TypeVar
 from fastapi.datastructures import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ..types.db_entities.user import UserNameAndID
-
 from ..oauth_providers.base import OAuthProvider
 
 from ..lib.token_generator import TokenGenerator
@@ -17,8 +15,15 @@ from ..repositories.user import UserRepo
 from ..types.setting import Setting
 
 from .base import ServiceRet
+from pydantic import BaseModel, ConfigDict
 
 logger = getLogger(__name__)
+
+
+class UserNameAndID(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
 
 
 @dataclass(slots=True)
