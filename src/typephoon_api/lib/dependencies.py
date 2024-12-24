@@ -1,6 +1,10 @@
 from logging import getLogger
 from fastapi import Request
 
+from ..types.setting import Setting
+
+from .token_validator import TokenValidator
+
 from ..types.enums import OAuthProviders
 
 from ..oauth_providers.google import GoogleOAuthProvider
@@ -26,6 +30,7 @@ async def get_auth_service(request: Request,
     app: TypephoonServer = request.app
 
     token_generator = TokenGenerator(app.setting)
+    token_validator = TokenValidator(app.setting)
     oauth_state_repo = OAuthStateRepo(setting=app.setting,
                                       redis_conn=app.redis_conn)
 
@@ -37,5 +42,11 @@ async def get_auth_service(request: Request,
     service = AuthService(setting=app.setting,
                           sessionmaker=app.sessionmaker,
                           oauth_provider=oauth_provider,
+                          token_validator=token_validator,
                           token_generator=token_generator)
     return service
+
+
+def get_setting(request: Request) -> Setting:
+    app: TypephoonServer = request.app
+    return app.setting

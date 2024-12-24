@@ -2,9 +2,9 @@ db:
   host: localhost
   port: 5432
   db: typephoon
-  echo: true
+  echo: false
 token:
-  refresh_endpoint: "/api/v1/auth/token_refresh"
+  refresh_endpoint: "/api/v1/auth/token-refresh"
 google:
   redirect_url: http://localhost:8080/api/v1/auth/google/login-redirect
 redis:

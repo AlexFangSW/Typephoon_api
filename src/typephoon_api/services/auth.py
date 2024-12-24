@@ -4,6 +4,11 @@ from typing import TypeVar
 from fastapi.datastructures import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..types.common import ErrorContext
+from ..types.enums import ErrorCode
+
+from ..lib.token_validator import TokenValidator
+
 from ..oauth_providers.base import OAuthProvider
 
 from ..lib.token_generator import TokenGenerator
@@ -38,35 +43,32 @@ class LoginRedirectRet:
 T = TypeVar("T")
 
 
-class AuthServiceRet(ServiceRet[T]):
-    error_redirect_url: str | None = None
-
-
 class AuthService:
 
     def __init__(self, setting: Setting,
                  sessionmaker: async_sessionmaker[AsyncSession],
                  token_generator: TokenGenerator,
+                 token_validator: TokenValidator,
                  oauth_provider: OAuthProvider) -> None:
         self._setting = setting
         self._sessionmaker = sessionmaker
         self._token_generator = token_generator
+        self._token_validator = token_validator
         self._oauth_provider = oauth_provider
 
-    async def login(self) -> AuthServiceRet[URL]:
+    async def login(self) -> ServiceRet[URL]:
         logger.debug("login")
 
         try:
             url = await self._oauth_provider.get_authorization_url()
-            return AuthServiceRet(ok=True, data=url)
+            return ServiceRet(ok=True, data=url)
 
         except:
             logger.exception("login redirect failed")
-            return AuthServiceRet(
-                ok=False, error_redirect_url=self._setting.error_redirect)
+            return ServiceRet(ok=False)
 
     async def login_redirect(self, state: str,
-                             code: str) -> AuthServiceRet[LoginRedirectRet]:
+                             code: str) -> ServiceRet[LoginRedirectRet]:
         logger.debug("login_redirect")
 
         try:
@@ -74,8 +76,7 @@ class AuthService:
                 state=state, code=code)
 
             if not handle_auth_ret.ok:
-                return AuthServiceRet(
-                    ok=False, error_redirect_url=self._setting.error_redirect)
+                return ServiceRet(ok=False)
 
             assert handle_auth_ret.user_id
             assert handle_auth_ret.username
@@ -103,46 +104,51 @@ class AuthService:
                 username=user.name,
                 refresh_endpoint=self._setting.token.refresh_endpoint,
             )
-            return AuthServiceRet(ok=True, data=data)
+            return ServiceRet(ok=True, data=data)
 
         except:
             logger.exception("login redirect failed")
-            return AuthServiceRet(
-                ok=False, error_redirect_url=self._setting.error_redirect)
+            return ServiceRet(ok=False)
 
-    async def logout(self) -> AuthServiceRet:
+    async def logout(self, access_token: str) -> ServiceRet:
         """
         Removes refresh token from db
         """
         logger.debug("logout")
 
-        try:
-            async with self._sessionmaker() as session:
-                ...
-                await session.commit()
+        info = self._token_validator.validate(access_token)
 
-            return AuthServiceRet(ok=True)
-        except:
-            logger.exception("logout failed")
-            return AuthServiceRet(
-                ok=False, error_redirect_url=self._setting.error_redirect)
+        async with self._sessionmaker() as session:
+            token_repo = TokenRepo(session)
+            await token_repo.remove_refresh_token(info.sub)
+            await session.commit()
 
-    async def token_refresh(self):
+        return ServiceRet(ok=True)
+
+    async def token_refresh(self, refresh_token: str) -> ServiceRet[str]:
         """
         - 
         - Generate new access token
         """
         logger.debug("token_refresh")
 
-        try:
-            # get refresh token
-            async with self._sessionmaker() as session:
-                ...
-            # is the refresh token valid
+        # is the refresh token valid
+        info = self._token_validator.validate(refresh_token)
 
-            # check if refresh token is the same in DB
+        # check if refresh token is the same in DB
+        async with self._sessionmaker() as session:
+            repo = TokenRepo(session)
+            token_in_db = await repo.get_refresh_token(info.sub)
 
-            # generate access token
-        except:
-            ...
-        ...
+        if token_in_db != refresh_token:
+            logger.warning(
+                "refresh token missmatch, got token: %s, db token: %s",
+                refresh_token, token_in_db)
+            error = ErrorContext(code=ErrorCode.REFRESH_TOKEN_MISSMATCH)
+            return ServiceRet(ok=False, error=error)
+
+        # generate access token
+        new_access_token = self._token_generator.gen_access_token(
+            info.sub, info.name)
+
+        return ServiceRet(ok=True, data=new_access_token)

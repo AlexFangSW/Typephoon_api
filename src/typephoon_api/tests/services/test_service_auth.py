@@ -1,6 +1,8 @@
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ...lib.token_validator import TokenValidator
+
 from ...oauth_providers.base import VerifyTokenRet
 
 from ...oauth_providers.google import GoogleOAuthProvider
@@ -33,12 +35,14 @@ async def test_auth_service_login_redirect(
     dummy_code = "code"
 
     token_generator = TokenGenerator(setting)
+    token_validator = TokenValidator(setting)
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
 
     service = AuthService(setting=setting,
                           sessionmaker=sessionmaker,
                           token_generator=token_generator,
+                          token_validator=token_validator,
                           oauth_provider=oauth_provider)
 
     # -------------------------------------------
@@ -49,7 +53,6 @@ async def test_auth_service_login_redirect(
 
     ret = await service.login_redirect(dummy_state, dummy_code)
     assert not ret.ok
-    assert ret.error_redirect_url == setting.error_redirect
 
     # -------------------------------------------
     # seccess

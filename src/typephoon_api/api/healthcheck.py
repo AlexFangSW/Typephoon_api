@@ -31,9 +31,9 @@ async def ready(
     if result.ok:
         msg = jsonable_encoder(SuccessResponse())
         return JSONResponse(msg, status_code=200)
-    else:
-        msg = jsonable_encoder(ErrorResponse())
-        return JSONResponse(msg, status_code=500)
+
+    msg = jsonable_encoder(ErrorResponse())
+    return JSONResponse(msg, status_code=500)
 
 
 @router.get("/alive", responses={200: {"model": SuccessResponse}})
@@ -46,5 +46,5 @@ async def alive(
     if result.ok:
         msg = jsonable_encoder(SuccessResponse())
         return JSONResponse(msg, status_code=200)
-    else:
-        raise ValueError("this should never happen !!")
+
+    raise ValueError("this should never happen !!")

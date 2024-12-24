@@ -1,10 +1,17 @@
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
 
 class ErrorCode(StrEnum):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
     KEY_NOT_FOUND = "KEY_NOT_FOUND"
+    REFRESH_TOKEN_MISSMATCH = "REFRESH_TOKEN_MISSMATCH"
 
 
 class OAuthProviders(StrEnum):
     GOOGLE = "google"
+
+
+class CookieNames(StrEnum):
+    ACCESS_TOKEN = "TP_AT"
+    REFRESH_TOKEN = "TP_RT"
+    USERNAME = "USERNAME"
