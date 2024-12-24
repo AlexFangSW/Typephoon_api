@@ -4,6 +4,8 @@ from typing import TypeVar
 from fastapi.datastructures import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..types.db_entities.user import UserNameAndID
+
 from ..oauth_providers.base import OAuthProvider
 
 from ..lib.token_generator import TokenGenerator
@@ -77,8 +79,9 @@ class AuthService:
                 user_repo = UserRepo(session)
                 token_repo = TokenRepo(session)
 
-                user = await user_repo.register(id=handle_auth_ret.user_id,
-                                                name=handle_auth_ret.username)
+                ret = await user_repo.register(id=handle_auth_ret.user_id,
+                                               name=handle_auth_ret.username)
+                user = UserNameAndID.model_validate(ret)
 
                 gen_token_ret = self._token_generator.gen_token_pair(
                     user_id=user.id, username=user.name)
@@ -87,7 +90,6 @@ class AuthService:
                     user_id=user.id, refresh_token=gen_token_ret.refresh_token)
 
                 await session.commit()
-                await session.refresh(user)
 
             data = LoginRedirectRet(
                 url=self._setting.front_end_endpoint,
