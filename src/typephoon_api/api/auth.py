@@ -14,7 +14,11 @@ from ..services.auth import AuthService
 
 from ..lib.util import catch_error_async
 
-router = APIRouter(tags=["Auth"], prefix="/auth")
+router = APIRouter(tags=["Auth"],
+                   prefix="/auth",
+                   responses={500: {
+                       "model": ErrorResponse
+                   }})
 
 
 @router.get("/{provider}/login")
