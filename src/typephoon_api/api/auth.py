@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Cookie, Depends, responses
+from fastapi import APIRouter, Cookie, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 
