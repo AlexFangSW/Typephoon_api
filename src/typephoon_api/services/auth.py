@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from logging import getLogger
 from typing import TypeVar
 from fastapi.datastructures import URL
+from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..types.common import ErrorContext
@@ -116,7 +117,12 @@ class AuthService:
         """
         logger.debug("logout")
 
-        info = self._token_validator.validate(access_token)
+        try:
+            info = self._token_validator.validate(access_token)
+        except PyJWTError:
+            # The client can't do anything with a invalied token,
+            # they are basically logged out.
+            return ServiceRet(ok=True)
 
         async with self._sessionmaker() as session:
             token_repo = TokenRepo(session)
@@ -127,13 +133,18 @@ class AuthService:
 
     async def token_refresh(self, refresh_token: str) -> ServiceRet[str]:
         """
-        - 
-        - Generate new access token
+        Generate new access token
         """
         logger.debug("token_refresh")
 
         # is the refresh token valid
-        info = self._token_validator.validate(refresh_token)
+        try:
+            info = self._token_validator.validate(refresh_token)
+        except PyJWTError as ex:
+            logger.warning("invalid token, token: %s, error: %s", refresh_token,
+                           str(ex))
+            error = ErrorContext(code=ErrorCode.INVALID_TOKEN, message=str(ex))
+            return ServiceRet(ok=False, error=error)
 
         # check if refresh token is the same in DB
         async with self._sessionmaker() as session:

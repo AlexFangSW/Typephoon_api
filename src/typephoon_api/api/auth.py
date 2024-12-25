@@ -1,11 +1,9 @@
 from typing import Annotated
-from fastapi import APIRouter, Cookie, Depends
+from fastapi import APIRouter, Cookie, Depends, responses
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from ..types.setting import Setting
-
-from ..types.common import ErrorContext
 
 from ..types.responses.base import ErrorResponse, SuccessResponse
 
@@ -73,7 +71,7 @@ async def login_redirect(state: str,
     return response
 
 
-@router.post("/logout")
+@router.post("/logout", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def logout(
     access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)],
@@ -83,10 +81,24 @@ async def logout(
 
     assert ret.ok
     msg = jsonable_encoder(SuccessResponse())
-    return JSONResponse(msg, status_code=200)
+    response = JSONResponse(msg, status_code=200)
+
+    response.delete_cookie(CookieNames.ACCESS_TOKEN)
+    response.set_cookie(CookieNames.REFRESH_TOKEN)
+    response.set_cookie(CookieNames.USERNAME)
+
+    return response
 
 
-@router.post("/token-refresh")
+@router.post("/token-refresh",
+             responses={
+                 200: {
+                     "model": SuccessResponse
+                 },
+                 400: {
+                     "model": ErrorResponse
+                 }
+             })
 @catch_error_async
 async def token_refresh(
     refresh_token: Annotated[str, Cookie(alias=CookieNames.REFRESH_TOKEN)],
@@ -97,7 +109,10 @@ async def token_refresh(
 
     if not ret.ok:
         assert ret.error
-        if ret.error.code == ErrorCode.REFRESH_TOKEN_MISSMATCH:
+        if ret.error.code in {
+                ErrorCode.REFRESH_TOKEN_MISSMATCH,
+                ErrorCode.INVALID_TOKEN,
+        }:
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=400)
         else:

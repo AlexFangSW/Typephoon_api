@@ -1,5 +1,9 @@
+from datetime import timedelta
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+import time_machine
+
+from ...repositories.token import TokenRepo
 
 from ...lib.token_validator import TokenValidator
 
@@ -11,7 +15,7 @@ from ...lib.token_generator import TokenGenerator
 
 from ...repositories.oauth_state import OAuthStateRepo
 
-from ...types.enums import OAuthProviders
+from ...types.enums import ErrorCode, OAuthProviders
 
 from ...repositories.user import UserRepo
 
@@ -55,7 +59,7 @@ async def test_auth_service_login_redirect(
     assert not ret.ok
 
     # -------------------------------------------
-    # seccess
+    # success
     # -------------------------------------------
     oauth_provider.handle_authorization_response = AsyncMock(
         return_value=VerifyTokenRet(
@@ -75,3 +79,94 @@ async def test_auth_service_login_redirect(
 
     assert user
     assert user.refresh_token == ret.data.refresh_token
+
+
+@pytest.mark.asyncio
+async def test_auth_service_logout(
+        setting: Setting, sessionmaker: async_sessionmaker[AsyncSession],
+        redis_conn: Redis):
+
+    dummy_google_user_id = "user_id"
+    dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
+    dummy_username = "username"
+    dummy_state = "state"
+    dummy_code = "code"
+
+    token_generator = TokenGenerator(setting)
+    token_validator = TokenValidator(setting)
+    oauth_state_repo = OAuthStateRepo(setting, redis_conn)
+    oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
+
+    service = AuthService(setting=setting,
+                          sessionmaker=sessionmaker,
+                          token_generator=token_generator,
+                          token_validator=token_validator,
+                          oauth_provider=oauth_provider)
+
+    # login
+    oauth_provider.handle_authorization_response = AsyncMock(
+        return_value=VerifyTokenRet(
+            ok=True, user_id=dummy_user_id, username=dummy_username))
+    login_info = await service.login_redirect(dummy_state, dummy_code)
+    assert login_info.data
+
+    # logout
+    ret = await service.logout(login_info.data.access_token)
+    assert ret.ok
+    # check that refresh token is removed
+    async with sessionmaker() as session:
+        repo = TokenRepo(session)
+        refresh_token = await repo.get_refresh_token(dummy_user_id)
+        assert refresh_token is None
+
+
+@pytest.mark.asyncio
+@time_machine.travel(NOW, tick=False)
+async def test_auth_service_token_refresh(
+        setting: Setting, sessionmaker: async_sessionmaker[AsyncSession],
+        redis_conn: Redis):
+
+    dummy_google_user_id = "user_id"
+    dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
+    dummy_username = "username"
+    dummy_state = "state"
+    dummy_code = "code"
+
+    token_generator = TokenGenerator(setting)
+    token_validator = TokenValidator(setting)
+    oauth_state_repo = OAuthStateRepo(setting, redis_conn)
+    oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
+
+    service = AuthService(setting=setting,
+                          sessionmaker=sessionmaker,
+                          token_generator=token_generator,
+                          token_validator=token_validator,
+                          oauth_provider=oauth_provider)
+
+    # login
+    oauth_provider.handle_authorization_response = AsyncMock(
+        return_value=VerifyTokenRet(
+            ok=True, user_id=dummy_user_id, username=dummy_username))
+    login_info = await service.login_redirect(dummy_state, dummy_code)
+    assert login_info.data
+
+    # refresh (success)
+    ret = await service.token_refresh(login_info.data.refresh_token)
+    assert ret.ok
+
+    # logout
+    await service.logout(login_info.data.access_token)
+
+    # refresh (fail, token missmatch)
+    ret = await service.token_refresh(login_info.data.refresh_token)
+    assert ret.ok is False
+    assert ret.error
+    assert ret.error.code == ErrorCode.REFRESH_TOKEN_MISSMATCH
+
+    # refresh (fail, invalid token)
+    with time_machine.travel(NOW +
+                             timedelta(seconds=setting.token.refresh_duration)):
+        ret = await service.token_refresh(login_info.data.refresh_token)
+        assert ret.ok is False
+        assert ret.error
+        assert ret.error.code == ErrorCode.INVALID_TOKEN

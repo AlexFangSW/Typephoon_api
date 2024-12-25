@@ -21,7 +21,11 @@ REDIS_DB = int(getenv("REDIS_DB", 0))
 
 API_PREFIX = "/api/v1"
 
-NOW = datetime(year=2024, month=12, day=22, tzinfo=UTC)
+tmp_now = datetime.now(UTC)
+NOW = datetime(year=tmp_now.year,
+               month=tmp_now.month,
+               day=tmp_now.day,
+               tzinfo=UTC)
 
 
 @pytest.fixture

@@ -15,7 +15,8 @@ class TokenValidator:
                                      "verify_signature": True,
                                      "verify_aud": False,
                                      "verify_iss": False,
-                                 })
+                                 },
+                                 algorithms=["RS256"])
 
         return JWTPayload(sub=decoded_jwt['sub'],
                           name=decoded_jwt["name"],
