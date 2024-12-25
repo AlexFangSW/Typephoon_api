@@ -9,7 +9,7 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 from ..types.enums import CookieNames, ErrorCode
 
-from ..lib.dependencies import get_auth_service, get_setting
+from ..lib.dependencies import get_auth_service, get_auth_service_with_provider, get_setting
 from ..services.auth import AuthService
 
 from ..lib.util import catch_error_async
@@ -20,7 +20,7 @@ router = APIRouter(tags=["Auth"], prefix="/auth")
 @router.get("/{provider}/login")
 @catch_error_async
 async def login(setting: Setting = Depends(get_setting),
-                service: AuthService = Depends(get_auth_service)):
+                service: AuthService = Depends(get_auth_service_with_provider)):
     """
     Set perams and redirect users to the login page
     """
@@ -35,10 +35,11 @@ async def login(setting: Setting = Depends(get_setting),
 
 @router.get("/{provider}/login-redirect")
 @catch_error_async
-async def login_redirect(state: str,
-                         code: str,
-                         setting: Setting = Depends(get_setting),
-                         service: AuthService = Depends(get_auth_service)):
+async def login_redirect(
+    state: str,
+    code: str,
+    setting: Setting = Depends(get_setting),
+    service: AuthService = Depends(get_auth_service_with_provider)):
 
     ret = await service.login_redirect(state, code)
 

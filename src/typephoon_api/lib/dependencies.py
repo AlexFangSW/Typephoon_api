@@ -25,8 +25,8 @@ async def get_health_check_service(request: Request) -> HealthCheckService:
     return service
 
 
-async def get_auth_service(request: Request,
-                           provider: OAuthProviders) -> AuthService:
+async def get_auth_service_with_provider(
+        request: Request, provider: OAuthProviders) -> AuthService:
     app: TypephoonServer = request.app
 
     token_generator = TokenGenerator(app.setting)
@@ -42,6 +42,19 @@ async def get_auth_service(request: Request,
     service = AuthService(setting=app.setting,
                           sessionmaker=app.sessionmaker,
                           oauth_provider=oauth_provider,
+                          token_validator=token_validator,
+                          token_generator=token_generator)
+    return service
+
+
+async def get_auth_service(request: Request) -> AuthService:
+    app: TypephoonServer = request.app
+
+    token_generator = TokenGenerator(app.setting)
+    token_validator = TokenValidator(app.setting)
+
+    service = AuthService(setting=app.setting,
+                          sessionmaker=app.sessionmaker,
                           token_validator=token_validator,
                           token_generator=token_generator)
     return service

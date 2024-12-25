@@ -46,11 +46,12 @@ T = TypeVar("T")
 
 class AuthService:
 
-    def __init__(self, setting: Setting,
+    def __init__(self,
+                 setting: Setting,
                  sessionmaker: async_sessionmaker[AsyncSession],
                  token_generator: TokenGenerator,
                  token_validator: TokenValidator,
-                 oauth_provider: OAuthProvider) -> None:
+                 oauth_provider: OAuthProvider | None = None) -> None:
         self._setting = setting
         self._sessionmaker = sessionmaker
         self._token_generator = token_generator
@@ -61,6 +62,7 @@ class AuthService:
         logger.debug("login")
 
         try:
+            assert self._oauth_provider
             url = await self._oauth_provider.get_authorization_url()
             return ServiceRet(ok=True, data=url)
 
@@ -73,6 +75,7 @@ class AuthService:
         logger.debug("login_redirect")
 
         try:
+            assert self._oauth_provider
             handle_auth_ret = await self._oauth_provider.handle_authorization_response(
                 state=state, code=code)
 
