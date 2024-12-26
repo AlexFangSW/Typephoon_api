@@ -32,4 +32,5 @@ async def queue_in(websocket: WebSocket,
     [Game mode: Random]
     This endpoint is reponsible for sending lobby related events to users.
     """
+    await websocket.accept()
     await service.queue_in(websocket)

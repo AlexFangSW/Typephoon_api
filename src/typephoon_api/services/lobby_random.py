@@ -1,12 +1,28 @@
 from collections import defaultdict
+from logging import getLogger
 from fastapi import WebSocket
+from jwt import PyJWTError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..repositories.game import GameRepo
+
+from ..repositories.guest_token import GuestTokenRepo
+
+from ..types.common import LobbyUserInfo
+
+from ..lib.util import gen_guest_user_info
+
+from ..types.enums import CookieNames, GameStatus, UserType, WSCloseReason
 
 from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from ..lib.lobby.lobby_random_background import LobbyRandomBackground
 
 from ..lib.token_generator import TokenGenerator
+from ..lib.token_validator import TokenValidator
 from ..types.setting import Setting
+
+logger = getLogger(__name__)
 
 
 class LobbyRandomService:
@@ -30,21 +46,64 @@ class LobbyRandomService:
         self,
         setting: Setting,
         token_generator: TokenGenerator,
+        token_validator: TokenValidator,
         background_bucket: defaultdict[str, LobbyBackgroundManager],
+        guest_token_repo: GuestTokenRepo,
+        sessionmaker: async_sessionmaker[AsyncSession],
     ) -> None:
         self._setting = setting
         self._token_generator = token_generator
         self._background_bucket = background_bucket
+        self._token_validator = token_validator
+        self._guest_token_repo = guest_token_repo
+        self._sessionmaker = sessionmaker
         # match making
         pass
 
     async def queue_in(self, websocket: WebSocket):
-        # hmm... proberbaly done in background.prepare()
-        # get and validate cookies
-        # gen token if needed
-        # match making
+        logger.debug("queue_in")
+
+        access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
+
+        guest_token_key: str | None = None
+
+        if access_token is None:
+            user_info = gen_guest_user_info()
+            token = self._token_generator.gen_access_token(
+                user_id=user_info.id,
+                username=user_info.name,
+                user_type=UserType.GUEST)
+            guest_token_key = await self._guest_token_repo.store(token)
+        else:
+            try:
+                assert access_token
+                info = self._token_validator.validate(access_token)
+                user_info = LobbyUserInfo(id=info.sub, name=info.name)
+            except PyJWTError:
+                await websocket.close(reason=WSCloseReason.INVALID_TOKEN)
+
+        # match making, find or create game
+        async with self._sessionmaker() as session:
+            game_repo = GameRepo(session)
+            game = await game_repo.get_one(status=GameStatus.LOBBY, lock=True)
+
+            game_id: int | None = None
+            if game:
+                logger.debug("found game, id: %s", game.id)
+                game_id = game.id
+                await game_repo.add_player()
+            else:
+                game = await game_repo.create()
+                logger.debug("create game, id: %s", game.id)
+                game_id = game.id
+                await game_repo.add_player()
+                # send self descruct/game start signal
+                # set start time in redis for user countdown pooling
+
+            await session.commit()
 
         # put into background bucket
+        # self._background_bucket[str(game.id)].add()
 
         # notify users on other servers
         ...

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
@@ -6,6 +7,9 @@ from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
+from uuid import uuid4
+
+from ..types.common import LobbyUserInfo
 
 from ..types.enums import OAuthProviders
 
@@ -86,3 +90,15 @@ def get_state_key(inpt: str) -> str:
 
 def gen_user_id(base_id: str, provider: OAuthProviders) -> str:
     return f"{provider}-{base_id}"
+
+
+@dataclass(slots=True)
+class GuestUserInfo:
+    id: str
+    name: str
+
+
+def gen_guest_user_info() -> LobbyUserInfo:
+    id = uuid4().hex
+    first_part = id.split("-")[0]
+    return LobbyUserInfo(id=f"guest-{id}", name=f"guest-{first_part}")

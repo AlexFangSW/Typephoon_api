@@ -22,4 +22,5 @@ class TokenValidator:
                           name=decoded_jwt["name"],
                           exp=decoded_jwt["exp"],
                           nbf=decoded_jwt["nbf"],
-                          iat=decoded_jwt["iat"])
+                          iat=decoded_jwt["iat"],
+                          user_type=decoded_jwt["user_type"])

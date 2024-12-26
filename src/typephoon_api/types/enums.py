@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 
 class ErrorCode(StrEnum):
@@ -16,3 +16,18 @@ class CookieNames(StrEnum):
     ACCESS_TOKEN = "TP_AT"
     REFRESH_TOKEN = "TP_RT"
     USERNAME = "USERNAME"
+
+
+class WSCloseReason(StrEnum):
+    INVALID_TOKEN = "INVALID_TOKEN"
+    ...
+
+
+class UserType(StrEnum):
+    GUEST = "GUEST"
+    REGISTERED = "REGISTERED"
+
+
+class GameStatus(IntEnum):
+    LOBBY = 0
+    IN_GAME = 1
