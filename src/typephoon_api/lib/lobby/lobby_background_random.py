@@ -5,7 +5,7 @@ from fastapi import WebSocket
 from ...types.common import LobbyUserInfo
 
 
-class LobbyRandomBackground:
+class LobbyBackgroundRandom:
     """
     [Game mode: Random]
     Background task for a single user
@@ -30,7 +30,7 @@ class LobbyRandomBackground:
 
     async def start(self):
         self._task: Task = create_task(
-            self._loop(), name=f"lobby_random_background-{self._user_info.sub}")
+            self._loop(), name=f"lobby_background_random-{self._user_info.id}")
 
     async def _before_end(self):
         ...

@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Annotated
 from fastapi import APIRouter, Cookie, Depends, WebSocket
 from fastapi.encoders import jsonable_encoder
@@ -23,14 +24,19 @@ router = APIRouter(tags=["Lobby"],
                        "model": ErrorResponse
                    }})
 
+logger = getLogger(__name__)
+
 
 @router.websocket("/queue-in")
-@catch_error_async
 async def queue_in(websocket: WebSocket,
                    service: LobbyRandomService = Depends()):
     """
     [Game mode: Random]
     This endpoint is reponsible for sending lobby related events to users.
     """
-    await websocket.accept()
-    await service.queue_in(websocket)
+    try:
+        await websocket.accept()
+        await service.queue_in(websocket)
+    except Exception as ex:
+        logger.exception("something whent wrong")
+        await websocket.close(reason=str(ex))

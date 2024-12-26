@@ -20,7 +20,6 @@ class CookieNames(StrEnum):
 
 class WSCloseReason(StrEnum):
     INVALID_TOKEN = "INVALID_TOKEN"
-    ...
 
 
 class UserType(StrEnum):
@@ -31,3 +30,8 @@ class UserType(StrEnum):
 class GameStatus(IntEnum):
     LOBBY = 0
     IN_GAME = 1
+
+
+class GameCacheType(StrEnum):
+    PLAYERS = "players"
+    COUNTDOWN = "countdown"

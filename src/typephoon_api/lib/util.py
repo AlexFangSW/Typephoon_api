@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
-from typing import Callable
+from typing import Any, Callable
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse

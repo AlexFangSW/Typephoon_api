@@ -1,14 +1,14 @@
 from typing import Any
 
-from .lobby_random_background import LobbyRandomBackground
+from .lobby_background_random import LobbyBackgroundRandom
 
 
 class LobbyBackgroundManager:
 
     def __init__(self) -> None:
-        self._background_tasks: list[LobbyRandomBackground] = []
+        self._background_tasks: list[LobbyBackgroundRandom] = []
 
-    async def add(self, bg: LobbyRandomBackground):
+    async def add(self, bg: LobbyBackgroundRandom):
         self._background_tasks.append(bg)
 
     async def broadcast(self, msg: Any):

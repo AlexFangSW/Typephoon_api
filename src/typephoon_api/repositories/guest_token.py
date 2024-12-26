@@ -1,4 +1,5 @@
 from redis.asyncio import Redis
+from time import time
 
 from ..types.setting import Setting
 from uuid import uuid4
@@ -11,7 +12,9 @@ class GuestTokenRepo:
         self._setting = setting
 
     def _gen_token_key(self) -> str:
-        return f"guest-token-{uuid4().hex.split('-')[0]}"
+        ts_part = int(time() * 1000)
+        uuid_part = uuid4().hex.split('-')[0]
+        return f"guest-token-{uuid_part}-{ts_part}"
 
     async def store(self, token: str) -> str:
         """gen random key and store it in redis"""

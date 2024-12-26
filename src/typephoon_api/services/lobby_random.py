@@ -6,6 +6,8 @@ from jwt import PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..lib.lobby.lobby_background_random import LobbyBackgroundRandom
+
 from ..repositories.game_cache import GameCacheRepo
 
 from ..types.errors import PublishNotAcknowledged
@@ -18,11 +20,10 @@ from ..types.common import LobbyUserInfo
 
 from ..lib.util import gen_guest_user_info
 
-from ..types.enums import CookieNames, GameStatus, UserType, WSCloseReason
+from ..types.enums import CookieNames, UserType, WSCloseReason
 
 from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
-from ..lib.lobby.lobby_random_background import LobbyRandomBackground
 from aio_pika.abc import AbstractExchange
 from aio_pika import Message
 
@@ -105,17 +106,18 @@ class LobbyRandomService:
                 logger.debug("found game, id: %s", game.id)
                 game_id = game.id
                 await game_repo.add_player(game_id)
-                await self._game_cache_repo.add_player(id=game.id,
+                await self._game_cache_repo.add_player(game_id=game.id,
                                                        user_info=user_info)
             else:
                 game = await game_repo.create()
                 logger.debug("create game, id: %s", game.id)
                 game_id = game.id
                 await game_repo.add_player(game_id)
-                await self._game_cache_repo.add_player(id=game.id,
+                await self._game_cache_repo.add_player(game_id=game.id,
                                                        user_info=user_info)
 
                 # send self descruct/start signal
+                # TODO: add setting and datastructure for this...
                 msg = Message(b"")
                 confirm = await self._amqp_countdown_exchange.publish(
                     msg, routing_key="")
@@ -126,12 +128,12 @@ class LobbyRandomService:
                 # set start time in redis for user countdown pooling
                 start_time = datetime.now(UTC) + timedelta(seconds=30)
                 await self._game_cache_repo.set_start_time(
-                    id=game.id, start_time=start_time)
+                    game_id=game.id, start_time=start_time)
 
             await session.commit()
 
         # put into background bucket
-        bg = LobbyRandomBackground(websocket=websocket, user_info=user_info)
+        bg = LobbyBackgroundRandom(websocket=websocket, user_info=user_info)
         await bg.prepare()
         await self._background_bucket[str(game_id)].add(bg)
         if guest_token_key:
@@ -139,6 +141,7 @@ class LobbyRandomService:
             await bg.notifiy("")
 
         # notify users on other servers
+        # TODO: add setting and datastructure for this...
         msg = Message(b"")
         confirm = await self._amqp_lobby_exchange.publish(msg, routing_key="")
         if not isinstance(confirm, Basic.Ack):
