@@ -1,8 +1,11 @@
+from collections import defaultdict
 from logging import getLogger
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
+
+from .lobby.lobby_manager import LobbyBackgroundManager
 
 from ..types.setting import Setting
 
@@ -30,7 +33,16 @@ class TypephoonServer(FastAPI):
                                  port=self._setting.redis.port,
                                  db=self._setting.redis.db)
 
+        # lobby background tasks [Game mode: Random]
+        # - key: team_id
+        self._lobby_bucket_random: defaultdict[
+            str, LobbyBackgroundManager] = defaultdict()
+
     async def cleanup(self):
+        for team_id, lobby_manager in self._lobby_bucket_random.items():
+            logger.debug("cleaning lobby: %s", team_id)
+            await lobby_manager.stop()
+
         await self._engine.dispose()
         await self._redis_conn.aclose()
 
@@ -61,3 +73,7 @@ class TypephoonServer(FastAPI):
     @property
     def setting(self) -> Setting:
         return self._setting
+
+    @property
+    def lobby_bucket_random(self) -> defaultdict[str, LobbyBackgroundManager]:
+        return self._lobby_bucket_random

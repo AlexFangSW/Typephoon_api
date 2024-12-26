@@ -7,9 +7,9 @@ from ...repositories.token import TokenRepo
 
 from ...lib.token_validator import TokenValidator
 
-from ...oauth_providers.base import VerifyTokenRet
+from ...lib.oauth_providers.base import VerifyTokenRet
 
-from ...oauth_providers.google import GoogleOAuthProvider
+from ...lib.oauth_providers.google import GoogleOAuthProvider
 
 from ...lib.token_generator import TokenGenerator
 

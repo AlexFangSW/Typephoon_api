@@ -5,12 +5,12 @@ from fastapi.datastructures import URL
 from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..lib.oauth_providers.base import OAuthProvider
+
 from ..types.common import ErrorContext
 from ..types.enums import ErrorCode
 
 from ..lib.token_validator import TokenValidator
-
-from ..oauth_providers.base import OAuthProvider
 
 from ..lib.token_generator import TokenGenerator
 

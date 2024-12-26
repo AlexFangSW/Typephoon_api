@@ -7,7 +7,7 @@ from .token_validator import TokenValidator
 
 from ..types.enums import OAuthProviders
 
-from ..oauth_providers.google import GoogleOAuthProvider
+from ..lib.oauth_providers.google import GoogleOAuthProvider
 from ..repositories.oauth_state import OAuthStateRepo
 
 from .token_generator import TokenGenerator

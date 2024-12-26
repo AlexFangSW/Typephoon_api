@@ -5,12 +5,12 @@ from redis.asyncio import Redis
 
 from .base import VerifyTokenRet
 
-from ..lib.util import gen_user_id
-from ..types.enums import OAuthProviders
+from ...lib.util import gen_user_id
+from ...types.enums import OAuthProviders
 
-from ..repositories.oauth_state import OAuthStateRepo
+from ...repositories.oauth_state import OAuthStateRepo
 
-from ..types.setting import Setting
+from ...types.setting import Setting
 import jwt
 from async_lru import alru_cache
 from aiohttp import ClientSession
