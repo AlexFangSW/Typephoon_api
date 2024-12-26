@@ -8,7 +8,7 @@ class LobbyBackgroundManager:
     def __init__(self) -> None:
         self._background_tasks: list[LobbyRandomBackground] = []
 
-    def add(self, bg: LobbyRandomBackground):
+    async def add(self, bg: LobbyRandomBackground):
         self._background_tasks.append(bg)
 
     async def broadcast(self, msg: Any):

@@ -2,7 +2,7 @@ from asyncio import Queue, Task, create_task
 from typing import Any
 from fastapi import WebSocket
 
-from ...types.jwt import JWTPayload
+from ...types.common import LobbyUserInfo
 
 
 class LobbyRandomBackground:
@@ -11,7 +11,7 @@ class LobbyRandomBackground:
     Background task for a single user
     """
 
-    def __init__(self, websocket: WebSocket, user_info: JWTPayload) -> None:
+    def __init__(self, websocket: WebSocket, user_info: LobbyUserInfo) -> None:
         self._user_info = user_info
         self._queue = Queue()
         self._websocket = websocket
