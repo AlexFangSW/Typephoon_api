@@ -29,5 +29,7 @@ class GameRepo:
         return await self._session.scalar(query)
 
     async def add_player(self, id: int):
-        query = update(Game).where(Game.id == id)
-        ...
+        query = update(Game).where(Game.id == id).values(
+            {"player_count": Game.player_count + 1})
+
+        return await self._session.execute(query)

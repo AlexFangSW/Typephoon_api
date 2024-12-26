@@ -104,15 +104,15 @@ class LobbyRandomService:
             if game:
                 logger.debug("found game, id: %s", game.id)
                 game_id = game.id
-                await game_repo.add_player()
-                await self._game_cache_repo.add_player(game_id=game.id,
+                await game_repo.add_player(game_id)
+                await self._game_cache_repo.add_player(id=game.id,
                                                        user_info=user_info)
             else:
                 game = await game_repo.create()
                 logger.debug("create game, id: %s", game.id)
                 game_id = game.id
-                await game_repo.add_player()
-                await self._game_cache_repo.add_player(game_id=game.id,
+                await game_repo.add_player(game_id)
+                await self._game_cache_repo.add_player(id=game.id,
                                                        user_info=user_info)
 
                 # send self descruct/start signal
@@ -126,7 +126,7 @@ class LobbyRandomService:
                 # set start time in redis for user countdown pooling
                 start_time = datetime.now(UTC) + timedelta(seconds=30)
                 await self._game_cache_repo.set_start_time(
-                    game_id=game.id, start_time=start_time)
+                    id=game.id, start_time=start_time)
 
             await session.commit()
 

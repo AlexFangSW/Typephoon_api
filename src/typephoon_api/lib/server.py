@@ -34,9 +34,13 @@ class TypephoonServer(FastAPI):
                                  db=self._setting.redis.db)
 
         # lobby background tasks [Game mode: Random]
-        # - key: team_id
+        # - key: game_id
         self._lobby_bucket_random: defaultdict[
             str, LobbyBackgroundManager] = defaultdict()
+
+        # lobby countdown consumer
+
+        # lobby consumer
 
     async def cleanup(self):
         for team_id, lobby_manager in self._lobby_bucket_random.items():
