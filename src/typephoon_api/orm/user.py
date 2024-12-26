@@ -8,16 +8,8 @@ class User(Base):
     """
     Attributes:
         id: User ID 
-            - {PREFIX}_{ID}_{TS}
-            - ex: google_1234567890_1717293420
-
-        name: User name
-            - Default to email username or auto generated username
-
-        registered_at: User registered at
-            - Default to current timestamp
-
-        refresh_token
+            - {PREFIX}-{ID}
+            - ex: google-1234567890
     """
     __tablename__ = "users"
 

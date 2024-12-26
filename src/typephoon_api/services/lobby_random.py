@@ -71,8 +71,6 @@ class LobbyRandomService:
         self._amqp_countdown_exchange = amqp_countdown_exchange
         self._amqp_lobby_exchange = amqp_lobby_exchange
         self._game_cache_repo = game_cache_repo
-        # match making
-        pass
 
     async def queue_in(self, websocket: WebSocket):
         logger.debug("queue_in")
@@ -100,7 +98,7 @@ class LobbyRandomService:
         # match making, find or create game
         async with self._sessionmaker() as session:
             game_repo = GameRepo(session)
-            game = await game_repo.get_one(status=GameStatus.LOBBY, lock=True)
+            game = await game_repo.get_one_available(lock=True)
             game_id: int | None = None
 
             if game:
@@ -117,7 +115,7 @@ class LobbyRandomService:
                 await self._game_cache_repo.add_player(game_id=game.id,
                                                        user_info=user_info)
 
-                # send self descruct/game start signal
+                # send self descruct/start signal
                 msg = Message(b"")
                 confirm = await self._amqp_countdown_exchange.publish(
                     msg, routing_key="")

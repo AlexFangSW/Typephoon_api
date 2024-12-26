@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import DateTime, Text, func
+from sqlalchemy import DateTime, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .custom import BigSerial
@@ -7,16 +7,6 @@ from .base import Base
 
 
 class Game(Base):
-    """
-    Attributes:
-        id: Game ID
-        created_at: Game created at
-        start_at: Game started at
-        end_at: Game ended at
-        status: Game status
-        invite_token: Game invite token
-        game_type: Game type
-    """
     __tablename__ = "games"
 
     id: Mapped[int] = mapped_column(
@@ -33,9 +23,8 @@ class Game(Base):
     invite_token: Mapped[str | None] = mapped_column(Text())
     game_type: Mapped[int] = mapped_column()
 
-    # TODO:
-    # - user_count int xxx current users in this game
-    # - finish_count int xxx finished users
+    player_count: Mapped[int] = mapped_column(server_default=text("0"))
+    finish_count: Mapped[int] = mapped_column(server_default=text("0"))
 
     game_results = relationship(
         "GameResult",
