@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Self
+from os import getenv
+from typing import Any, Self
 from datetime import timedelta
 from pydantic import BaseModel, Field
 import yaml
@@ -110,11 +111,40 @@ class GoogleSetting(GoogleCredentials):
         self.client_id = inpt.client_id
 
 
+class AMQPCredentials(BaseModel):
+    user: str = "guest"
+    password: str = "guest"
+
+
+class AMQPSetting(AMQPCredentials):
+    host: str = "localhost"
+    vhost: str = "typephoon"
+
+    countdown_direct_exchange: str = "lobby.countdown"
+    lobby_random_notification_fanout_exchange: str = "lobby.random.notification"
+
+    # [game mode: random]
+    lobby_random_notification_queue: str = "lobby.random.notification"
+    lobby_random_countdown_wait_queue: str = "lobby.random.countdown.wait"
+    lobby_random_countdown_queue: str = "lobby.random.countdown"
+
+    def merge(self, inpt: AMQPCredentials):
+        self.user = inpt.user
+        self.password = inpt.password
+
+    def model_post_init(self, _: Any) -> None:
+        # if there are multiple servers, each server needs to have a unique SERVER_NAME
+        server_name = getenv("SERVER_NAME", "")
+        self.lobby_random_notification_queue = ".".join(
+            [self.lobby_random_notification_queue, server_name])
+
+
 class SecretSetting(BaseModel):
     google_credential: GoogleCredentials = Field(
         default_factory=GoogleCredentials)
     token_pk: TokenPK = Field(default_factory=TokenPK)
     db: DBCredentialsSetting = Field(default_factory=DBCredentialsSetting)
+    amqp: AMQPCredentials = Field(default_factory=AMQPCredentials)
 
 
 class Setting(BaseModel):
@@ -125,6 +155,7 @@ class Setting(BaseModel):
     logger: dict = Field(default_factory=default_logger)
     google: GoogleSetting = Field(default_factory=GoogleSetting)
     token: TokenSetting = Field(default_factory=TokenSetting)
+    amqp: AMQPSetting = Field(default_factory=AMQPSetting)
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
@@ -133,6 +164,7 @@ class Setting(BaseModel):
         self.google.merge(inpt.google_credential)
         self.token.merge(inpt.token_pk)
         self.db.merge(inpt.db)
+        self.amqp.merge(inpt.amqp)
 
     @classmethod
     def from_file(cls,

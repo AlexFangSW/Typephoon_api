@@ -10,6 +10,8 @@ class LobbyBackgroundManager:
 
     async def add(self, bg: LobbyBackgroundRandom):
         self._background_tasks.append(bg)
+        # TODO: message datastructure
+        await self.broadcast("xxx")
 
     async def broadcast(self, msg: Any):
         for bg in self._background_tasks:

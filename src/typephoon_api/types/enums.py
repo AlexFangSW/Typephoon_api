@@ -30,8 +30,15 @@ class UserType(StrEnum):
 class GameStatus(IntEnum):
     LOBBY = 0
     IN_GAME = 1
+    FINISHED = 2
 
 
 class GameCacheType(StrEnum):
     PLAYERS = "players"
     COUNTDOWN = "countdown"
+
+
+class GameType(IntEnum):
+    SINGLE = 0
+    RANDOM = 1
+    TEAM = 2

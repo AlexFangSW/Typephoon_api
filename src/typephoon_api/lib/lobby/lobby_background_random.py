@@ -23,19 +23,29 @@ class LobbyBackgroundRandom:
     async def prepare(self):
         ...
 
-    async def _loop(self):
+    async def _send_loop(self):
         while True:
             msg = await self._queue.get()
+            # check event and notify user
+            ...
+
+    async def _receive_loop(self):
+        while True:
             ...
 
     async def start(self):
-        self._task: Task = create_task(
-            self._loop(), name=f"lobby_background_random-{self._user_info.id}")
+        self._send_task: Task = create_task(
+            self._send_loop(),
+            name=f"lobby_background_random-{self._user_info.id}-send")
+        self._receive_task: Task = create_task(
+            self._receive_loop(),
+            name=f"lobby_background_random-{self._user_info.id}-receive")
 
     async def _before_end(self):
         ...
 
     async def stop(self):
         await self._before_end()
-        self._task.cancel()
+        self._send_task.cancel()
+        self._receive_task.cancel()
         await self._websocket.close()

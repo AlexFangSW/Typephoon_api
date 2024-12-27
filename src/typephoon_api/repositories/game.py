@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import select
 
-from ..types.enums import GameStatus
+from ..types.enums import GameStatus, GameType
 
 from ..orm.game import Game
 
@@ -13,9 +13,16 @@ class GameRepo:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    # TODO
-    async def create(self) -> Game:
-        ...
+    async def create(self, game_type: GameType, status: GameStatus) -> Game:
+        query = insert(Game).values({
+            "game_type": game_type,
+            "status": status
+        }).returning(Game)
+
+        ret = await self._session.scalar(query)
+        assert ret
+
+        return ret
 
     async def get_one_available(self, lock: bool = False) -> Game | None:
         query = select(Game).where(

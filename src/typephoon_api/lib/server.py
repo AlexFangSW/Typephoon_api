@@ -1,9 +1,15 @@
+from asyncio import timeout
 from collections import defaultdict
 from logging import getLogger
+from aio_pika import connect_robust
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
+
+from .amqp_manager import AMQPManager
+
+from ..types.errors import AMQPNotReady
 
 from .lobby.lobby_manager import LobbyBackgroundManager
 
@@ -33,14 +39,27 @@ class TypephoonServer(FastAPI):
                                  port=self._setting.redis.port,
                                  db=self._setting.redis.db)
 
-        # lobby background tasks [Game mode: Random]
+        # amqp
+        self._amqp_conn = await connect_robust(
+            host=self._setting.amqp.host,
+            login=self._setting.amqp.user,
+            password=self._setting.amqp.password,
+            virtualhost=self._setting.amqp.vhost,
+            client_properties={'connection_name': 'typephoon'})
+
+        await AMQPManager(setting=self._setting,
+                          amqp_conn=self._amqp_conn).setup()
+        # TODO: add channel and exchange for 'countdown', 'notification'
+
+        # ------- [Game mode: Random] --------
+        # lobby background tasks
         # - key: game_id
         self._lobby_bucket_random: defaultdict[
             str, LobbyBackgroundManager] = defaultdict()
 
         # lobby countdown consumer
 
-        # lobby consumer
+        # lobby notification consumer
 
     async def cleanup(self):
         for team_id, lobby_manager in self._lobby_bucket_random.items():
@@ -49,6 +68,7 @@ class TypephoonServer(FastAPI):
 
         await self._engine.dispose()
         await self._redis_conn.aclose()
+        await self._amqp_conn.close()
 
     async def ready(self) -> bool:
         try:
@@ -58,6 +78,13 @@ class TypephoonServer(FastAPI):
 
             # redis
             await self._redis_conn.ping()
+
+            # amqp
+            try:
+                async with timeout(0.1):
+                    await self._amqp_conn.ready()
+            except TimeoutError:
+                raise AMQPNotReady("amqp_conn not ready")
 
         except Exception as ex:
             logger.warning("failed 'ready' check, error: %s", str(ex))
