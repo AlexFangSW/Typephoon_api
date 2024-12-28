@@ -3,9 +3,9 @@ from jwt.exceptions import ExpiredSignatureError
 import pytest
 import time_machine
 
-from ...lib.token_validator import TokenValidator
+from ...lib.oauth_providers.base import OAuthProviders
 
-from ...types.enums import OAuthProviders
+from ...lib.token_validator import TokenValidator
 
 from ...lib.util import gen_user_id
 

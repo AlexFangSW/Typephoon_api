@@ -1,11 +1,11 @@
 from logging import getLogger
 from fastapi import Request
 
+from .oauth_providers.base import OAuthProviders
+
 from ..types.setting import Setting
 
 from .token_validator import TokenValidator
-
-from ..types.enums import OAuthProviders
 
 from ..lib.oauth_providers.google import GoogleOAuthProvider
 from ..repositories.oauth_state import OAuthStateRepo

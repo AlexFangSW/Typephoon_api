@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Protocol
-
+from enum import StrEnum
 from fastapi.datastructures import URL
 
 
@@ -9,6 +9,10 @@ class VerifyTokenRet:
     ok: bool
     user_id: str | None = None
     username: str | None = None
+
+
+class OAuthProviders(StrEnum):
+    GOOGLE = "google"
 
 
 class OAuthProvider(Protocol):

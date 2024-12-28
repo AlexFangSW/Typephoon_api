@@ -19,17 +19,17 @@ class AMQPManager:
             type=ExchangeType.DIRECT,
             durable=True)
 
-        notification_exchange = await channel.declare_exchange(
-            name=self._setting.amqp.lobby_random_notification_fanout_exchange,
+        notify_exchange = await channel.declare_exchange(
+            name=self._setting.amqp.lobby_random_notify_fanout_exchange,
             type=ExchangeType.FANOUT,
             durable=True)
 
-        # notification exchange is fanout, no need for routing key
-        notification_queue = await channel.declare_queue(
-            name=self._setting.amqp.lobby_random_notification_queue,
+        # notify exchange is fanout, no need for routing key
+        notify_queue = await channel.declare_queue(
+            name=self._setting.amqp.lobby_random_notify_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
-        await notification_queue.bind(exchange=notification_exchange)
+        await notify_queue.bind(exchange=notify_exchange)
 
         # NEED dead letter policy
         # - dead letter exchange: <countdown exchange name>

@@ -3,10 +3,9 @@ from fastapi.datastructures import URL
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from .base import VerifyTokenRet
+from .base import OAuthProviders, VerifyTokenRet
 
 from ...lib.util import gen_user_id
-from ...types.enums import OAuthProviders
 
 from ...repositories.oauth_state import OAuthStateRepo
 

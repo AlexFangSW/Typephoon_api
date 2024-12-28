@@ -1,13 +1,15 @@
 from dataclasses import asdict
 from datetime import datetime
-
 from redis.asyncio import Redis
 import json
-
-from ..types.enums import GameCacheType
-
+from enum import StrEnum
 from ..types.setting import Setting
 from ..types.common import LobbyUserInfo
+
+
+class GameCacheType(StrEnum):
+    PLAYERS = "players"
+    COUNTDOWN = "countdown"
 
 
 class GameCacheRepo:

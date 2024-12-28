@@ -1,10 +1,14 @@
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from fastapi import WebSocket, status
+from fastapi import WebSocket
 from jwt import PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..types.amqp import LobbyCountdownMsg, LobbyNotifyType, LobbyNotifyMsg
+
+from ..orm.game import GameStatus, GameType
 
 from ..lib.lobby.lobby_background_random import LobbyBackgroundRandom
 
@@ -20,14 +24,14 @@ from ..types.common import LobbyUserInfo
 
 from ..lib.util import gen_guest_user_info
 
-from ..types.enums import CookieNames, GameStatus, GameType, UserType, WSCloseReason
+from ..types.enums import CookieNames, WSCloseReason
 
 from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from aio_pika.abc import AbstractExchange
 from aio_pika import Message
 
-from ..lib.token_generator import TokenGenerator
+from ..lib.token_generator import TokenGenerator, UserType
 from ..lib.token_validator import TokenValidator
 from ..types.setting import Setting
 
@@ -59,7 +63,7 @@ class LobbyRandomService:
         background_bucket: defaultdict[str, LobbyBackgroundManager],
         guest_token_repo: GuestTokenRepo,
         sessionmaker: async_sessionmaker[AsyncSession],
-        amqp_notification_exchange: AbstractExchange,
+        amqp_notify_exchange: AbstractExchange,
         amqp_countdown_exchange: AbstractExchange,
         game_cache_repo: GameCacheRepo,
     ) -> None:
@@ -70,7 +74,7 @@ class LobbyRandomService:
         self._guest_token_repo = guest_token_repo
         self._sessionmaker = sessionmaker
         self._amqp_countdown_exchange = amqp_countdown_exchange
-        self._amqp_notification_exchange = amqp_notification_exchange
+        self._amqp_notify_exchange = amqp_notify_exchange
         self._game_cache_repo = game_cache_repo
 
     async def queue_in(self, websocket: WebSocket):
@@ -119,10 +123,11 @@ class LobbyRandomService:
                                                        user_info=user_info)
 
                 # send self descruct/start signal
-                # TODO: add setting and datastructure for this...
-                msg = Message(b"")
+                msg = LobbyCountdownMsg(
+                    game_id=game_id).model_dump_json().encode()
+                amqp_msg = Message(msg)
                 confirm = await self._amqp_countdown_exchange.publish(
-                    msg,
+                    amqp_msg,
                     routing_key=self._setting.amqp.
                     lobby_random_countdown_wait_queue)
                 if not isinstance(confirm, Basic.Ack):
@@ -140,14 +145,16 @@ class LobbyRandomService:
         bg = LobbyBackgroundRandom(websocket=websocket, user_info=user_info)
         await self._background_bucket[str(game_id)].add(bg)
         if guest_token_key:
-            # notify user to get their cookie
-            await bg.notifiy("")
+            # notify guest user to get their token
+            msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.GET_TOKEN,
+                                 game_id=game_id)
+            await bg.notifiy(msg)
 
         # notify users on other servers
-        # TODO: add setting and datastructure for this...
-        msg = Message(b"")
-        confirm = await self._amqp_notification_exchange.publish(
-            msg, routing_key=self._setting.amqp.lobby_random_notification_queue)
+        msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
+                             game_id=game_id).model_dump_json().encode()
+        amqp_msg = Message(msg)
+        confirm = await self._amqp_notify_exchange.publish(
+            amqp_msg, routing_key=self._setting.amqp.lobby_random_notify_queue)
         if not isinstance(confirm, Basic.Ack):
-            raise PublishNotAcknowledged(
-                "publish lobby notification message failed")
+            raise PublishNotAcknowledged("publish lobby notify message failed")

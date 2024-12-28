@@ -1,4 +1,4 @@
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
 
 class ErrorCode(StrEnum):
@@ -6,10 +6,6 @@ class ErrorCode(StrEnum):
     KEY_NOT_FOUND = "KEY_NOT_FOUND"
     REFRESH_TOKEN_MISSMATCH = "REFRESH_TOKEN_MISSMATCH"
     INVALID_TOKEN = "INVALID_TOKEN"
-
-
-class OAuthProviders(StrEnum):
-    GOOGLE = "google"
 
 
 class CookieNames(StrEnum):
@@ -25,20 +21,3 @@ class WSCloseReason(StrEnum):
 class UserType(StrEnum):
     GUEST = "GUEST"
     REGISTERED = "REGISTERED"
-
-
-class GameStatus(IntEnum):
-    LOBBY = 0
-    IN_GAME = 1
-    FINISHED = 2
-
-
-class GameCacheType(StrEnum):
-    PLAYERS = "players"
-    COUNTDOWN = "countdown"
-
-
-class GameType(IntEnum):
-    SINGLE = 0
-    RANDOM = 1
-    TEAM = 2

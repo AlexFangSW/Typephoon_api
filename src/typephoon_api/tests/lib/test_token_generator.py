@@ -4,7 +4,7 @@ import pytest
 import jwt
 import time_machine
 
-from ...types.enums import OAuthProviders
+from ...lib.oauth_providers.base import OAuthProviders
 
 from ...lib.util import gen_user_id
 

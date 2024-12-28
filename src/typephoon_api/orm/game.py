@@ -4,6 +4,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .custom import BigSerial
 from .base import Base
+from enum import IntEnum
+
+
+class GameType(IntEnum):
+    SINGLE = 0
+    RANDOM = 1
+    TEAM = 2
+
+
+class GameStatus(IntEnum):
+    LOBBY = 0
+    IN_GAME = 1
+    FINISHED = 2
 
 
 class Game(Base):

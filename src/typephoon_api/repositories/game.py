@@ -3,9 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import select
 
-from ..types.enums import GameStatus, GameType
-
-from ..orm.game import Game
+from ..orm.game import Game, GameStatus, GameType
 
 
 class GameRepo:

@@ -23,6 +23,14 @@ services:
       - backend_net
     ports:
       - "6379:6379"
+  message_queue:
+    image: rabbitmq:4.0-management
+    container_name: typephoon-rabbitmq
+    networks:
+      - backend_net
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
 networks:
   backend_net: {}

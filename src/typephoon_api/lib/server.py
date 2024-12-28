@@ -49,7 +49,12 @@ class TypephoonServer(FastAPI):
 
         await AMQPManager(setting=self._setting,
                           amqp_conn=self._amqp_conn).setup()
-        # TODO: add channel and exchange for 'countdown', 'notification'
+
+        self._default_channel = await self._amqp_conn.channel()
+        self._notify_channel = await self._amqp_conn.channel()
+        self._default_exchange = self._default_channel.default_exchange
+        self._notify_exchange = await self._notify_channel.get_exchange(
+            self._setting.amqp.lobby_random_notify_fanout_exchange)
 
         # ------- [Game mode: Random] --------
         # lobby background tasks
@@ -57,9 +62,10 @@ class TypephoonServer(FastAPI):
         self._lobby_bucket_random: defaultdict[
             str, LobbyBackgroundManager] = defaultdict()
 
+        # TODO
         # lobby countdown consumer
 
-        # lobby notification consumer
+        # lobby notify consumer
 
     async def cleanup(self):
         for team_id, lobby_manager in self._lobby_bucket_random.items():
@@ -68,6 +74,8 @@ class TypephoonServer(FastAPI):
 
         await self._engine.dispose()
         await self._redis_conn.aclose()
+        await self._default_channel.close()
+        await self._notify_channel.close()
         await self._amqp_conn.close()
 
     async def ready(self) -> bool:

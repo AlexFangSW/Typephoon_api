@@ -2,7 +2,6 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 
 from ..types.enums import UserType
-
 from ..types.jwt import JWTPayload
 from ..types.setting import Setting
 import jwt

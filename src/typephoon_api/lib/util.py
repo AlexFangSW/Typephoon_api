@@ -2,16 +2,16 @@ from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from logging.config import dictConfig
-from typing import Any, Callable
+from typing import Callable
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
 from uuid import uuid4
 
-from ..types.common import LobbyUserInfo
+from .oauth_providers.base import OAuthProviders
 
-from ..types.enums import OAuthProviders
+from ..types.common import LobbyUserInfo
 
 from ..types.log import TRACE
 from ..types.setting import Setting

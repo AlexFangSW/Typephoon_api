@@ -7,7 +7,7 @@ from ...repositories.token import TokenRepo
 
 from ...lib.token_validator import TokenValidator
 
-from ...lib.oauth_providers.base import VerifyTokenRet
+from ...lib.oauth_providers.base import OAuthProviders, VerifyTokenRet
 
 from ...lib.oauth_providers.google import GoogleOAuthProvider
 
@@ -15,7 +15,7 @@ from ...lib.token_generator import TokenGenerator
 
 from ...repositories.oauth_state import OAuthStateRepo
 
-from ...types.enums import ErrorCode, OAuthProviders
+from ...types.enums import ErrorCode
 
 from ...repositories.user import UserRepo
 
