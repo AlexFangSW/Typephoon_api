@@ -20,30 +20,39 @@ class AMQPManager:
             durable=True)
 
         notify_exchange = await channel.declare_exchange(
-            name=self._setting.amqp.lobby_random_notify_fanout_exchange,
+            name=self._setting.amqp.lobby_notify_fanout_exchange,
             type=ExchangeType.FANOUT,
             durable=True)
 
         # notify exchange is fanout, no need for routing key
         notify_queue = await channel.declare_queue(
-            name=self._setting.amqp.lobby_random_notify_queue,
+            name=self._setting.amqp.lobby_notify_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
         await notify_queue.bind(exchange=notify_exchange)
 
-        # NEED dead letter policy
-        # - dead letter exchange: <countdown exchange name>
-        # - dead leter routing key: 'countdown'
         countdown_queue = await channel.declare_queue(
-            name=self._setting.amqp.lobby_random_countdown_queue,
+            name=self._setting.amqp.lobby_countdown_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
         await countdown_queue.bind(exchange=countdown_exchange,
                                    routing_key="countdown")
 
         # use default exchange to publish to this queue
+        # NEED dead letter policy
+        # - dead letter exchange: <countdown exchange name>
+        # - dead leter routing key: 'countdown'
         await channel.declare_queue(
             name=self._setting.amqp.lobby_random_countdown_wait_queue,
+            durable=True,
+            arguments={"x-queue-type": "quorum"})
+
+        # use default exchange to publish to this queue
+        # NEED dead letter policy
+        # - dead letter exchange: <countdown exchange name>
+        # - dead leter routing key: 'countdown'
+        await channel.declare_queue(
+            name=self._setting.amqp.lobby_team_countdown_wait_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
 

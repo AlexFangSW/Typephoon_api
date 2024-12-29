@@ -34,6 +34,25 @@ class GameRepo:
 
         return await self._session.scalar(query)
 
+    async def is_available(self,
+                           id: int,
+                           lock: bool = False,
+                           new_player: bool = False) -> Game | None:
+        query = select(Game).where(
+            and_(
+                Game.status == GameStatus.LOBBY,
+                Game.id == id,
+            ))
+        if new_player:
+            query = query.where(Game.player_count < 5)
+        else:
+            query = query.where(Game.player_count <= 5)
+
+        if lock:
+            query = query.with_for_update()
+
+        return await self._session.scalar(query)
+
     async def add_player(self, id: int):
         query = update(Game).where(Game.id == id).values(
             {"player_count": Game.player_count + 1})

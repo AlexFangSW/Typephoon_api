@@ -1,6 +1,6 @@
 from logging import getLogger
 from typing import Annotated
-from fastapi import APIRouter, Cookie, Depends, WebSocket
+from fastapi import APIRouter, Cookie, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.util import await_only
@@ -11,7 +11,7 @@ from ..types.setting import Setting
 
 from ..types.responses.base import ErrorResponse, SuccessResponse
 
-from ..types.enums import CookieNames, ErrorCode
+from ..types.enums import CookieNames, ErrorCode, QueueInType
 
 from ..lib.dependencies import get_auth_service, get_auth_service_with_provider, get_setting
 from ..services.auth import AuthService
@@ -29,6 +29,9 @@ logger = getLogger(__name__)
 
 @router.websocket("/queue-in")
 async def queue_in(websocket: WebSocket,
+                   queue_in_type: Annotated[QueueInType,
+                                            Query(default=QueueInType.NEW)],
+                   prev_game_id: Annotated[int | None, Query()],
                    service: LobbyRandomService = Depends()):
     """
     [Game mode: Random]
@@ -36,7 +39,9 @@ async def queue_in(websocket: WebSocket,
     """
     try:
         await websocket.accept()
-        await service.queue_in(websocket)
+        await service.queue_in(websocket=websocket,
+                               queue_in_type=queue_in_type,
+                               prev_game_id=prev_game_id)
     except Exception as ex:
         logger.exception("something whent wrong")
         await websocket.close(reason=str(ex))

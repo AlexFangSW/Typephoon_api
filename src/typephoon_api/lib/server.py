@@ -54,11 +54,9 @@ class TypephoonServer(FastAPI):
         self._notify_channel = await self._amqp_conn.channel()
         self._default_exchange = self._default_channel.default_exchange
         self._notify_exchange = await self._notify_channel.get_exchange(
-            self._setting.amqp.lobby_random_notify_fanout_exchange)
+            self._setting.amqp.lobby_notify_fanout_exchange)
 
-        # ------- [Game mode: Random] --------
-        # lobby background tasks
-        # - key: game_id
+        # lobby background tasks (key: game_id)
         self._lobby_bucket_random: defaultdict[
             str, LobbyBackgroundManager] = defaultdict()
 

@@ -120,13 +120,14 @@ class AMQPSetting(AMQPCredentials):
     host: str = "localhost"
     vhost: str = "typephoon"
 
+    lobby_notify_fanout_exchange: str = "lobby.notify"
     countdown_direct_exchange: str = "lobby.countdown"
-    lobby_random_notify_fanout_exchange: str = "lobby.random.notify"
 
-    # [game mode: random]
-    lobby_random_notify_queue: str = "lobby.random.notify"
+    lobby_notify_queue: str = "lobby.notify"
+    lobby_countdown_queue: str = "lobby.countdown"
+
     lobby_random_countdown_wait_queue: str = "lobby.random.countdown.wait"
-    lobby_random_countdown_queue: str = "lobby.random.countdown"
+    lobby_team_countdown_wait_queue: str = "lobby.team.countdown.wait"
 
     def merge(self, inpt: AMQPCredentials):
         self.user = inpt.user
@@ -135,8 +136,8 @@ class AMQPSetting(AMQPCredentials):
     def model_post_init(self, _: Any) -> None:
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
         server_name = getenv("SERVER_NAME", "")
-        self.lobby_random_notify_queue = ".".join(
-            [self.lobby_random_notify_queue, server_name])
+        self.lobby_notify_queue = ".".join(
+            [self.lobby_notify_queue, server_name])
 
 
 class SecretSetting(BaseModel):

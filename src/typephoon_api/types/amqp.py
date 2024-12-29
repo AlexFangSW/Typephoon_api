@@ -8,6 +8,7 @@ class LobbyNotifyType(StrEnum):
     USER_LEFT = "USER_LEFT"
     GET_TOKEN = "GET_TOKEN"
     GAME_START = "GAME_START"
+    RECONNECT = "RECONNECT"
 
 
 class LobbyNotifyMsg(BaseModel):

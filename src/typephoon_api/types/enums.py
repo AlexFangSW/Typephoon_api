@@ -12,6 +12,7 @@ class CookieNames(StrEnum):
     ACCESS_TOKEN = "TP_AT"
     REFRESH_TOKEN = "TP_RT"
     USERNAME = "USERNAME"
+    GAME_ID = "GAME_ID"
 
 
 class WSCloseReason(StrEnum):
@@ -21,3 +22,8 @@ class WSCloseReason(StrEnum):
 class UserType(StrEnum):
     GUEST = "GUEST"
     REGISTERED = "REGISTERED"
+
+
+class QueueInType(StrEnum):
+    RECONNECT = "reconnect"
+    NEW = "new"
