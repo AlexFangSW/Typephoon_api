@@ -119,6 +119,7 @@ class AMQPCredentials(BaseModel):
 class AMQPSetting(AMQPCredentials):
     host: str = "localhost"
     vhost: str = "typephoon"
+    prefetch_count: int = 50
 
     lobby_notify_fanout_exchange: str = "lobby.notify"
     countdown_direct_exchange: str = "lobby.countdown"

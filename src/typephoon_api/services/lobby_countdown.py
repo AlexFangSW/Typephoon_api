@@ -14,7 +14,7 @@ class LobbyCountdownService:
         self._setting = setting
         self._background_bucket = background_bucket
 
-    async def count_down_random(self):
+    async def count_down_random(self, msg: LobbyCountdownMsg):
         """
         countdown for random gamemode
         """
