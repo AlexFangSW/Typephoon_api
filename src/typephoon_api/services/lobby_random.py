@@ -13,7 +13,7 @@ from ..types.amqp import LobbyCountdownMsg, LobbyNotifyType, LobbyNotifyMsg
 
 from ..orm.game import Game, GameStatus, GameType
 
-from ..lib.lobby.lobby_background_random import LobbyBackground
+from ..lib.lobby.lobby_background import LobbyBackground
 
 from ..repositories.game_cache import GameCacheRepo
 

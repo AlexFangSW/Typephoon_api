@@ -20,6 +20,7 @@ class LobbyBackground:
         await self._queue.put(msg)
 
     async def _send_loop(self):
+        # TODO
         while True:
             msg = await self._queue.get()
             # check event and notify user
@@ -30,10 +31,11 @@ class LobbyBackground:
             self._send_loop(),
             name=f"lobby_background_random-{self._user_info.id}-send")
 
-    async def _before_end(self):
-        ...
+    async def server_shutdown(self):
+        # TODO: send reconnect event to user
+        self._task.cancel()
+        await self._websocket.close()
 
     async def stop(self):
-        await self._before_end()
         self._task.cancel()
         await self._websocket.close()

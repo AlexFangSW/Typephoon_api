@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from sqlalchemy import and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
@@ -10,6 +11,16 @@ class GameRepo:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def start_game(self, id: int) -> Game:
+        query = update(Game).values({
+            "status": GameStatus.IN_GAME,
+            "start_at": datetime.now(UTC)
+        }).where(Game.id == id).returning(Game)
+
+        ret = await self._session.scalar(query)
+        assert ret
+        return ret
 
     async def create(self, game_type: GameType, status: GameStatus) -> Game:
         query = insert(Game).values({

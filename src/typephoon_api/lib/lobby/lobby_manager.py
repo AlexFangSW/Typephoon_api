@@ -1,7 +1,7 @@
 from .base import LobbyBGNotifyMsg
 from ...types.amqp import LobbyNotifyType
 
-from .lobby_background_random import LobbyBackground
+from .lobby_background import LobbyBackground
 
 
 class LobbyBackgroundManager:
@@ -21,3 +21,10 @@ class LobbyBackgroundManager:
     async def stop(self):
         for bg in self._background_tasks:
             await bg.stop()
+
+    async def server_shutdown(self):
+        """
+        Sends reconnect event to all users
+        """
+        for bg in self._background_tasks:
+            await bg.server_shutdown()
