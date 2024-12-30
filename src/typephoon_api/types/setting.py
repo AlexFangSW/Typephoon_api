@@ -5,6 +5,8 @@ from datetime import timedelta
 from pydantic import BaseModel, Field
 import yaml
 
+from ..orm.game import Game
+
 
 def default_logger() -> dict:
     return {
@@ -63,6 +65,7 @@ class RedisSetting(BaseModel):
     port: int = 6379
     db: int = 0
     expire_time: int = 60
+    in_game_player_cache_expire_time: int = 60 * 15
 
 
 class CORSSetting(BaseModel):
@@ -149,6 +152,12 @@ class SecretSetting(BaseModel):
     amqp: AMQPCredentials = Field(default_factory=AMQPCredentials)
 
 
+class GameSetting(BaseModel):
+    start_countdown: int = 5
+    lobby_countdown: int = 30
+    player_limit: int = 5
+
+
 class Setting(BaseModel):
     db: DBSetting = Field(default_factory=DBSetting)
     redis: RedisSetting = Field(default_factory=RedisSetting)
@@ -158,6 +167,7 @@ class Setting(BaseModel):
     google: GoogleSetting = Field(default_factory=GoogleSetting)
     token: TokenSetting = Field(default_factory=TokenSetting)
     amqp: AMQPSetting = Field(default_factory=AMQPSetting)
+    game: GameSetting = Field(default_factory=GameSetting)
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"

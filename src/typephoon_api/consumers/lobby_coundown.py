@@ -1,3 +1,4 @@
+from datetime import timedelta
 from logging import getLogger
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
@@ -36,24 +37,39 @@ class LobbyCountdownConsumer(AbstractConsumer):
         [Start game]
         - Set game status to IN_GAME
         - Set game start time
-        - Update game cache expiration --> 10 min ?
+        - Extend game player cache expiration
         - Start game start countdown (5s)
             - "game.start.wait" queue -- 5s --> "game.start" queue
-            - Game start ts in cache for countdown pooling
+            - Set Game start ts (+5s) in cache for countdown pooling
 
         [Send event] 
         - Notify game start
             - {"game_id": xxx}
-            - Frontend redirects users to gaming page
+            - Send event with game_id to frontend, frontend redirects users to gaming page
         """
 
+        # set game status
         async with self._sessionmaker() as session:
             game_repo = GameRepo(session)
             game = await game_repo.start_game(msg.game_id)
 
-            game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
-                                            setting=self._setting)
-            ...
+            assert game.start_at
+            game_start_at = game.start_at + timedelta(
+                seconds=self._setting.game.start_countdown)
+
+            await session.commit()
+
+        # extend game player cache expiration
+        game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
+                                        setting=self._setting)
+        await game_cache_repo.touch_player_cache(
+            game_id=msg.game_id,
+            ex=self._setting.redis.in_game_player_cache_expire_time)
+
+        # TODO:
+        # - set start countdown cache
+        # - send countdown delayed message
+        # - notify all users
 
         ...
 

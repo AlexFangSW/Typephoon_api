@@ -76,6 +76,14 @@ class GameCacheRepo:
 
         return new_player
 
+    async def touch_player_cache(self, game_id: int, ex: int):
+        """
+        Update the expire time
+        """
+        key = self._gen_cache_key(game_id=game_id,
+                                  cache_type=GameCacheType.PLAYERS)
+        await self._redis_conn.getex(name=key, ex=ex)
+
     async def set_start_time(self, game_id: int, start_time: datetime):
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.COUNTDOWN)
