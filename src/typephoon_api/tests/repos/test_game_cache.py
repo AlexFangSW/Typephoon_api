@@ -1,4 +1,4 @@
-from pydantic.deprecated.parse import json
+import json
 import pytest
 from redis.asyncio import Redis
 

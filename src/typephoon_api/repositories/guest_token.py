@@ -26,4 +26,5 @@ class GuestTokenRepo:
         return key
 
     async def get(self, key: str) -> str | None:
-        return await self._redis_conn.getdel(key)
+        ret: bytes = await self._redis_conn.getdel(key)
+        return ret.decode()
