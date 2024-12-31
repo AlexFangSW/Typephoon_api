@@ -6,13 +6,16 @@ from sqlalchemy.sql import select
 
 from ..orm.game import Game, GameStatus, GameType
 
-# TODO: better returning control
-
 
 class GameRepo:
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, player_limit: int = 5) -> None:
         self._session = session
+        self._player_limit = player_limit
+
+    async def get(self, id: int) -> Game | None:
+        query = select(Game).where(Game.id == id)
+        return await self._session.scalar(query)
 
     async def start_game(self, id: int):
         query = update(Game).values({
@@ -37,7 +40,7 @@ class GameRepo:
         query = select(Game).where(
             and_(
                 Game.status == GameStatus.LOBBY,
-                Game.player_count < 5,
+                Game.player_count < self._player_limit,
             )).limit(1)
 
         if lock:
@@ -55,9 +58,9 @@ class GameRepo:
                 Game.id == id,
             ))
         if new_player:
-            query = query.where(Game.player_count < 5)
+            query = query.where(Game.player_count < self._player_limit)
         else:
-            query = query.where(Game.player_count <= 5)
+            query = query.where(Game.player_count <= self._player_limit)
 
         if lock:
             query = query.with_for_update()

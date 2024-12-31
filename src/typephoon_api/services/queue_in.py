@@ -116,8 +116,11 @@ class QueueInService:
     async def _join_game(self, game_repo: GameRepo, game_id: int,
                          user_info: LobbyUserInfo):
         logger.debug("_join_game, game_id: %s", game_id)
-        new_player = await self._game_cache_repo.add_player(game_id=game_id,
-                                                            user_info=user_info)
+
+        async with self._game_cache_repo.lock(game_id):
+            new_player = await self._game_cache_repo.add_player(
+                game_id=game_id, user_info=user_info)
+
         if new_player:
             await game_repo.add_player(game_id)
 
@@ -133,7 +136,8 @@ class QueueInService:
             raise PublishNotAcknowledged("publish countdown message failed")
 
     async def _set_start_ts_cache(self, game_id: int):
-        start_time = datetime.now(UTC) + timedelta(seconds=30)
+        start_time = datetime.now(UTC) + timedelta(
+            seconds=self._setting.game.lobby_countdown)
         await self._game_cache_repo.set_start_time(game_id=game_id,
                                                    start_time=start_time)
 
@@ -188,7 +192,8 @@ class QueueInService:
 
         # match making, find or create game
         async with self._sessionmaker() as session:
-            game_repo = GameRepo(session)
+            game_repo = GameRepo(session=session,
+                                 player_limit=self._setting.game.player_limit)
             game_id: int | None = None
 
             game = await self._find_game(game_repo=game_repo,

@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from contextlib import asynccontextmanager
 from datetime import datetime
 from redis.asyncio import Redis
 import json
@@ -12,6 +12,9 @@ class GameCacheType(StrEnum):
     COUNTDOWN = "countdown"
 
 
+# TODO: move lock outside
+
+
 class GameCacheRepo:
 
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
@@ -21,12 +24,18 @@ class GameCacheRepo:
     def _gen_cache_key(self, game_id: int, cache_type: GameCacheType) -> str:
         return f"game-cache-{cache_type}-{game_id}"
 
-    def _gen_lock_key(self, key: str) -> str:
-        return f"{key}-lock"
+    def _gen_lock_key(self, game_id: str) -> str:
+        return f"game-cache-{game_id}-lock"
+
+    @asynccontextmanager
+    async def lock(self, game_id: int):
+        lock_key = self._gen_lock_key(str(game_id))
+        lock = self._redis_conn.lock(name=lock_key)
+        yield lock
 
     async def add_player(self, game_id: int, user_info: LobbyUserInfo) -> bool:
         """
-        player is a dict of 'LobbyUserInfo'
+        player cache is a dict of 'LobbyUserInfo'
 
         ```json
         {
@@ -38,26 +47,23 @@ class GameCacheRepo:
         """
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.PLAYERS)
-        lock_key = self._gen_lock_key(key)
-        lock = self._redis_conn.lock(name=lock_key)
-
         new_player = False
-        async with lock:
-            # get current status
-            ret = await self._redis_conn.get(name=key)
-            if ret:
-                current_status = json.loads(ret)
-            else:
-                current_status = {}
 
-            if user_info.id not in current_status:
-                new_player = True
+        # get current status
+        ret = await self._redis_conn.get(name=key)
+        if ret:
+            current_status = json.loads(ret)
+        else:
+            current_status = {}
 
-            # set new status
-            current_status[user_info.id] = asdict(user_info)
-            await self._redis_conn.set(name=key,
-                                       value=json.dumps(current_status),
-                                       ex=self._setting.redis.expire_time)
+        if user_info.id not in current_status:
+            new_player = True
+
+        # set new status
+        current_status[user_info.id] = user_info.model_dump()
+        await self._redis_conn.set(name=key,
+                                   value=json.dumps(current_status),
+                                   ex=self._setting.redis.expire_time)
         return new_player
 
     async def is_new_player(self, game_id: int, user_id: str) -> bool:
@@ -76,18 +82,75 @@ class GameCacheRepo:
 
         return new_player
 
-    async def touch_cache(self, game_id: int, cache_type: GameCacheType,
-                          ex: int):
+    async def touch_cache(self, game_id: int, ex: int):
         """
         Update the expire time
         """
-        key = self._gen_cache_key(game_id=game_id, cache_type=cache_type)
-        await self._redis_conn.getex(name=key, ex=ex)
+        player_key = self._gen_cache_key(game_id=game_id,
+                                         cache_type=GameCacheType.PLAYERS)
+        countdown_key = self._gen_cache_key(game_id=game_id,
+                                            cache_type=GameCacheType.COUNTDOWN)
+        pipeline = self._redis_conn.pipeline()
+        pipeline.expire(player_key, time=ex)
+        pipeline.expire(countdown_key, time=ex)
+        await pipeline.execute()
 
     async def set_start_time(self, game_id: int, start_time: datetime):
+        """
+        Set start time for countdown pooling
+        """
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.COUNTDOWN)
 
         await self._redis_conn.set(name=key,
                                    value=start_time.isoformat(),
                                    ex=self._setting.redis.expire_time)
+
+    async def get_start_time(self, game_id: int) -> datetime | None:
+        """
+        Get start time for countdown pooling
+        """
+        key = self._gen_cache_key(game_id=game_id,
+                                  cache_type=GameCacheType.COUNTDOWN)
+
+        ret: bytes = await self._redis_conn.get(name=key)
+        if ret:
+            return datetime.fromisoformat(ret.decode())
+        else:
+            return None
+
+    async def clear_cache(self, game_id: int):
+        """
+        Clear all cache for the game
+        """
+        player_cache_key = self._gen_cache_key(game_id=game_id,
+                                               cache_type=GameCacheType.PLAYERS)
+        countdown_cache_key = self._gen_cache_key(
+            game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
+
+        await self._redis_conn.delete(player_cache_key, countdown_cache_key)
+
+    async def remove_player(self, game_id: int, user_id: str):
+        key = self._gen_cache_key(game_id=game_id,
+                                  cache_type=GameCacheType.PLAYERS)
+        ret = await self._redis_conn.get(name=key)
+        if ret:
+            data: dict = json.loads(ret)
+            data.pop(user_id)
+            await self._redis_conn.set(name=key,
+                                       value=json.dumps(data),
+                                       ex=self._setting.redis.expire_time)
+
+    async def get_players(self,
+                          game_id: int) -> dict[str, LobbyUserInfo] | None:
+        key = self._gen_cache_key(game_id=game_id,
+                                  cache_type=GameCacheType.PLAYERS)
+        ret = await self._redis_conn.get(name=key)
+        if ret:
+            raw: dict = json.loads(ret)
+            result: dict[str, LobbyUserInfo] = {
+                k: LobbyUserInfo.model_validate(v) for k, v in raw.items()
+            }
+            return result
+        else:
+            return None

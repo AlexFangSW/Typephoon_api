@@ -18,9 +18,4 @@ class TokenValidator:
                                  },
                                  algorithms=["RS256"])
 
-        return JWTPayload(sub=decoded_jwt['sub'],
-                          name=decoded_jwt["name"],
-                          exp=decoded_jwt["exp"],
-                          nbf=decoded_jwt["nbf"],
-                          iat=decoded_jwt["iat"],
-                          user_type=decoded_jwt["user_type"])
+        return JWTPayload.model_validate(decoded_jwt)

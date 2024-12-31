@@ -63,7 +63,7 @@ class RedisSetting(BaseModel):
     port: int = 6379
     db: int = 0
     expire_time: int = 60
-    in_game_player_cache_expire_time: int = 60 * 15
+    in_game_cache_expire_time: int = 60 * 15
 
 
 class CORSSetting(BaseModel):

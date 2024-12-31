@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from ..types.enums import UserType
@@ -37,7 +37,7 @@ class TokenGenerator:
                              iat=int(iat.timestamp()),
                              user_type=user_type)
 
-        return jwt.encode(asdict(payload),
+        return jwt.encode(payload.model_dump(),
                           self._setting.token.private_key,
                           algorithm="RS256")
 
@@ -54,7 +54,7 @@ class TokenGenerator:
                              nbf=int(nbf.timestamp()),
                              iat=int(iat.timestamp()),
                              user_type=user_type)
-        return jwt.encode(asdict(payload),
+        return jwt.encode(payload.model_dump(),
                           self._setting.token.private_key,
                           algorithm="RS256")
 

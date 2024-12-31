@@ -27,3 +27,12 @@ python3 -m typephoon_api --help
 ```
 pytest -v
 ```
+
+## TODO
+Tests
+- [] lobby manager/background
+- repository
+    - [ok] game
+    - [ok] game cache
+    - [] guest token
+- [] queue in service

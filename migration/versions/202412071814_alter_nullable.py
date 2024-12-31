@@ -48,25 +48,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.alter_column('games',
-                    'invite_token',
-                    existing_type=sa.TEXT(),
-                    nullable=False)
-    op.alter_column('games',
-                    'end_at',
-                    existing_type=postgresql.TIMESTAMP(timezone=True),
-                    nullable=False)
-    op.alter_column('games',
-                    'start_at',
-                    existing_type=postgresql.TIMESTAMP(timezone=True),
-                    nullable=False)
-    op.drop_constraint("game_results_user_id_fkey",
-                       'game_results',
-                       type_='foreignkey')
-    op.drop_constraint("game_results_game_id_fkey",
-                       'game_results',
-                       type_='foreignkey')
-    op.create_foreign_key('game_results_user_id_fkey', 'game_results', 'users',
-                          ['user_id'], ['id'])
-    op.create_foreign_key('game_results_game_id_fkey', 'game_results', 'games',
-                          ['game_id'], ['id'])
+    pass

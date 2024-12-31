@@ -1,10 +1,9 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 from .enums import UserType
 
 
-@dataclass(slots=True)
-class JWTPayload:
+class JWTPayload(BaseModel):
     """
     sub: user id
     """

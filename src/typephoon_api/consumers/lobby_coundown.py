@@ -37,13 +37,7 @@ class LobbyCountdownConsumer(AbstractConsumer):
         game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
                                         setting=self._setting)
         await game_cache_repo.touch_cache(
-            game_id=game_id,
-            cache_type=GameCacheType.PLAYERS,
-            ex=self._setting.redis.in_game_player_cache_expire_time)
-        await game_cache_repo.touch_cache(
-            game_id=game_id,
-            cache_type=GameCacheType.COUNTDOWN,
-            ex=self._setting.redis.in_game_player_cache_expire_time)
+            game_id=game_id, ex=self._setting.redis.in_game_cache_expire_time)
 
     async def _notify_all_users(self, game_id: int):
         notify_body = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
@@ -56,7 +50,8 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
     async def _set_game_status(self, game_id: int):
         async with self._sessionmaker() as session:
-            game_repo = GameRepo(session)
+            game_repo = GameRepo(session=session,
+                                 player_limit=self._setting.game.player_limit)
             await game_repo.start_game(game_id)
             await session.commit()
 

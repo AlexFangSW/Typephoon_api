@@ -70,12 +70,14 @@ class TypephoonServer(FastAPI):
             sessionmaker=self._sessionmaker,
             redis_conn=self._redis_conn)
         await self._lobby_countdown_consumer.prepare()
+        await self._lobby_countdown_consumer.start()
 
         self._lobby_notify_consumer = LobbyNotifyConsumer(
             setting=self._setting,
             amqp_conn=self._amqp_conn,
             background_bucket=self._lobby_background_bucket)
         await self._lobby_notify_consumer.prepare()
+        await self._lobby_notify_consumer.start()
 
     async def cleanup(self):
         await self._lobby_notify_consumer.stop()
