@@ -29,10 +29,9 @@ pytest -v
 ```
 
 ## TODO
+Features:
+- lobby:
+    - [ ] api for frontend to get lobby info
 Tests
-- [] lobby manager/background
-- repository
-    - [ok] game
-    - [ok] game cache
-    - [] guest token
-- [] queue in service
+- [ ] lobby manager/background
+- [ ] queue in service
