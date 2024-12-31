@@ -1,6 +1,5 @@
 from enum import StrEnum
 from pydantic import BaseModel
-from typing import Any
 
 
 class LobbyNotifyType(StrEnum):
@@ -13,8 +12,11 @@ class LobbyNotifyType(StrEnum):
 
 class LobbyNotifyMsg(BaseModel):
     notify_type: LobbyNotifyType
-    data: Any = None
     game_id: int
+    user_id: str | None = None
+
+    def slim_dump_json(self) -> str:
+        return self.model_dump_json(exclude_none=True)
 
 
 class LobbyCountdownMsg(BaseModel):

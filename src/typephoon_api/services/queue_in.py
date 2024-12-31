@@ -47,21 +47,9 @@ class ProcessTokenRet:
     guest_token_key: str | None = None
 
 
-class LobbyRandomService:
+class QueueInService:
     """
-    Lobby service for 'Ramdom' game mode
-
-    -   Generate temp auth cookies for guests, just for identifiying who they are
-        in latter stages. Users will recive an event though this websocket that 
-        guides them to request their cookies though an endpoint.
-
-    -   Match making. Tigger update when new team is found.
-
-    -   Trigger update when new user comes in
-
-    -   Trigger game start
-        -   When contdown ends 
-        -   When all users click 'just start'
+    Queue in service for 'Ramdom' game mode
     """
 
     def __init__(
@@ -178,9 +166,9 @@ class LobbyRandomService:
                                    guest_token_key=guest_token_key)
             await bg.notifiy(msg)
 
-    async def _notify_other_servers(self, game_id: int):
+    async def _notify_all_servers(self, game_id: int):
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
-                             game_id=game_id).model_dump_json().encode()
+                             game_id=game_id).slim_dump_json().encode()
         amqp_msg = Message(msg)
         confirm = await self._amqp_notify_exchange.publish(
             amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
@@ -227,4 +215,4 @@ class LobbyRandomService:
             game_id=game_id,
             guest_token_key=process_token_ret.guest_token_key)
 
-        await self._notify_other_servers(game_id)
+        await self._notify_all_servers(game_id)

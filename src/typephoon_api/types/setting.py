@@ -133,12 +133,8 @@ class AMQPSetting(AMQPCredentials):
     lobby_countdown_queue: str = "lobby.countdown"
     lobby_countdown_queue_routing_key: str = "lobby.countdown"
 
-    game_start_countdown_queue: str = "game.start.countdown"
-    game_start_countdown_queue_routing_key: str = "game.start.countdown"
-
     # "wait queues" use deadletter policies to connect with exchanges.
     # no consumers, publish only.
-    game_start_countdown_wait_queue: str = "game.start.countdown.wait"
     lobby_random_countdown_wait_queue: str = "lobby.random.countdown.wait"
     lobby_team_countdown_wait_queue: str = "lobby.team.countdown.wait"
 

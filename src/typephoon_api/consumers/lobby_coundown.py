@@ -33,34 +33,37 @@ class LobbyCountdownConsumer(AbstractConsumer):
                       amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
-    async def _process(self, msg: LobbyNotifyMsg):
-        # set game status
-        async with self._sessionmaker() as session:
-            game_repo = GameRepo(session)
-            await game_repo.start_game(msg.game_id)
-            await session.commit()
-
-        # extend game cache expiration
+    async def _extend_game_cache_expiraton(self, game_id: int):
         game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
                                         setting=self._setting)
         await game_cache_repo.touch_cache(
-            game_id=msg.game_id,
+            game_id=game_id,
             cache_type=GameCacheType.PLAYERS,
             ex=self._setting.redis.in_game_player_cache_expire_time)
         await game_cache_repo.touch_cache(
-            game_id=msg.game_id,
+            game_id=game_id,
             cache_type=GameCacheType.COUNTDOWN,
             ex=self._setting.redis.in_game_player_cache_expire_time)
 
-        # notify all users
-        notify_body = LobbyNotifyMsg(
-            notify_type=LobbyNotifyType.GAME_START,
-            game_id=msg.game_id).model_dump_json().encode()
+    async def _notify_all_users(self, game_id: int):
+        notify_body = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
+                                     game_id=game_id).slim_dump_json().encode()
         notify_msg = Message(notify_body, delivery_mode=DeliveryMode.PERSISTENT)
         confirm = await self._notify_exchange.publish(message=notify_msg,
                                                       routing_key="")
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("game start notify publish failed")
+
+    async def _set_game_status(self, game_id: int):
+        async with self._sessionmaker() as session:
+            game_repo = GameRepo(session)
+            await game_repo.start_game(game_id)
+            await session.commit()
+
+    async def _process(self, msg: LobbyNotifyMsg):
+        await self._set_game_status(msg.game_id)
+        await self._extend_game_cache_expiraton(msg.game_id)
+        await self._notify_all_users(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")

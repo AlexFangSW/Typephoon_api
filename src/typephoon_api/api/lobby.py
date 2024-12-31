@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.util import await_only
 
-from ..services.lobby_random import LobbyRandomService
+from ..services.queue_in import QueueInService
 
 from ..types.setting import Setting
 
@@ -32,7 +32,7 @@ async def queue_in(websocket: WebSocket,
                    queue_in_type: Annotated[QueueInType,
                                             Query(default=QueueInType.NEW)],
                    prev_game_id: Annotated[int | None, Query()],
-                   service: LobbyRandomService = Depends()):
+                   service: QueueInService = Depends()):
     """
     [Game mode: Random]
     This endpoint is reponsible for sending lobby related events to users.
@@ -45,3 +45,24 @@ async def queue_in(websocket: WebSocket,
     except Exception as ex:
         logger.exception("something whent wrong")
         await websocket.close(reason=str(ex))
+
+
+@router.get("/info/random")
+async def info_random():
+    ...
+
+
+@router.post("/leave")
+async def leave():
+    ...
+
+
+@router.get("/countdown")
+async def countdown():
+    ...
+
+
+@router.post("/start")
+async def start():
+    # TODO
+    ...
