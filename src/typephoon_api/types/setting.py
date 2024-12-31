@@ -5,8 +5,6 @@ from datetime import timedelta
 from pydantic import BaseModel, Field
 import yaml
 
-from ..orm.game import Game
-
 
 def default_logger() -> dict:
     return {
@@ -124,12 +122,23 @@ class AMQPSetting(AMQPCredentials):
     vhost: str = "typephoon"
     prefetch_count: int = 50
 
+    # exchanges
     lobby_notify_fanout_exchange: str = "lobby.notify"
     countdown_direct_exchange: str = "lobby.countdown"
 
+    # queues with consumers
     lobby_notify_queue: str = "lobby.notify"
-    lobby_countdown_queue: str = "lobby.countdown"
+    lobby_notify_queue_routing_key: str = "lobby.notify"
 
+    lobby_countdown_queue: str = "lobby.countdown"
+    lobby_countdown_queue_routing_key: str = "lobby.countdown"
+
+    game_start_countdown_queue: str = "game.start.countdown"
+    game_start_countdown_queue_routing_key: str = "game.start.countdown"
+
+    # "wait queues" use deadletter policies to connect with exchanges.
+    # no consumers, publish only.
+    game_start_countdown_wait_queue: str = "game.start.countdown.wait"
     lobby_random_countdown_wait_queue: str = "lobby.random.countdown.wait"
     lobby_team_countdown_wait_queue: str = "lobby.team.countdown.wait"
 

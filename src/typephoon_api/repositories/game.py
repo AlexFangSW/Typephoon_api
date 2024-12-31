@@ -6,21 +6,21 @@ from sqlalchemy.sql import select
 
 from ..orm.game import Game, GameStatus, GameType
 
+# TODO: better returning control
+
 
 class GameRepo:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def start_game(self, id: int) -> Game:
+    async def start_game(self, id: int):
         query = update(Game).values({
             "status": GameStatus.IN_GAME,
             "start_at": datetime.now(UTC)
-        }).where(Game.id == id).returning(Game)
+        }).where(Game.id == id)
 
-        ret = await self._session.scalar(query)
-        assert ret
-        return ret
+        await self._session.execute(query)
 
     async def create(self, game_type: GameType, status: GameStatus) -> Game:
         query = insert(Game).values({
@@ -68,4 +68,4 @@ class GameRepo:
         query = update(Game).where(Game.id == id).values(
             {"player_count": Game.player_count + 1})
 
-        return await self._session.execute(query)
+        await self._session.execute(query)

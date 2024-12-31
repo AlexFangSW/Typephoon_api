@@ -1,19 +1,20 @@
-from datetime import timedelta
 from logging import getLogger
-from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
+from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection, DeliveryMode
+from pamqp.commands import Basic
 from pydantic import ValidationError
-from redis.asyncio import Redis, lock
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from aio_pika import Message
 
-from ..repositories.game_cache import GameCacheRepo
+from ..types.errors import PublishNotAcknowledged
 
-from ..orm.game import GameStatus
+from ..repositories.game_cache import GameCacheRepo, GameCacheType
 
 from ..repositories.game import GameRepo
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyNotifyMsg
+from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -33,45 +34,33 @@ class LobbyCountdownConsumer(AbstractConsumer):
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
-        """
-        [Start game]
-        - Set game status to IN_GAME
-        - Set game start time
-        - Extend game player cache expiration
-        - Start game start countdown (5s)
-            - "game.start.wait" queue -- 5s --> "game.start" queue
-            - Set Game start ts (+5s) in cache for countdown pooling
-
-        [Send event] 
-        - Notify game start
-            - {"game_id": xxx}
-            - Send event with game_id to frontend, frontend redirects users to gaming page
-        """
-
         # set game status
         async with self._sessionmaker() as session:
             game_repo = GameRepo(session)
-            game = await game_repo.start_game(msg.game_id)
-
-            assert game.start_at
-            game_start_at = game.start_at + timedelta(
-                seconds=self._setting.game.start_countdown)
-
+            await game_repo.start_game(msg.game_id)
             await session.commit()
 
-        # extend game player cache expiration
+        # extend game cache expiration
         game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
                                         setting=self._setting)
-        await game_cache_repo.touch_player_cache(
+        await game_cache_repo.touch_cache(
             game_id=msg.game_id,
+            cache_type=GameCacheType.PLAYERS,
+            ex=self._setting.redis.in_game_player_cache_expire_time)
+        await game_cache_repo.touch_cache(
+            game_id=msg.game_id,
+            cache_type=GameCacheType.COUNTDOWN,
             ex=self._setting.redis.in_game_player_cache_expire_time)
 
-        # TODO:
-        # - set start countdown cache
-        # - send countdown delayed message
-        # - notify all users
-
-        ...
+        # notify all users
+        notify_body = LobbyNotifyMsg(
+            notify_type=LobbyNotifyType.GAME_START,
+            game_id=msg.game_id).model_dump_json().encode()
+        notify_msg = Message(notify_body, delivery_mode=DeliveryMode.PERSISTENT)
+        confirm = await self._notify_exchange.publish(message=notify_msg,
+                                                      routing_key="")
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("game start notify publish failed")
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")
@@ -99,17 +88,24 @@ class LobbyCountdownConsumer(AbstractConsumer):
     async def prepare(self):
         logger.info("prepare")
 
+        # lobby countdown
         self._channel = await self._amqp_conn.channel()
-
         await self._channel.set_qos(
             prefetch_count=self._setting.amqp.prefetch_count)
-
         self._queue = await self._channel.get_queue(
             self._setting.amqp.lobby_countdown_queue)
 
+        # default exchange
+        self._default_publish_channel = await self._amqp_conn.channel()
+        self._default_exchange = self._default_publish_channel.default_exchange
+
+        # notify fanout exchange
+        self._notify_publish_channel = await self._amqp_conn.channel()
+        self._notify_exchange = await self._notify_publish_channel.get_exchange(
+            self._setting.amqp.lobby_notify_fanout_exchange)
+
     async def start(self):
         logger.info("start")
-
         self._consumer_tag = await self._queue.consume(self.on_message)
 
     async def stop(self):
@@ -117,3 +113,5 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
         await self._queue.cancel(self._consumer_tag)
         await self._channel.close()
+        await self._notify_publish_channel.close()
+        await self._default_publish_channel.close()
