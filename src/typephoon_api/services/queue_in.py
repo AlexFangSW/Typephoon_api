@@ -78,6 +78,7 @@ class QueueInService:
         """
         Validate token, create one for guest if needed
         """
+        logger.debug("_process_token")
 
         if access_token is None:
             user_info = gen_guest_user_info()
@@ -98,8 +99,12 @@ class QueueInService:
     async def _find_game(self, game_repo: GameRepo, queue_in_type: QueueInType,
                          prev_game_id: int | None,
                          user_info: LobbyUserInfo) -> Game | None:
+        logger.debug(
+            "_find_game, queue_in_type: %s, prev_game_id: %s, user_info: %s",
+            queue_in_type, prev_game_id, user_info)
 
         if queue_in_type == QueueInType.RECONNECT and prev_game_id is not None:
+            logger.debug("try reconnect, prev_game_id: %s", prev_game_id)
             prev_game_id = int(prev_game_id)
             new_player = await self._game_cache_repo.is_new_player(
                 game_id=prev_game_id, user_id=user_info.id)
@@ -110,21 +115,27 @@ class QueueInService:
             return game
 
         else:
+            logger.debug("get_one_available")
             game = await game_repo.get_one_available(lock=True)
             return game
 
     async def _join_game(self, game_repo: GameRepo, game_id: int,
                          user_info: LobbyUserInfo):
-        logger.debug("_join_game, game_id: %s", game_id)
+        logger.debug("_join_game, game_id: %s, user_info: %s", game_id,
+                     user_info)
 
         async with self._game_cache_repo.lock(game_id):
             new_player = await self._game_cache_repo.add_player(
                 game_id=game_id, user_info=user_info)
 
         if new_player:
+            logger.debug("new player, game_id: %s, user_info: %s", game_id,
+                         user_info)
             await game_repo.add_player(game_id)
 
     async def _send_countdown_signal(self, game_id: int):
+        logger.debug("_send_countdown_signal")
+
         msg = LobbyCountdownMsg(game_id=game_id).model_dump_json().encode()
         amqp_msg = Message(msg)
 
@@ -136,6 +147,8 @@ class QueueInService:
             raise PublishNotAcknowledged("publish countdown message failed")
 
     async def _set_start_ts_cache(self, game_id: int):
+        logger.debug("_set_start_ts_cache")
+
         start_time = datetime.now(UTC) + timedelta(
             seconds=self._setting.game.lobby_countdown)
         await self._game_cache_repo.set_start_time(game_id=game_id,
@@ -160,17 +173,25 @@ class QueueInService:
                                  user_info: LobbyUserInfo,
                                  game_id: int,
                                  guest_token_key: str | None = None):
+        logger.debug(
+            "_add_bg_event_loop, user_info: %s, game_id: %s, guest_token_key: %s",
+            user_info, game_id, guest_token_key)
 
         bg = LobbyBackground(websocket=websocket, user_info=user_info)
         await self._background_bucket[str(game_id)].add(bg)
 
         # notify guest user to get their token
         if guest_token_key:
+            logger.debug(
+                "notify guest user to get token, user_info: %s, game_id: %s, guest_token_key: %s",
+                user_info, game_id, guest_token_key)
             msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.GET_TOKEN,
                                    guest_token_key=guest_token_key)
             await bg.notifiy(msg)
 
     async def _notify_all_servers(self, game_id: int):
+        logger.debug("_notify_all_servers, game_id: %s", game_id)
+
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                              game_id=game_id).slim_dump_json().encode()
         amqp_msg = Message(msg)
@@ -179,14 +200,18 @@ class QueueInService:
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish lobby notify message failed")
 
-    async def queue_in(self, websocket: WebSocket, queue_in_type: QueueInType,
-                       prev_game_id: int | None):
-        logger.debug("queue_in")
+    async def queue_in(self,
+                       websocket: WebSocket,
+                       queue_in_type: QueueInType,
+                       prev_game_id: int | None = None):
+        logger.debug("queue_in, queue_in_type: %s, prev_game_id: %s",
+                     queue_in_type, prev_game_id)
 
         try:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
             process_token_ret = await self._process_token(access_token)
-        except PyJWTError:
+        except PyJWTError as ex:
+            logger.warning("invalid token, error: %s", str(ex))
             await websocket.close(reason=WSCloseReason.INVALID_TOKEN)
             return
 
