@@ -32,6 +32,12 @@ pytest -v
 Features:
 - lobby:
     - [ ] api for frontend to get lobby info
+
 Tests
 - [ ] lobby manager/background
 - [ ] queue in service
+
+QOL:
+- [ ] request id
+    - use or generate request id for each request and use it in our logger
+    - https://github.com/snok/asgi-correlation-id
