@@ -18,7 +18,7 @@ def default_logger() -> dict:
         },
         "formatters": {
             "default": {
-                "format": "%(levelname)s %(name)s :: %(message)s"
+                "format": "%(levelname)s %(name)s(%(lineno)d) :: %(message)s"
             }
         },
         "root": {

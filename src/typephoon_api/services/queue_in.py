@@ -140,7 +140,7 @@ class QueueInService:
         amqp_msg = Message(msg)
 
         confirm = await self._amqp_countdown_exchange.publish(
-            amqp_msg,
+            message=amqp_msg,
             routing_key=self._setting.amqp.lobby_random_countdown_wait_queue)
 
         if not isinstance(confirm, Basic.Ack):
@@ -196,7 +196,7 @@ class QueueInService:
                              game_id=game_id).slim_dump_json().encode()
         amqp_msg = Message(msg)
         confirm = await self._amqp_notify_exchange.publish(
-            amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
+            message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish lobby notify message failed")
 

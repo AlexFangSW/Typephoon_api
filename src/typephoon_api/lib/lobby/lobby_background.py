@@ -18,6 +18,10 @@ class LobbyBackground:
         self._queue: Queue[LobbyBGNotifyMsg] = Queue()
         self._websocket = websocket
 
+    @property
+    def user_info(self) -> LobbyUserInfo:
+        return self._user_info
+
     async def notifiy(self, msg: LobbyBGNotifyMsg):
         await self._queue.put(msg)
 

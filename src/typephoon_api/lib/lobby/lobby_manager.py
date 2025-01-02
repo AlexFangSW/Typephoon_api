@@ -1,20 +1,26 @@
+from logging import getLogger
 from .base import LobbyBGNotifyMsg
 
 from .lobby_background import LobbyBackground
+
+logger = getLogger(__name__)
 
 
 class LobbyBackgroundManager:
 
     def __init__(self) -> None:
-        self._background_tasks: list[LobbyBackground] = []
+        self._background_tasks: dict[str, LobbyBackground] = {}
 
     async def add(self, bg: LobbyBackground):
-        self._background_tasks.append(bg)
+        self._background_tasks[bg.user_info.id] = bg
+
+    async def remove(self, user_id: str):
+        self._background_tasks.pop(user_id)
 
     async def broadcast(self, msg: LobbyBGNotifyMsg):
-        for bg in self._background_tasks:
+        for _, bg in self._background_tasks.items():
             await bg.notifiy(msg)
 
     async def stop(self):
-        for bg in self._background_tasks:
+        for _, bg in self._background_tasks.items():
             await bg.stop()
