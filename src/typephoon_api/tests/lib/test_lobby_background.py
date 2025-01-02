@@ -29,9 +29,9 @@ async def test_lobby_background():
     assert websocket.send_bytes.call_args.args[0] == msg.slim_dump_json(
     ).encode()
 
-    await bg.stop()
+    final_msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.RECONNECT)
+    await bg.stop(final_msg)
 
-    reconnect_msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.RECONNECT)
     assert websocket.send_bytes.called
-    assert websocket.send_bytes.call_args.args[
-        0] == reconnect_msg.slim_dump_json().encode()
+    assert websocket.send_bytes.call_args.args[0] == final_msg.slim_dump_json(
+    ).encode()

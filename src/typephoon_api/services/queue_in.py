@@ -31,7 +31,7 @@ from ..types.enums import CookieNames, QueueInType, WSCloseReason
 
 from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
-from aio_pika.abc import AbstractExchange
+from aio_pika.abc import AbstractExchange, DeliveryMode
 from aio_pika import Message
 
 from ..lib.token_generator import TokenGenerator, UserType
@@ -120,7 +120,7 @@ class QueueInService:
             return game
 
     async def _join_game(self, game_repo: GameRepo, game_id: int,
-                         user_info: LobbyUserInfo):
+                         user_info: LobbyUserInfo) -> bool:
         logger.debug("_join_game, game_id: %s, user_info: %s", game_id,
                      user_info)
 
@@ -131,7 +131,17 @@ class QueueInService:
         if new_player:
             logger.debug("new player, game_id: %s, user_info: %s", game_id,
                          user_info)
-            await game_repo.add_player(game_id)
+
+            game = await game_repo.add_player(game_id)
+            assert game
+
+            logger.debug("current player count: %s, game_id: %s",
+                         game.player_count, game_id)
+
+            if game.player_count >= self._setting.game.player_limit:
+                return True
+
+        return False
 
     async def _send_countdown_signal(self, game_id: int):
         logger.debug("_send_countdown_signal")
@@ -189,8 +199,8 @@ class QueueInService:
                                    guest_token_key=guest_token_key)
             await bg.notifiy(msg)
 
-    async def _notify_all_servers(self, game_id: int):
-        logger.debug("_notify_all_servers, game_id: %s", game_id)
+    async def _notify_user_join(self, game_id: int):
+        logger.debug("_notify_user_join, game_id: %s", game_id)
 
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                              game_id=game_id).slim_dump_json().encode()
@@ -198,7 +208,18 @@ class QueueInService:
         confirm = await self._amqp_notify_exchange.publish(
             message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
         if not isinstance(confirm, Basic.Ack):
-            raise PublishNotAcknowledged("publish lobby notify message failed")
+            raise PublishNotAcknowledged("publish user join message failed")
+
+    async def _send_start_msg(self, game_id: int):
+        logger.debug("_send_start_event, game_id: %s", game_id)
+
+        msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
+                             game_id=game_id).slim_dump_json().encode()
+        amqp_msg = Message(msg)
+        confirm = await self._amqp_notify_exchange.publish(
+            message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish start msg failed")
 
     async def queue_in(self,
                        websocket: WebSocket,
@@ -228,14 +249,16 @@ class QueueInService:
 
             if game:
                 game_id = game.id
-                await self._join_game(game_repo=game_repo,
-                                      game_id=game_id,
-                                      user_info=process_token_ret.user_info)
+                game_full = await self._join_game(
+                    game_repo=game_repo,
+                    game_id=game_id,
+                    user_info=process_token_ret.user_info)
             else:
                 game_id = await self._create_game(game_repo=game_repo)
-                await self._join_game(game_repo=game_repo,
-                                      game_id=game_id,
-                                      user_info=process_token_ret.user_info)
+                game_full = await self._join_game(
+                    game_repo=game_repo,
+                    game_id=game_id,
+                    user_info=process_token_ret.user_info)
 
             await session.commit()
 
@@ -245,4 +268,22 @@ class QueueInService:
             game_id=game_id,
             guest_token_key=process_token_ret.guest_token_key)
 
-        await self._notify_all_servers(game_id)
+        await self._notify_user_join(game_id)
+
+        if game_full:
+            logger.debug("game full, game_id: %s", game_id)
+
+            # set game status
+            async with self._sessionmaker() as session:
+                game_repo = GameRepo(
+                    session=session,
+                    player_limit=self._setting.game.player_limit)
+                await game_repo.start_game(game_id)
+                await session.commit()
+
+            # extend game cache expiration
+            await self._game_cache_repo.touch_cache(
+                game_id=game_id,
+                ex=self._setting.redis.in_game_cache_expire_time)
+
+            await self._send_start_msg(game_id)

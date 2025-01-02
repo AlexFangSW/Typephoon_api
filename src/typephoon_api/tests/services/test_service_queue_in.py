@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...orm.game import GameStatus
+
 from ...types.amqp import LobbyCountdownMsg, LobbyNotifyMsg, LobbyNotifyType
 
 from ...types.common import LobbyUserInfo
@@ -236,3 +238,61 @@ async def test_service_queue_in(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
     ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                         game_id=game_id)
+
+
+@pytest.mark.asyncio
+async def test_service_queue_in_game_full(
+    setting: Setting,
+    redis_conn: Redis,
+    sessionmaker: async_sessionmaker[AsyncSession],
+):
+    token_generator = TokenGenerator(setting)
+    token_validator = TokenValidator(setting)
+    backgrond_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
+        LobbyBackgroundManager)
+    guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
+    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+
+    amqp_notify_exchange: AbstractExchange = AsyncMock()
+    amqp_countdown_exchange: AbstractExchange = AsyncMock()
+
+    websocket: WebSocket = AsyncMock()
+
+    service = QueueInService(
+        setting=setting,
+        token_generator=token_generator,
+        token_validator=token_validator,
+        background_bucket=backgrond_bucket,
+        guest_token_repo=guest_token_repo,
+        sessionmaker=sessionmaker,
+        amqp_notify_exchange=amqp_notify_exchange,
+        amqp_countdown_exchange=amqp_countdown_exchange,
+        game_cache_repo=game_cache_repo,
+    )
+
+    websocket.cookies = {}
+    amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
+    amqp_countdown_exchange.publish = AsyncMock(return_value=Basic.Ack())
+
+    # run
+    for _ in range(setting.game.player_limit):
+        await service.queue_in(websocket=websocket,
+                               queue_in_type=QueueInType.NEW)
+
+    # check _amqp_notify_exchange
+    assert amqp_notify_exchange.publish.called
+    notify_msg = LobbyNotifyMsg.model_validate_json(
+        amqp_notify_exchange.publish.call_args.kwargs["message"].body)
+    assert notify_msg.notify_type == LobbyNotifyType.GAME_START
+
+    game_id = notify_msg.game_id
+
+    assert len(backgrond_bucket[str(
+        game_id)]._background_tasks) == setting.game.player_limit
+
+    async with sessionmaker() as session:
+        repo = GameRepo(session)
+        game = await repo.get(game_id)
+        assert game
+        assert game.player_count == setting.game.player_limit
+        assert game.status == GameStatus.IN_GAME

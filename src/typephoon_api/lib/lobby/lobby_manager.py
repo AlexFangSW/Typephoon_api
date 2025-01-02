@@ -22,6 +22,6 @@ class LobbyBackgroundManager:
         for _, bg in self._background_tasks.items():
             await bg.notifiy(msg)
 
-    async def stop(self, reconnect: bool = False, now: bool = False):
+    async def stop(self, final_msg: LobbyBGNotifyMsg | None = None):
         for _, bg in self._background_tasks.items():
-            await bg.stop(reconnect=reconnect, now=now)
+            await bg.stop(final_msg)

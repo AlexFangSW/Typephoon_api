@@ -38,12 +38,14 @@ class LobbyNotifyConsumer(AbstractConsumer):
         game_id = str(msg.game_id)
 
         bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type)
-        await self._background_bucket[game_id].broadcast(bg_notify_msg)
 
         if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
             logger.debug("game started, game_id: %s", game_id)
-            await self._background_bucket[game_id].stop()
+            await self._background_bucket[game_id].stop(bg_notify_msg)
             self._background_bucket.pop(game_id)
+
+        else:
+            await self._background_bucket[game_id].broadcast(bg_notify_msg)
 
     async def _on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")

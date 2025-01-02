@@ -2,8 +2,6 @@ from asyncio import Queue, Task, create_task, Event
 from logging import getLogger
 from fastapi import WebSocket
 
-from ...types.amqp import LobbyNotifyType
-
 from .base import LobbyBGNotifyMsg
 
 from ...types.common import LobbyUserInfo
@@ -34,25 +32,14 @@ class LobbyBackground:
             msg = await self._queue.get()
             await self._websocket.send_bytes(msg.slim_dump_json().encode())
 
-            if msg.notify_type == LobbyNotifyType.GAME_START:
-                self._end_event.set()
-                break
-
     async def start(self):
         self._task: Task = create_task(
-            self._loop(),
-            name=f"lobby_background_random-{self._user_info.id}-send")
+            self._loop(), name=f"lobby_background-{self._user_info.id}")
 
-    async def stop(self, reconnect: bool = False, now: bool = False):
-        if not now:
-            await self._end_event.wait()
-        else:
-            self._task.cancel()
+    async def stop(self, final_msg: LobbyBGNotifyMsg | None = None):
+        if final_msg:
+            await self._websocket.send_bytes(
+                final_msg.slim_dump_json().encode())
 
-        # send reconnect event to user
-        if reconnect:
-            msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.RECONNECT
-                                  ).slim_dump_json().encode()
-            await self._websocket.send_bytes(msg)
-
+        self._task.cancel()
         await self._websocket.close()

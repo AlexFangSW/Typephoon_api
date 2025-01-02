@@ -28,12 +28,40 @@ python3 -m typephoon_api --help
 pytest -v
 ```
 
+## Notes
+- Lobby
+    - user join
+    - user reconnect
+    - game start on countdown end
+    - game start on game full
+    - [TODO] send reconnect msg on server shoutdown
+        - lifespan
+    - [TODO] api for lobby info
+        - player list
+    - [TODO] api for coutdown
+        - return seconds
+    - [TODO] api for user leave
+        - remove from cache
+        - substract player count
+        - remove background task
+    - [TODO] FE:
+        - get event and do stuff
+            - reconnect
+            - update
+            - game start
+        - button to leave
+        - button to queue in
+
 ## TODO
 Features:
 - lobby:
-    - [ ] api for frontend to get lobby info
+    - api for frontend to get lobby info
+
+- RabbitMQ deadletter policy for lobby countdown
+    - random 
+    - team
 
 QOL:
-- [ ] request id
+- request id
     - use or generate request id for each request and use it in our logger
     - https://github.com/snok/asgi-correlation-id
