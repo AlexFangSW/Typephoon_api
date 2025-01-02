@@ -1,4 +1,5 @@
 from logging import getLogger
+
 from .base import LobbyBGNotifyMsg
 
 from .lobby_background import LobbyBackground
@@ -21,6 +22,6 @@ class LobbyBackgroundManager:
         for _, bg in self._background_tasks.items():
             await bg.notifiy(msg)
 
-    async def stop(self):
+    async def stop(self, reconnect: bool = False, now: bool = False):
         for _, bg in self._background_tasks.items():
-            await bg.stop()
+            await bg.stop(reconnect=reconnect, now=now)

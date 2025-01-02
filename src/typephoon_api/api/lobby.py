@@ -47,8 +47,11 @@ async def queue_in(websocket: WebSocket,
         await websocket.close(reason=str(ex))
 
 
-@router.get("/info/random")
+@router.get("/info")
 async def info_random():
+    """
+    player list
+    """
     ...
 
 
@@ -59,10 +62,7 @@ async def leave():
 
 @router.get("/countdown")
 async def countdown():
-    ...
-
-
-@router.post("/start")
-async def start():
-    # TODO
+    """
+    lobby countdown in seconds
+    """
     ...

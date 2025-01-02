@@ -9,7 +9,7 @@ from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyNotifyMsg
+from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -35,8 +35,15 @@ class LobbyNotifyConsumer(AbstractConsumer):
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
+        game_id = str(msg.game_id)
+
         bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type)
-        await self._background_bucket[str(msg.game_id)].broadcast(bg_notify_msg)
+        await self._background_bucket[game_id].broadcast(bg_notify_msg)
+
+        if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
+            logger.debug("game started, game_id: %s", game_id)
+            await self._background_bucket[game_id].stop()
+            self._background_bucket.pop(game_id)
 
     async def _on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")
