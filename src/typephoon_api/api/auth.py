@@ -73,6 +73,7 @@ async def login_redirect(
                         httponly=True,
                         secure=True,
                         samesite="strict")
+
     return response
 
 
@@ -89,8 +90,8 @@ async def logout(
     response = JSONResponse(msg, status_code=200)
 
     response.delete_cookie(CookieNames.ACCESS_TOKEN)
-    response.set_cookie(CookieNames.REFRESH_TOKEN)
-    response.set_cookie(CookieNames.USERNAME)
+    response.delete_cookie(CookieNames.REFRESH_TOKEN)
+    response.delete_cookie(CookieNames.USERNAME)
 
     return response
 
