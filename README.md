@@ -38,12 +38,13 @@ pytest -v
         - lifespan
     - [OK] api for lobby info
         - player list
-    - [TODO] api for coutdown
+    - [OK] api for coutdown
         - return seconds
-    - [TODO] api for user leave
+    - [DOING] api for user leave
         - remove from cache
         - substract player count
-        - remove background task
+        - [TODO] remove background task
+        - [TODO] send `USER_LEAVE` notification
     - [TODO] FE:
         - get event and do stuff
             - reconnect
