@@ -4,3 +4,7 @@ class PublishNotAcknowledged(Exception):
 
 class AMQPNotReady(Exception):
     pass
+
+
+class InvalidCookieToken(Exception):
+    pass

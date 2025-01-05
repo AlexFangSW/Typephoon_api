@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from ..types.responses.lobby import LobbyPlayersResponse
+from ..orm.game import GameType
+
+from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
 
 from ..types.jwt import JWTPayload
 
@@ -14,7 +16,7 @@ from ..services.queue_in import QueueInService
 
 from ..types.responses.base import ErrorResponse, SuccessResponse
 
-from ..types.enums import QueueInType
+from ..types.enums import ErrorCode, QueueInType
 
 from ..lib.dependencies import get_access_token_info, get_lobby_service, get_queue_in_service
 
@@ -62,9 +64,15 @@ async def players(game_id: int,
 
     ret = await service.get_players(user_id=current_user.sub, game_id=game_id)
 
-    assert ret.ok
-    assert ret.data
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
 
+    assert ret.data
     msg = jsonable_encoder(
         LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
     return JSONResponse(msg, status_code=200)
@@ -77,14 +85,36 @@ async def leave(game_id: int,
 
     ret = await service.leave(user_id=current_user.sub, game_id=game_id)
 
-    assert ret.ok
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
     msg = jsonable_encoder(SuccessResponse())
     return JSONResponse(msg, status_code=200)
 
 
 @router.get("/countdown")
-async def countdown():
+async def get_countdown(game_id: int,
+                        game_type: GameType,
+                        service: LobbyService = Depends(get_lobby_service)):
     """
     lobby countdown in seconds
     """
-    ...
+
+    ret = await service.get_countdown(game_id=game_id, game_type=game_type)
+
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data
+    msg = jsonable_encoder(LobbyCountdownResponse(seconds_left=ret.data))
+    return JSONResponse(msg, status_code=200)

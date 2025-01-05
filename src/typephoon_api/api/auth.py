@@ -122,7 +122,7 @@ async def token_refresh(
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=400)
         else:
-            raise ValueError("unknown error code")
+            raise ValueError(f"unknown error code: {ret.error.code}")
 
     assert ret.data
     msg = jsonable_encoder(SuccessResponse())

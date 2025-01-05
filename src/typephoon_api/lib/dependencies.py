@@ -4,6 +4,8 @@ from fastapi import Cookie, Request
 from fastapi.security.api_key import Annotated
 from jwt.exceptions import PyJWTError
 
+from ..types.errors import InvalidCookieToken
+
 from ..types.common import ErrorContext
 
 from ..types.jwt import JWTPayload
@@ -82,7 +84,9 @@ async def get_lobby_service(request: Request) -> LobbyService:
     app: TypephoonServer = request.app
     game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
                                     setting=app.setting)
-    service = LobbyService(setting=app.setting, game_cache_repo=game_cache_repo)
+    service = LobbyService(setting=app.setting,
+                           game_cache_repo=game_cache_repo,
+                           sessionmaker=app.sessionmaker)
     return service
 
 
@@ -121,5 +125,8 @@ def get_access_token_info(
     validate 'access' token and return payload
     """
     app: TypephoonServer = request.app
-    token_validator = TokenValidator(app.setting)
-    return token_validator.validate(access_token)
+    try:
+        token_validator = TokenValidator(app.setting)
+        return token_validator.validate(access_token)
+    except PyJWTError as ex:
+        raise InvalidCookieToken(str(ex))

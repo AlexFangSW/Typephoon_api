@@ -6,9 +6,10 @@ from typing import Callable
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
-from jwt.exceptions import PyJWTError
 from pydantic_core import Url
 from uuid import uuid4
+
+from ..types.errors import InvalidCookieToken
 
 from ..types.enums import ErrorCode
 
@@ -79,7 +80,7 @@ def catch_error_async(func: Callable):
         try:
             return await func(*args, **kwargs)
 
-        except PyJWTError as ex:
+        except InvalidCookieToken as ex:
             logger.warning("token error: %s", str(ex))
             error = ErrorContext(code=ErrorCode.INVALID_TOKEN, message=str(ex))
             msg = ErrorResponse(error=error).model_dump()
