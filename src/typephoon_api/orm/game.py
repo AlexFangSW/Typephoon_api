@@ -9,7 +9,7 @@ from enum import IntEnum
 
 class GameType(IntEnum):
     SINGLE = 0
-    RANDOM = 1
+    MULTI = 1
     TEAM = 2
 
 

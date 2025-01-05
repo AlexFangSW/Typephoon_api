@@ -43,7 +43,7 @@ class AMQPManager:
         # - dead letter exchange: <countdown exchange name>
         # - dead leter routing key: 'countdown'
         await channel.declare_queue(
-            name=self._setting.amqp.lobby_random_countdown_wait_queue,
+            name=self._setting.amqp.lobby_multi_countdown_wait_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
 

@@ -31,7 +31,7 @@ from ..types.enums import CookieNames, QueueInType, WSCloseReason
 
 from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
-from aio_pika.abc import AbstractExchange, DeliveryMode
+from aio_pika.abc import AbstractExchange
 from aio_pika import Message
 
 from ..lib.token_generator import TokenGenerator, UserType
@@ -61,7 +61,7 @@ class QueueInService:
         guest_token_repo: GuestTokenRepo,
         sessionmaker: async_sessionmaker[AsyncSession],
         amqp_notify_exchange: AbstractExchange,
-        amqp_countdown_exchange: AbstractExchange,
+        amqp_default_exchange: AbstractExchange,
         game_cache_repo: GameCacheRepo,
     ) -> None:
         self._setting = setting
@@ -70,7 +70,7 @@ class QueueInService:
         self._token_validator = token_validator
         self._guest_token_repo = guest_token_repo
         self._sessionmaker = sessionmaker
-        self._amqp_countdown_exchange = amqp_countdown_exchange
+        self._amqp_default_exchange = amqp_default_exchange
         self._amqp_notify_exchange = amqp_notify_exchange
         self._game_cache_repo = game_cache_repo
 
@@ -99,9 +99,8 @@ class QueueInService:
     async def _find_game(self, game_repo: GameRepo, queue_in_type: QueueInType,
                          prev_game_id: int | None,
                          user_info: LobbyUserInfo) -> Game | None:
-        logger.debug(
-            "_find_game, queue_in_type: %s, prev_game_id: %s, user_info: %s",
-            queue_in_type, prev_game_id, user_info)
+        logger.debug("queue_in_type: %s, prev_game_id: %s, user_info: %s",
+                     queue_in_type, prev_game_id, user_info)
 
         if queue_in_type == QueueInType.RECONNECT and prev_game_id is not None:
             logger.debug("try reconnect, prev_game_id: %s", prev_game_id)
@@ -121,8 +120,7 @@ class QueueInService:
 
     async def _join_game(self, game_repo: GameRepo, game_id: int,
                          user_info: LobbyUserInfo) -> bool:
-        logger.debug("_join_game, game_id: %s, user_info: %s", game_id,
-                     user_info)
+        logger.debug("game_id: %s, user_info: %s", game_id, user_info)
 
         async with self._game_cache_repo.lock(game_id):
             new_player = await self._game_cache_repo.add_player(
@@ -144,20 +142,20 @@ class QueueInService:
         return False
 
     async def _send_countdown_signal(self, game_id: int):
-        logger.debug("_send_countdown_signal")
+        logger.debug("game_id: %s", game_id)
 
         msg = LobbyCountdownMsg(game_id=game_id).model_dump_json().encode()
         amqp_msg = Message(msg)
 
-        confirm = await self._amqp_countdown_exchange.publish(
+        confirm = await self._amqp_default_exchange.publish(
             message=amqp_msg,
-            routing_key=self._setting.amqp.lobby_random_countdown_wait_queue)
+            routing_key=self._setting.amqp.lobby_multi_countdown_wait_queue)
 
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish countdown message failed")
 
     async def _set_start_ts_cache(self, game_id: int):
-        logger.debug("_set_start_ts_cache")
+        logger.debug("game_id: %s", game_id)
 
         start_time = datetime.now(UTC) + timedelta(
             seconds=self._setting.game.lobby_countdown)
@@ -165,10 +163,10 @@ class QueueInService:
                                                    start_time=start_time)
 
     async def _create_game(self, game_repo: GameRepo) -> int:
-        game = await game_repo.create(game_type=GameType.RANDOM,
+        game = await game_repo.create(game_type=GameType.MULTI,
                                       status=GameStatus.LOBBY)
 
-        logger.debug("_create_game, id: %s", game.id)
+        logger.debug("id: %s", game.id)
 
         # send countdown signal
         await self._send_countdown_signal(game.id)
@@ -183,11 +181,14 @@ class QueueInService:
                                  user_info: LobbyUserInfo,
                                  game_id: int,
                                  guest_token_key: str | None = None):
-        logger.debug(
-            "_add_bg_event_loop, user_info: %s, game_id: %s, guest_token_key: %s",
-            user_info, game_id, guest_token_key)
+        logger.debug("user_info: %s, game_id: %s, guest_token_key: %s",
+                     user_info, game_id, guest_token_key)
 
+        # notify user their game id
         bg = LobbyBackground(websocket=websocket, user_info=user_info)
+        msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.INIT,
+                               game_id=game_id)
+        await bg.notifiy(msg)
         await self._background_bucket[str(game_id)].add(bg)
 
         # notify guest user to get their token
@@ -200,7 +201,7 @@ class QueueInService:
             await bg.notifiy(msg)
 
     async def _notify_user_join(self, game_id: int):
-        logger.debug("_notify_user_join, game_id: %s", game_id)
+        logger.debug("game_id: %s", game_id)
 
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                              game_id=game_id).slim_dump_json().encode()
@@ -211,7 +212,7 @@ class QueueInService:
             raise PublishNotAcknowledged("publish user join message failed")
 
     async def _send_start_msg(self, game_id: int):
-        logger.debug("_send_start_event, game_id: %s", game_id)
+        logger.debug("game_id: %s", game_id)
 
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
                              game_id=game_id).slim_dump_json().encode()
@@ -225,8 +226,8 @@ class QueueInService:
                        websocket: WebSocket,
                        queue_in_type: QueueInType,
                        prev_game_id: int | None = None):
-        logger.debug("queue_in, queue_in_type: %s, prev_game_id: %s",
-                     queue_in_type, prev_game_id)
+        logger.debug("queue_in_type: %s, prev_game_id: %s", queue_in_type,
+                     prev_game_id)
 
         try:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)

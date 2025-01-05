@@ -46,7 +46,7 @@ async def test_service_queue_in(
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
-    amqp_countdown_exchange: AbstractExchange = AsyncMock()
+    amqp_default_exchange: AbstractExchange = AsyncMock()
 
     websocket: WebSocket = AsyncMock()
 
@@ -58,7 +58,7 @@ async def test_service_queue_in(
         guest_token_repo=guest_token_repo,
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
-        amqp_countdown_exchange=amqp_countdown_exchange,
+        amqp_default_exchange=amqp_default_exchange,
         game_cache_repo=game_cache_repo,
     )
 
@@ -87,7 +87,7 @@ async def test_service_queue_in(
     # mocks
     websocket.cookies = {CookieNames.ACCESS_TOKEN: player_1_access_token}
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
-    amqp_countdown_exchange.publish = AsyncMock(return_value=Basic.Ack())
+    amqp_default_exchange.publish = AsyncMock(return_value=Basic.Ack())
 
     # run
     await service.queue_in(websocket=websocket, queue_in_type=QueueInType.NEW)
@@ -104,12 +104,12 @@ async def test_service_queue_in(
     game_id = p1_notify_msg.game_id
 
     # check countdown exchange
-    assert amqp_countdown_exchange.publish.called
-    assert amqp_countdown_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_random_countdown_wait_queue
+    assert amqp_default_exchange.publish.called
+    assert amqp_default_exchange.publish.call_args.kwargs[
+        "routing_key"] == setting.amqp.lobby_multi_countdown_wait_queue
 
     p1_countdown_msg = LobbyCountdownMsg.model_validate_json(
-        amqp_countdown_exchange.publish.call_args.kwargs["message"].body)
+        amqp_default_exchange.publish.call_args.kwargs["message"].body)
     assert p1_countdown_msg.game_id == game_id
 
     # check game player count
@@ -254,7 +254,7 @@ async def test_service_queue_in_game_full(
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
-    amqp_countdown_exchange: AbstractExchange = AsyncMock()
+    amqp_default_exchange: AbstractExchange = AsyncMock()
 
     websocket: WebSocket = AsyncMock()
 
@@ -266,13 +266,13 @@ async def test_service_queue_in_game_full(
         guest_token_repo=guest_token_repo,
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
-        amqp_countdown_exchange=amqp_countdown_exchange,
+        amqp_default_exchange=amqp_default_exchange,
         game_cache_repo=game_cache_repo,
     )
 
     websocket.cookies = {}
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
-    amqp_countdown_exchange.publish = AsyncMock(return_value=Basic.Ack())
+    amqp_default_exchange.publish = AsyncMock(return_value=Basic.Ack())
 
     # run
     for _ in range(setting.game.player_limit):

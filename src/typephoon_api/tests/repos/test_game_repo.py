@@ -12,9 +12,9 @@ async def test_game_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
 
-        game = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         assert game.id is not None
-        assert game.game_type == GameType.RANDOM
+        assert game.game_type == GameType.MULTI
         assert game.status == GameStatus.LOBBY
 
         game_id = game.id
@@ -25,7 +25,7 @@ async def test_game_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
         game = await session.get(Game, game_id)
         assert game is not None
         assert game.id == game_id
-        assert game.game_type == GameType.RANDOM
+        assert game.game_type == GameType.MULTI
         assert game.status == GameStatus.LOBBY
         assert game.player_count == 0
         assert game.finish_count == 0
@@ -36,7 +36,7 @@ async def test_game_repo_add_player(
         sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
-        game = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_id = game.id
         await repo.add_player(game_id)
         await session.commit()
@@ -53,7 +53,7 @@ async def test_game_repo_is_available(
 
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
-        game = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_id = game.id
         await repo.add_player(game_id)
         await repo.add_player(game_id)
@@ -78,11 +78,11 @@ async def test_game_repo_get_one_available(
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
 
-        game_full = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game_full = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         for _ in range(repo._player_limit):
             await repo.add_player(game_full.id)
 
-        game_available = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game_available = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_available_id = game_available.id
 
         await session.commit()
@@ -101,7 +101,7 @@ async def test_game_repo_start_game(
         sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
-        game = await repo.create(GameType.RANDOM, GameStatus.LOBBY)
+        game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_id = game.id
         await repo.start_game(game_id)
         await session.commit()

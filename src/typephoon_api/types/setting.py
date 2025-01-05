@@ -18,7 +18,8 @@ def default_logger() -> dict:
         },
         "formatters": {
             "default": {
-                "format": "%(levelname)s %(name)s(%(lineno)d) :: %(message)s"
+                "format":
+                    "%(levelname)s %(name)s.%(funcName)s:%(lineno)d :: %(message)s"
             }
         },
         "root": {
@@ -135,7 +136,7 @@ class AMQPSetting(AMQPCredentials):
 
     # "wait queues" use deadletter policies to connect with exchanges.
     # no consumers, publish only.
-    lobby_random_countdown_wait_queue: str = "lobby.random.countdown.wait"
+    lobby_multi_countdown_wait_queue: str = "lobby.multi.countdown.wait"
     lobby_team_countdown_wait_queue: str = "lobby.team.countdown.wait"
 
     def merge(self, inpt: AMQPCredentials):

@@ -2,10 +2,14 @@ from asyncio import timeout
 from collections import defaultdict
 from logging import getLogger
 from aio_pika import connect_robust
+from aio_pika.abc import AbstractExchange
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
+
+from .lobby.base import LobbyBGNotifyMsg
+from ..types.amqp import LobbyNotifyType
 
 from ..consumers.lobby_notify import LobbyNotifyConsumer
 
@@ -85,7 +89,8 @@ class TypephoonServer(FastAPI):
 
         for team_id, lobby_manager in self._lobby_background_bucket.items():
             logger.debug("cleaning lobby: %s", team_id)
-            await lobby_manager.stop()
+            msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.RECONNECT)
+            await lobby_manager.stop(msg)
 
         await self._engine.dispose()
         await self._redis_conn.aclose()
@@ -132,3 +137,11 @@ class TypephoonServer(FastAPI):
     def lobby_background_bucket(
             self) -> defaultdict[str, LobbyBackgroundManager]:
         return self._lobby_background_bucket
+
+    @property
+    def amqp_default_exchange(self) -> AbstractExchange:
+        return self._default_exchange
+
+    @property
+    def amqp_notify_exchange(self) -> AbstractExchange:
+        return self._notify_exchange

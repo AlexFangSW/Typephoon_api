@@ -12,9 +12,6 @@ class GameCacheType(StrEnum):
     COUNTDOWN = "countdown"
 
 
-# TODO: move lock outside
-
-
 class GameCacheRepo:
 
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:

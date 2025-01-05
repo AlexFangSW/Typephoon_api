@@ -6,8 +6,11 @@ from typing import Callable
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
+from jwt.exceptions import PyJWTError
 from pydantic_core import Url
 from uuid import uuid4
+
+from ..types.enums import ErrorCode
 
 from .oauth_providers.base import OAuthProviders
 

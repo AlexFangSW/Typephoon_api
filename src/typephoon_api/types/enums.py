@@ -12,7 +12,6 @@ class CookieNames(StrEnum):
     ACCESS_TOKEN = "TP_AT"
     REFRESH_TOKEN = "TP_RT"
     USERNAME = "USERNAME"
-    GAME_ID = "GAME_ID"
 
 
 class WSCloseReason(StrEnum):

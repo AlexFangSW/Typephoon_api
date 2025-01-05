@@ -39,6 +39,7 @@ class LoginRedirectRet:
     refresh_token: str
     refresh_endpoint: str
     username: str
+    id: str
 
 
 T = TypeVar("T")
@@ -107,6 +108,7 @@ class AuthService:
                 refresh_token=gen_token_ret.refresh_token,
                 username=user.name,
                 refresh_endpoint=self._setting.token.refresh_endpoint,
+                id=user.id,
             )
             return ServiceRet(ok=True, data=data)
 

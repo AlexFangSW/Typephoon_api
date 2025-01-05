@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class LobbyNotifyType(StrEnum):
+    INIT = "INIT"
     USER_JOINED = "USER_JOINED"
     USER_LEFT = "USER_LEFT"
     GET_TOKEN = "GET_TOKEN"

@@ -1,5 +1,22 @@
+from dataclasses import dataclass
 from logging import getLogger
-from fastapi import Request
+from fastapi import Cookie, Request
+from fastapi.security.api_key import Annotated
+from jwt.exceptions import PyJWTError
+
+from ..types.common import ErrorContext
+
+from ..types.jwt import JWTPayload
+
+from ..types.enums import CookieNames, ErrorCode
+
+from ..services.lobby import LobbyService
+
+from ..repositories.game_cache import GameCacheRepo
+
+from ..repositories.guest_token import GuestTokenRepo
+
+from ..services.queue_in import QueueInService
 
 from .oauth_providers.base import OAuthProviders
 
@@ -15,6 +32,7 @@ from .token_generator import TokenGenerator
 from ..services.auth import AuthService
 from .server import TypephoonServer
 from ..services.health_check import HealthCheckService
+from . import token_validator
 
 logger = getLogger(__name__)
 
@@ -57,6 +75,28 @@ async def get_auth_service(request: Request) -> AuthService:
                           sessionmaker=app.sessionmaker,
                           token_validator=token_validator,
                           token_generator=token_generator)
+    return service
+
+
+async def get_queue_in_service(request: Request) -> QueueInService:
+    app: TypephoonServer = request.app
+
+    token_generator = TokenGenerator(app.setting)
+    token_validator = TokenValidator(app.setting)
+    guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn,
+                                      setting=app.setting)
+    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
+                                    setting=app.setting)
+
+    service = QueueInService(setting=app.setting,
+                             token_validator=token_validator,
+                             token_generator=token_generator,
+                             background_bucket=app.lobby_background_bucket,
+                             guest_token_repo=guest_token_repo,
+                             sessionmaker=app.sessionmaker,
+                             amqp_notify_exchange=app.amqp_notify_exchange,
+                             amqp_default_exchange=app.amqp_default_exchange,
+                             game_cache_repo=game_cache_repo)
     return service
 
 
