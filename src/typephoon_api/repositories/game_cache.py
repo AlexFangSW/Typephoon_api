@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+from logging import getLogger
 from redis.asyncio import Redis
 import json
 from enum import StrEnum
+
 from ..types.setting import Setting
 from ..types.common import LobbyUserInfo
+
+logger = getLogger(__name__)
 
 
 class GameCacheType(StrEnum):
@@ -111,10 +115,11 @@ class GameCacheRepo:
                                   cache_type=GameCacheType.COUNTDOWN)
 
         ret: bytes = await self._redis_conn.get(name=key)
-        if ret:
-            return datetime.fromisoformat(ret.decode())
-        else:
-            return None
+        if not ret:
+            logger.warning("game not found, game_id: %s", game_id)
+            return
+
+        return datetime.fromisoformat(ret.decode())
 
     async def clear_cache(self, game_id: int):
         """
@@ -131,23 +136,27 @@ class GameCacheRepo:
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
-        if ret:
-            data: dict = json.loads(ret)
-            data.pop(user_id)
-            await self._redis_conn.set(name=key,
-                                       value=json.dumps(data),
-                                       ex=self._setting.redis.expire_time)
+        if not ret:
+            logger.warning("game not found, game_id: %s", game_id)
+            return
+
+        data: dict = json.loads(ret)
+        data.pop(user_id)
+        await self._redis_conn.set(name=key,
+                                   value=json.dumps(data),
+                                   ex=self._setting.redis.expire_time)
 
     async def get_players(self,
                           game_id: int) -> dict[str, LobbyUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
-        if ret:
-            raw: dict = json.loads(ret)
-            result: dict[str, LobbyUserInfo] = {
-                k: LobbyUserInfo.model_validate(v) for k, v in raw.items()
-            }
-            return result
-        else:
-            return None
+        if not ret:
+            logger.warning("game not found, game_id: %s", game_id)
+            return
+
+        raw: dict = json.loads(ret)
+        result: dict[str, LobbyUserInfo] = {
+            k: LobbyUserInfo.model_validate(v) for k, v in raw.items()
+        }
+        return result

@@ -32,13 +32,24 @@ async def test_game_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
 
 
 @pytest.mark.asyncio
-async def test_game_repo_add_player(
+async def test_game_repo_player_count(
         sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
         game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_id = game.id
-        await repo.add_player(game_id)
+        await repo.increase_player_count(game_id)
+        await repo.increase_player_count(game_id)
+        await session.commit()
+
+    async with sessionmaker() as session:
+        game = await session.get(Game, game_id)
+        assert game is not None
+        assert game.player_count == 2
+
+    async with sessionmaker() as session:
+        repo = GameRepo(session=session)
+        await repo.decrease_player_count(game_id)
         await session.commit()
 
     async with sessionmaker() as session:
@@ -55,11 +66,11 @@ async def test_game_repo_is_available(
         repo = GameRepo(session=session)
         game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_id = game.id
-        await repo.add_player(game_id)
-        await repo.add_player(game_id)
-        await repo.add_player(game_id)
-        await repo.add_player(game_id)
-        await repo.add_player(game_id)
+        await repo.increase_player_count(game_id)
+        await repo.increase_player_count(game_id)
+        await repo.increase_player_count(game_id)
+        await repo.increase_player_count(game_id)
+        await repo.increase_player_count(game_id)
         await session.commit()
 
     async with sessionmaker() as session:
@@ -80,7 +91,7 @@ async def test_game_repo_get_one_available(
 
         game_full = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         for _ in range(repo._player_limit):
-            await repo.add_player(game_full.id)
+            await repo.increase_player_count(game_full.id)
 
         game_available = await repo.create(GameType.MULTI, GameStatus.LOBBY)
         game_available_id = game_available.id

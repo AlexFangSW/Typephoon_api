@@ -12,7 +12,7 @@ from ..services.lobby import LobbyService
 
 from ..services.queue_in import QueueInService
 
-from ..types.responses.base import ErrorResponse
+from ..types.responses.base import ErrorResponse, SuccessResponse
 
 from ..types.enums import QueueInType
 
@@ -59,6 +59,7 @@ async def queue_in(websocket: WebSocket,
 async def players(game_id: int,
                   current_user: JWTPayload = Depends(get_access_token_info),
                   service: LobbyService = Depends(get_lobby_service)):
+
     ret = await service.get_players(user_id=current_user.sub, game_id=game_id)
 
     assert ret.ok
@@ -70,8 +71,15 @@ async def players(game_id: int,
 
 
 @router.post("/leave")
-async def leave():
-    ...
+async def leave(game_id: int,
+                current_user: JWTPayload = Depends(get_access_token_info),
+                service: LobbyService = Depends(get_lobby_service)):
+
+    ret = await service.leave(user_id=current_user.sub, game_id=game_id)
+
+    assert ret.ok
+    msg = jsonable_encoder(SuccessResponse())
+    return JSONResponse(msg, status_code=200)
 
 
 @router.get("/countdown")

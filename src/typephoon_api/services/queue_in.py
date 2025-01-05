@@ -130,7 +130,7 @@ class QueueInService:
             logger.debug("new player, game_id: %s, user_info: %s", game_id,
                          user_info)
 
-            game = await game_repo.add_player(game_id)
+            game = await game_repo.increase_player_count(game_id)
             assert game
 
             logger.debug("current player count: %s, game_id: %s",
