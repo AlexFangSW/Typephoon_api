@@ -78,6 +78,13 @@ def catch_error_async(func: Callable):
     async def wrapped(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
+
+        except PyJWTError as ex:
+            logger.warning("token error: %s", str(ex))
+            error = ErrorContext(code=ErrorCode.INVALID_TOKEN, message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=400)
+
         except Exception as ex:
             logger.exception("something went wrong")
             error = ErrorContext(message=str(ex))

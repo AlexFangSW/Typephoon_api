@@ -34,9 +34,9 @@ pytest -v
     - user reconnect
     - game start on countdown end
     - game start on game full
-    - [TODO] send reconnect msg on server shoutdown
+    - [OK] send reconnect msg on server shoutdown
         - lifespan
-    - [TODO] api for lobby info
+    - [OK] api for lobby info
         - player list
     - [TODO] api for coutdown
         - return seconds

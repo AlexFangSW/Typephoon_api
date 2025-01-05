@@ -78,6 +78,14 @@ async def get_auth_service(request: Request) -> AuthService:
     return service
 
 
+async def get_lobby_service(request: Request) -> LobbyService:
+    app: TypephoonServer = request.app
+    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
+                                    setting=app.setting)
+    service = LobbyService(setting=app.setting, game_cache_repo=game_cache_repo)
+    return service
+
+
 async def get_queue_in_service(request: Request) -> QueueInService:
     app: TypephoonServer = request.app
 
@@ -103,3 +111,15 @@ async def get_queue_in_service(request: Request) -> QueueInService:
 def get_setting(request: Request) -> Setting:
     app: TypephoonServer = request.app
     return app.setting
+
+
+def get_access_token_info(
+    request: Request,
+    access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)]
+) -> JWTPayload:
+    """
+    validate 'access' token and return payload
+    """
+    app: TypephoonServer = request.app
+    token_validator = TokenValidator(app.setting)
+    return token_validator.validate(access_token)

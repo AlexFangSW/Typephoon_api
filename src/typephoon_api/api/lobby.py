@@ -1,28 +1,35 @@
 from logging import getLogger
 from typing import Annotated
-from fastapi import APIRouter, Cookie, Depends, Query, WebSocket
+from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy.util import await_only
+from fastapi.responses import JSONResponse
+
+from ..types.responses.lobby import LobbyPlayersResponse
+
+from ..types.jwt import JWTPayload
+
+from ..services.lobby import LobbyService
 
 from ..services.queue_in import QueueInService
 
-from ..types.setting import Setting
+from ..types.responses.base import ErrorResponse
 
-from ..types.responses.base import ErrorResponse, SuccessResponse
+from ..types.enums import QueueInType
 
-from ..types.enums import CookieNames, ErrorCode, QueueInType
-
-from ..lib.dependencies import get_auth_service, get_auth_service_with_provider, get_setting
-from ..services.auth import AuthService
+from ..lib.dependencies import get_access_token_info, get_lobby_service, get_queue_in_service
 
 from ..lib.util import catch_error_async
 
 router = APIRouter(tags=["Lobby"],
                    prefix="/lobby",
-                   responses={500: {
-                       "model": ErrorResponse
-                   }})
+                   responses={
+                       500: {
+                           "model": ErrorResponse
+                       },
+                       400: {
+                           "model": ErrorResponse
+                       }
+                   })
 
 logger = getLogger(__name__)
 
@@ -32,9 +39,9 @@ async def queue_in(websocket: WebSocket,
                    queue_in_type: Annotated[QueueInType,
                                             Query(default=QueueInType.NEW)],
                    prev_game_id: Annotated[int | None, Query()],
-                   service: QueueInService = Depends()):
+                   service: QueueInService = Depends(get_queue_in_service)):
     """
-    [Game mode: Random]
+    [Game mode: Multi]
     This endpoint is reponsible for sending lobby related events to users.
     """
     try:
@@ -47,12 +54,19 @@ async def queue_in(websocket: WebSocket,
         await websocket.close(reason=str(ex))
 
 
-@router.get("/info")
-async def info_random():
-    """
-    player list
-    """
-    ...
+@router.get("/players")
+@catch_error_async
+async def players(game_id: int,
+                  current_user: JWTPayload = Depends(get_access_token_info),
+                  service: LobbyService = Depends(get_lobby_service)):
+    ret = await service.get_players(user_id=current_user.sub, game_id=game_id)
+
+    assert ret.ok
+    assert ret.data
+
+    msg = jsonable_encoder(
+        LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
+    return JSONResponse(msg, status_code=200)
 
 
 @router.post("/leave")
