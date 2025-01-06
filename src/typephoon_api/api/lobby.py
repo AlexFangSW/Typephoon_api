@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from ..types.errors import InvalidCookieToken
+
 from ..orm.game import GameType
 
 from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
@@ -18,7 +20,7 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 from ..types.enums import ErrorCode, QueueInType
 
-from ..lib.dependencies import get_access_token_info, get_lobby_service, get_queue_in_service
+from ..lib.dependencies import GetAccessTokenInfoRet, get_access_token_info, get_lobby_service, get_queue_in_service
 
 from ..lib.util import catch_error_async
 
@@ -38,9 +40,9 @@ logger = getLogger(__name__)
 
 @router.websocket("/queue-in")
 async def queue_in(websocket: WebSocket,
-                   queue_in_type: Annotated[QueueInType,
-                                            Query(default=QueueInType.NEW)],
                    prev_game_id: Annotated[int | None, Query()],
+                   queue_in_type: Annotated[QueueInType,
+                                            Query()] = QueueInType.NEW,
                    service: QueueInService = Depends(get_queue_in_service)):
     """
     [Game mode: Multi]
@@ -58,11 +60,17 @@ async def queue_in(websocket: WebSocket,
 
 @router.get("/players")
 @catch_error_async
-async def players(game_id: int,
-                  current_user: JWTPayload = Depends(get_access_token_info),
-                  service: LobbyService = Depends(get_lobby_service)):
+async def players(
+    game_id: int,
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: LobbyService = Depends(get_lobby_service)):
 
-    ret = await service.get_players(user_id=current_user.sub, game_id=game_id)
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
+
+    assert current_user.payload
+    ret = await service.get_players(user_id=current_user.payload.sub,
+                                    game_id=game_id)
 
     if not ret.ok:
         assert ret.error
@@ -79,11 +87,17 @@ async def players(game_id: int,
 
 
 @router.post("/leave")
-async def leave(game_id: int,
-                current_user: JWTPayload = Depends(get_access_token_info),
-                service: LobbyService = Depends(get_lobby_service)):
+@catch_error_async
+async def leave(
+    game_id: int,
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: LobbyService = Depends(get_lobby_service)):
 
-    ret = await service.leave(user_id=current_user.sub, game_id=game_id)
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
+
+    assert current_user.payload
+    ret = await service.leave(user_id=current_user.payload.sub, game_id=game_id)
 
     if not ret.ok:
         assert ret.error

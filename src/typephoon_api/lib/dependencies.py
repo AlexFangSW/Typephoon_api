@@ -1,16 +1,12 @@
 from dataclasses import dataclass
 from logging import getLogger
+from typing import Annotated
 from fastapi import Cookie, Request
-from fastapi.security.api_key import Annotated
 from jwt.exceptions import PyJWTError
-
-from ..types.errors import InvalidCookieToken
-
-from ..types.common import ErrorContext
 
 from ..types.jwt import JWTPayload
 
-from ..types.enums import CookieNames, ErrorCode
+from ..types.enums import CookieNames
 
 from ..services.lobby import LobbyService
 
@@ -119,16 +115,23 @@ def get_setting(request: Request) -> Setting:
     return app.setting
 
 
+@dataclass(slots=True)
+class GetAccessTokenInfoRet:
+    payload: JWTPayload | None = None
+    error: str | None = None
+
+
 def get_access_token_info(
     request: Request,
     access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)]
-) -> JWTPayload:
+) -> GetAccessTokenInfoRet:
     """
     validate 'access' token and return payload
     """
     app: TypephoonServer = request.app
     try:
         token_validator = TokenValidator(app.setting)
-        return token_validator.validate(access_token)
+        return GetAccessTokenInfoRet(
+            payload=token_validator.validate(access_token))
     except PyJWTError as ex:
-        raise InvalidCookieToken(str(ex))
+        return GetAccessTokenInfoRet(error=str(ex))
