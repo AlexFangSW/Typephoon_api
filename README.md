@@ -40,11 +40,11 @@ pytest -v
         - player list
     - [OK] api for coutdown
         - return seconds
-    - [DOING] api for user leave
+    - [OK] api for user leave
         - remove from cache
         - substract player count
-        - [TODO] remove background task
-        - [TODO] send `USER_LEAVE` notification
+        - remove background task
+        - send `USER_LEAVE` notification
     - [TODO] FE:
         - get event and do stuff
             - reconnect
