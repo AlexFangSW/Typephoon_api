@@ -112,14 +112,14 @@ async def leave(
 
 
 @router.get("/countdown")
+@catch_error_async
 async def get_countdown(game_id: int,
-                        game_type: GameType,
                         service: LobbyService = Depends(get_lobby_service)):
     """
     lobby countdown in seconds
     """
 
-    ret = await service.get_countdown(game_id=game_id, game_type=game_type)
+    ret = await service.get_countdown(game_id=game_id)
 
     if not ret.ok:
         assert ret.error

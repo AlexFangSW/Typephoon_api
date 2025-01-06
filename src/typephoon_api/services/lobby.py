@@ -54,9 +54,8 @@ class LobbyService:
     async def get_countdown(
         self,
         game_id: int,
-        game_type: GameType,
     ) -> ServiceRet[float]:
-        logger.debug("game_id: %s, game_type: %s", game_id, game_type)
+        logger.debug("game_id: %s, game_type: %s", game_id)
 
         start_time = await self._game_cache_repo.get_start_time(game_id)
         if not start_time:
@@ -93,7 +92,7 @@ class LobbyService:
                              game_id=game_id,
                              user_id=user_id).model_dump_json().encode()
         amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
-        confirm = await self._amqp_notify_exchange.publish(amqp_msg,
+        confirm = await self._amqp_notify_exchange.publish(message=amqp_msg,
                                                            routing_key="")
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish user join message failed")
@@ -111,7 +110,7 @@ class LobbyService:
         players = await self._game_cache_repo.get_players(game_id)
 
         if not players:
-            logger.warning("game found, game_id: %s", game_id)
+            logger.warning("game not found, game_id: %s", game_id)
             return ServiceRet(ok=False,
                               error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
 
