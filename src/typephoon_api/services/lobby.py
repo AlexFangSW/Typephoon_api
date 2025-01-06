@@ -1,9 +1,18 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Context
 from logging import getLogger
 
+from aio_pika import DeliveryMode, Message
+from aio_pika.abc import AbstractExchange
+from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..types.errors import PublishNotAcknowledged
+
+from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
+
+from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from ..types.enums import ErrorCode
 
@@ -28,11 +37,19 @@ class GetPlayersRet:
 
 class LobbyService:
 
-    def __init__(self, setting: Setting, game_cache_repo: GameCacheRepo,
-                 sessionmaker: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        setting: Setting,
+        game_cache_repo: GameCacheRepo,
+        sessionmaker: async_sessionmaker[AsyncSession],
+        background_bucket: defaultdict[str, LobbyBackgroundManager],
+        amqp_notify_exchange: AbstractExchange,
+    ) -> None:
         self._setting = setting
         self._game_cache_repo = game_cache_repo
         self._sessionmaker = sessionmaker
+        self._background_bucket = background_bucket
+        self._amqp_notify_exchange = amqp_notify_exchange
 
     async def get_countdown(
         self,
@@ -70,6 +87,17 @@ class LobbyService:
 
         await self._game_cache_repo.remove_player(game_id=game_id,
                                                   user_id=user_id)
+
+        # notify all servers
+        msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_LEFT,
+                             game_id=game_id,
+                             user_id=user_id).model_dump_json().encode()
+        amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
+        confirm = await self._amqp_notify_exchange.publish(amqp_msg,
+                                                           routing_key="")
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish user join message failed")
+
         return ServiceRet(ok=True)
 
     async def get_players(

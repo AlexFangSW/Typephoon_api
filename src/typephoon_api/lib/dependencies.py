@@ -86,6 +86,8 @@ async def get_lobby_service(request: Request) -> LobbyService:
                                     setting=app.setting)
     service = LobbyService(setting=app.setting,
                            game_cache_repo=game_cache_repo,
+                           background_bucket=app.lobby_background_bucket,
+                           amqp_notify_exchange=app.amqp_notify_exchange,
                            sessionmaker=app.sessionmaker)
     return service
 

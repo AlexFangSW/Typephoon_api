@@ -37,7 +37,8 @@ class LobbyNotifyConsumer(AbstractConsumer):
     async def _process(self, msg: LobbyNotifyMsg):
         game_id = str(msg.game_id)
 
-        bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type)
+        bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type,
+                                         user_id=msg.user_id)
 
         if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
             logger.debug("game started, game_id: %s", game_id)

@@ -186,6 +186,7 @@ class QueueInService:
 
         # notify user their game id
         bg = LobbyBackground(websocket=websocket, user_info=user_info)
+        await bg.start()
         msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.INIT,
                                game_id=game_id)
         await bg.notifiy(msg)
@@ -206,8 +207,8 @@ class QueueInService:
         msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                              game_id=game_id).slim_dump_json().encode()
         amqp_msg = Message(msg)
-        confirm = await self._amqp_notify_exchange.publish(
-            message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
+        confirm = await self._amqp_notify_exchange.publish(message=amqp_msg,
+                                                           routing_key="")
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish user join message failed")
 

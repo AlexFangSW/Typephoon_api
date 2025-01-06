@@ -94,8 +94,6 @@ async def test_service_queue_in(
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
-    assert amqp_notify_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_notify_queue
 
     p1_notify_msg = LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body)
@@ -163,8 +161,6 @@ async def test_service_queue_in(
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
-    assert amqp_notify_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_notify_queue
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
     ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
@@ -200,8 +196,6 @@ async def test_service_queue_in(
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
-    assert amqp_notify_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_notify_queue
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
     ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
@@ -232,8 +226,6 @@ async def test_service_queue_in(
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
-    assert amqp_notify_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_notify_queue
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
     ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,

@@ -145,9 +145,9 @@ class AMQPSetting(AMQPCredentials):
 
     def model_post_init(self, _: Any) -> None:
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
-        server_name = getenv("SERVER_NAME", "")
-        self.lobby_notify_queue = ".".join(
-            [self.lobby_notify_queue, server_name])
+        server_name = getenv("SERVER_NAME", None)
+        if server_name:
+            self.lobby_notify_queue = f"{self.lobby_notify_queue}.{server_name}"
 
 
 class SecretSetting(BaseModel):
