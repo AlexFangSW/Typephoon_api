@@ -26,7 +26,7 @@ logger:
       formatter: default
   formatters:
     default:
-      format: "%(levelname)s %(name)s.%(funcName)s:%(lineno)d :: %(message)s"
+      format: "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
   root:
     level: INFO
     handlers:
