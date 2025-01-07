@@ -34,7 +34,7 @@ router = APIRouter(tags=["Lobby"],
 logger = getLogger(__name__)
 
 
-@router.websocket("/queue-in")
+@router.websocket("/queue-in/ws")
 async def queue_in(websocket: WebSocket,
                    prev_game_id: Annotated[int | None, Query()],
                    queue_in_type: Annotated[QueueInType,
