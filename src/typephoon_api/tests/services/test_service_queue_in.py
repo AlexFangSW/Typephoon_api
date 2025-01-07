@@ -299,7 +299,12 @@ async def test_service_queue_in_game_full(
         assert game.player_count == setting.game.player_limit
         assert game.status == GameStatus.IN_GAME
 
-    # TODO: check game cache
+    # check game cache
+    game_players = await game_cache_repo.get_players(game_id)
+    assert game_players
+    assert len(game_players.keys()) == setting.game.player_limit
+    game_start_time = await game_cache_repo.get_start_time(game_id)
+    assert game_start_time
 
     # clean up
     for game_id, manager in backgrond_bucket.items():

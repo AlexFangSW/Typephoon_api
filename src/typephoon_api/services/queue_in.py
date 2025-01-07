@@ -289,6 +289,8 @@ class QueueInService:
 
             # populate game cache
             await self._game_cache_repo.populate_with_lobby_cache(
-                game_id=game_id, lobby_cache_repo=self._lobby_cache_repo)
+                game_id=game_id,
+                lobby_cache_repo=self._lobby_cache_repo,
+                auto_clean=True)
 
             await self._send_start_msg(game_id)
