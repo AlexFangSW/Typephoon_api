@@ -11,4 +11,3 @@ class ErrorContext(BaseModel):
 class LobbyUserInfo(BaseModel):
     id: str
     name: str
-    finish: bool = False

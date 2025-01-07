@@ -45,24 +45,19 @@ async def test_api_lobby_players(
         'me': {
             'id': 'player-1',
             'name': 'player-name-1',
-            'finish': False
         },
         'others': [{
             'id': 'player-0',
             'name': 'player-name-0',
-            'finish': False
         }, {
             'id': 'player-2',
             'name': 'player-name-2',
-            'finish': False
         }, {
             'id': 'player-3',
             'name': 'player-name-3',
-            'finish': False
         }, {
             'id': 'player-4',
             'name': 'player-name-4',
-            'finish': False
         }]
     }
 
