@@ -24,6 +24,12 @@ class UserType(StrEnum):
     REGISTERED = "REGISTERED"
 
 
+# NOTE: replace QueueInType with WSConnectionType ?
 class QueueInType(StrEnum):
+    RECONNECT = "reconnect"
+    NEW = "new"
+
+
+class WSConnectionType(StrEnum):
     RECONNECT = "reconnect"
     NEW = "new"
