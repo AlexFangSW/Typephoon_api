@@ -8,7 +8,7 @@ from ...types.enums import CookieNames
 
 from ...types.common import LobbyUserInfo
 
-from ...repositories.game_cache import GameCacheRepo
+from ...repositories.lobby_cache import LobbyCacheRepo
 
 from ...lib.token_generator import TokenGenerator
 
@@ -24,12 +24,12 @@ async def test_api_lobby_players(
     game_id = 123
 
     # insert players to cache
-    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     for i in range(setting.game.player_limit):
-        await game_cache_repo.add_player(game_id=game_id,
-                                         user_info=LobbyUserInfo(
-                                             id=f"player-{i}",
-                                             name=f"player-name-{i}"))
+        await lobby_cache_repo.add_player(game_id=game_id,
+                                          user_info=LobbyUserInfo(
+                                              id=f"player-{i}",
+                                              name=f"player-name-{i}"))
 
     # get player
     token_generator = TokenGenerator(setting)
@@ -74,8 +74,9 @@ async def test_api_lobby_countdown(
     start_time = datetime.now(UTC) + timedelta(
         seconds=setting.game.lobby_countdown)
 
-    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    await game_cache_repo.set_start_time(game_id=game_id, start_time=start_time)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
+    await lobby_cache_repo.set_start_time(game_id=game_id,
+                                          start_time=start_time)
 
     # call api
     ret = await client.get(f"{API_PREFIX}/lobby/countdown",

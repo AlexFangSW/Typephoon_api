@@ -16,7 +16,7 @@ from ...types.common import LobbyUserInfo
 
 from ...repositories.game import GameRepo
 
-from ...repositories.game_cache import GameCacheRepo
+from ...repositories.lobby_cache import LobbyCacheRepo
 
 from ...repositories.guest_token import GuestTokenRepo
 
@@ -43,7 +43,7 @@ async def test_service_queue_in(
     backgrond_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
-    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_default_exchange: AbstractExchange = AsyncMock()
@@ -59,7 +59,7 @@ async def test_service_queue_in(
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
         amqp_default_exchange=amqp_default_exchange,
-        game_cache_repo=game_cache_repo,
+        lobby_cache_repo=lobby_cache_repo,
     )
 
     # ---------------------
@@ -117,12 +117,12 @@ async def test_service_queue_in(
 
     assert game
     assert game.player_count == 1
-    ret = await game_cache_repo.get_players(game_id)
+    ret = await lobby_cache_repo.get_players(game_id)
     assert ret
     assert player_1 == ret[player_1.id]
 
     # check start ts cache
-    start_ts = await game_cache_repo.get_start_time(game_id)
+    start_ts = await lobby_cache_repo.get_start_time(game_id)
     assert start_ts
     assert start_ts == datetime.now(UTC) + timedelta(
         seconds=setting.game.lobby_countdown)
@@ -151,7 +151,7 @@ async def test_service_queue_in(
 
     assert game
     assert game.player_count == 2
-    ret = await game_cache_repo.get_players(game_id)
+    ret = await lobby_cache_repo.get_players(game_id)
     assert ret
     assert player_1 == ret[player_1.id]
     assert player_2 == ret[player_2.id]
@@ -186,7 +186,7 @@ async def test_service_queue_in(
 
     assert game
     assert game.player_count == 2
-    ret = await game_cache_repo.get_players(game_id)
+    ret = await lobby_cache_repo.get_players(game_id)
     assert ret
     assert player_1 == ret[player_1.id]
     assert player_2 == ret[player_2.id]
@@ -217,7 +217,7 @@ async def test_service_queue_in(
 
     assert game
     assert game.player_count == 3
-    ret = await game_cache_repo.get_players(game_id)
+    ret = await lobby_cache_repo.get_players(game_id)
     assert ret
     assert len(ret.keys()) == 3
 
@@ -243,7 +243,7 @@ async def test_service_queue_in_game_full(
     backgrond_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
-    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_default_exchange: AbstractExchange = AsyncMock()
@@ -259,7 +259,7 @@ async def test_service_queue_in_game_full(
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
         amqp_default_exchange=amqp_default_exchange,
-        game_cache_repo=game_cache_repo,
+        lobby_cache_repo=lobby_cache_repo,
     )
 
     websocket.cookies = {}

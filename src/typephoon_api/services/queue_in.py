@@ -15,7 +15,7 @@ from ..orm.game import Game, GameStatus, GameType
 
 from ..lib.lobby.lobby_background import LobbyBackground
 
-from ..repositories.game_cache import GameCacheRepo
+from ..repositories.lobby_cache import LobbyCacheRepo
 
 from ..types.errors import PublishNotAcknowledged
 
@@ -62,7 +62,7 @@ class QueueInService:
         sessionmaker: async_sessionmaker[AsyncSession],
         amqp_notify_exchange: AbstractExchange,
         amqp_default_exchange: AbstractExchange,
-        game_cache_repo: GameCacheRepo,
+        lobby_cache_repo: LobbyCacheRepo,
     ) -> None:
         self._setting = setting
         self._token_generator = token_generator
@@ -72,7 +72,7 @@ class QueueInService:
         self._sessionmaker = sessionmaker
         self._amqp_default_exchange = amqp_default_exchange
         self._amqp_notify_exchange = amqp_notify_exchange
-        self._game_cache_repo = game_cache_repo
+        self._lobby_cache_repo = lobby_cache_repo
 
     async def _process_token(self, access_token: str | None) -> ProcessTokenRet:
         """
@@ -105,7 +105,7 @@ class QueueInService:
         if queue_in_type == QueueInType.RECONNECT and prev_game_id is not None:
             logger.debug("try reconnect, prev_game_id: %s", prev_game_id)
             prev_game_id = int(prev_game_id)
-            new_player = await self._game_cache_repo.is_new_player(
+            new_player = await self._lobby_cache_repo.is_new_player(
                 game_id=prev_game_id, user_id=user_info.id)
 
             game = await game_repo.is_available(id=prev_game_id,
@@ -122,8 +122,8 @@ class QueueInService:
                          user_info: LobbyUserInfo) -> bool:
         logger.debug("game_id: %s, user_info: %s", game_id, user_info)
 
-        async with self._game_cache_repo.lock(game_id):
-            new_player = await self._game_cache_repo.add_player(
+        async with self._lobby_cache_repo.lock(game_id):
+            new_player = await self._lobby_cache_repo.add_player(
                 game_id=game_id, user_info=user_info)
 
         if new_player:
@@ -159,8 +159,8 @@ class QueueInService:
 
         start_time = datetime.now(UTC) + timedelta(
             seconds=self._setting.game.lobby_countdown)
-        await self._game_cache_repo.set_start_time(game_id=game_id,
-                                                   start_time=start_time)
+        await self._lobby_cache_repo.set_start_time(game_id=game_id,
+                                                    start_time=start_time)
 
     async def _create_game(self, game_repo: GameRepo) -> int:
         game = await game_repo.create(game_type=GameType.MULTI,
@@ -284,7 +284,7 @@ class QueueInService:
                 await session.commit()
 
             # extend game cache expiration
-            await self._game_cache_repo.touch_cache(
+            await self._lobby_cache_repo.touch_cache(
                 game_id=game_id,
                 ex=self._setting.redis.in_game_cache_expire_time)
 

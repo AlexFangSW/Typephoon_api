@@ -10,7 +10,7 @@ from ..types.enums import CookieNames
 
 from ..services.lobby import LobbyService
 
-from ..repositories.game_cache import GameCacheRepo
+from ..repositories.lobby_cache import LobbyCacheRepo
 
 from ..repositories.guest_token import GuestTokenRepo
 
@@ -78,10 +78,10 @@ async def get_auth_service(request: Request) -> AuthService:
 
 async def get_lobby_service(request: Request) -> LobbyService:
     app: TypephoonServer = request.app
-    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
-                                    setting=app.setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=app.redis_conn,
+                                      setting=app.setting)
     service = LobbyService(setting=app.setting,
-                           game_cache_repo=game_cache_repo,
+                           lobby_cache_repo=lobby_cache_repo,
                            background_bucket=app.lobby_background_bucket,
                            amqp_notify_exchange=app.amqp_notify_exchange,
                            sessionmaker=app.sessionmaker)
@@ -95,8 +95,8 @@ async def get_queue_in_service(request: Request) -> QueueInService:
     token_validator = TokenValidator(app.setting)
     guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn,
                                       setting=app.setting)
-    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
-                                    setting=app.setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=app.redis_conn,
+                                      setting=app.setting)
 
     service = QueueInService(setting=app.setting,
                              token_validator=token_validator,
@@ -106,7 +106,7 @@ async def get_queue_in_service(request: Request) -> QueueInService:
                              sessionmaker=app.sessionmaker,
                              amqp_notify_exchange=app.amqp_notify_exchange,
                              amqp_default_exchange=app.amqp_default_exchange,
-                             game_cache_repo=game_cache_repo)
+                             lobby_cache_repo=lobby_cache_repo)
     return service
 
 

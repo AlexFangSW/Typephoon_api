@@ -12,11 +12,10 @@ from ...orm.game import GameStatus, GameType
 
 from ...repositories.game import GameRepo
 
-from ...lib.lobby.lobby_background import LobbyBackground
 from ...types.common import LobbyUserInfo
 
 from ...lib.lobby.lobby_manager import LobbyBackgroundManager
-from ...repositories.game_cache import GameCacheRepo
+from ...repositories.lobby_cache import LobbyCacheRepo
 from ...services.lobby import LobbyService
 from ..helper import *
 
@@ -26,14 +25,14 @@ async def test_lobby_service_leave(
         setting: Setting, redis_conn: Redis,
         sessionmaker: async_sessionmaker[AsyncSession]):
 
-    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     background_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
         LobbyBackgroundManager)
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
 
     service = LobbyService(setting=setting,
-                           game_cache_repo=game_cache_repo,
+                           lobby_cache_repo=lobby_cache_repo,
                            background_bucket=background_bucket,
                            amqp_notify_exchange=amqp_notify_exchange,
                            sessionmaker=sessionmaker)
@@ -48,12 +47,12 @@ async def test_lobby_service_leave(
         await game_repo.increase_player_count(game_id)
         await session.commit()
 
-    await game_cache_repo.add_player(game_id=game_id,
-                                     user_info=LobbyUserInfo(id=user_id,
-                                                             name="name"))
+    await lobby_cache_repo.add_player(game_id=game_id,
+                                      user_info=LobbyUserInfo(id=user_id,
+                                                              name="name"))
 
     # check
-    players = await game_cache_repo.get_players(game_id)
+    players = await lobby_cache_repo.get_players(game_id)
     assert players
     assert len(players.keys()) == 1
     async with sessionmaker() as session:
@@ -66,7 +65,7 @@ async def test_lobby_service_leave(
     await service.leave(user_id=user_id, game_id=game_id)
 
     # check
-    players = await game_cache_repo.get_players(game_id)
+    players = await lobby_cache_repo.get_players(game_id)
     assert players == {}
     async with sessionmaker() as session:
         game_repo = GameRepo(session)

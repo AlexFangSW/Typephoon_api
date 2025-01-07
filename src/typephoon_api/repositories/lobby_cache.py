@@ -11,22 +11,22 @@ from ..types.common import LobbyUserInfo
 logger = getLogger(__name__)
 
 
-class GameCacheType(StrEnum):
+class LobbyCacheType(StrEnum):
     PLAYERS = "players"
     COUNTDOWN = "countdown"
 
 
-class GameCacheRepo:
+class LobbyCacheRepo:
 
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
         self._redis_conn = redis_conn
         self._setting = setting
 
-    def _gen_cache_key(self, game_id: int, cache_type: GameCacheType) -> str:
-        return f"game-cache-{cache_type}-{game_id}"
+    def _gen_cache_key(self, game_id: int, cache_type: LobbyCacheType) -> str:
+        return f"lobby-cache-{cache_type}-{game_id}"
 
     def _gen_lock_key(self, game_id: str) -> str:
-        return f"game-cache-{game_id}-lock"
+        return f"lobby-cache-{game_id}-lock"
 
     @asynccontextmanager
     async def lock(self, game_id: int):
@@ -47,7 +47,7 @@ class GameCacheRepo:
         ```
         """
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+                                  cache_type=LobbyCacheType.PLAYERS)
         new_player = False
 
         # get current status
@@ -69,7 +69,7 @@ class GameCacheRepo:
 
     async def is_new_player(self, game_id: int, user_id: str) -> bool:
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+                                  cache_type=LobbyCacheType.PLAYERS)
         new_player = False
         ret = await self._redis_conn.get(name=key)
 
@@ -88,9 +88,9 @@ class GameCacheRepo:
         Update the expire time
         """
         player_key = self._gen_cache_key(game_id=game_id,
-                                         cache_type=GameCacheType.PLAYERS)
+                                         cache_type=LobbyCacheType.PLAYERS)
         countdown_key = self._gen_cache_key(game_id=game_id,
-                                            cache_type=GameCacheType.COUNTDOWN)
+                                            cache_type=LobbyCacheType.COUNTDOWN)
         pipeline = self._redis_conn.pipeline()
         pipeline.expire(player_key, time=ex)
         pipeline.expire(countdown_key, time=ex)
@@ -101,7 +101,7 @@ class GameCacheRepo:
         Set start time for countdown pooling
         """
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.COUNTDOWN)
+                                  cache_type=LobbyCacheType.COUNTDOWN)
 
         await self._redis_conn.set(name=key,
                                    value=start_time.isoformat(),
@@ -112,7 +112,7 @@ class GameCacheRepo:
         Get start time for countdown pooling
         """
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.COUNTDOWN)
+                                  cache_type=LobbyCacheType.COUNTDOWN)
 
         ret: bytes = await self._redis_conn.get(name=key)
         if not ret:
@@ -125,16 +125,16 @@ class GameCacheRepo:
         """
         Clear all cache for the game
         """
-        player_cache_key = self._gen_cache_key(game_id=game_id,
-                                               cache_type=GameCacheType.PLAYERS)
+        player_cache_key = self._gen_cache_key(
+            game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         countdown_cache_key = self._gen_cache_key(
-            game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
+            game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
 
         await self._redis_conn.delete(player_cache_key, countdown_cache_key)
 
     async def remove_player(self, game_id: int, user_id: str):
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+                                  cache_type=LobbyCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
         if not ret:
             logger.warning("game not found, game_id: %s", game_id)
@@ -149,7 +149,7 @@ class GameCacheRepo:
     async def get_players(self,
                           game_id: int) -> dict[str, LobbyUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+                                  cache_type=LobbyCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
         if not ret:
             logger.warning("game not found, game_id: %s", game_id)

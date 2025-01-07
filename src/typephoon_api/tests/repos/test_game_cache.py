@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 
 from ...types.common import LobbyUserInfo
 
-from ...repositories.game_cache import GameCacheRepo, GameCacheType
+from ...repositories.lobby_cache import LobbyCacheRepo, LobbyCacheType
 
 from ..helper import *
 
@@ -19,7 +19,7 @@ async def test_game_cache_repo_add_players(redis_conn: Redis, setting: Setting):
     ]
 
     # add players
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     for player in players:
         ret = await repo.add_player(game_id=dummy_game_id, user_info=player)
         assert ret
@@ -29,7 +29,7 @@ async def test_game_cache_repo_add_players(redis_conn: Redis, setting: Setting):
 
     # check
     key = repo._gen_cache_key(game_id=dummy_game_id,
-                              cache_type=GameCacheType.PLAYERS)
+                              cache_type=LobbyCacheType.PLAYERS)
     ret = await redis_conn.get(key)
     assert ret
     data: dict = json.loads(ret)
@@ -47,7 +47,7 @@ async def test_game_cache_repo_get_players(redis_conn: Redis, setting: Setting):
     ]
 
     # add players
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     for player in players:
         await repo.add_player(game_id=dummy_game_id, user_info=player)
 
@@ -68,7 +68,7 @@ async def test_game_cache_repo_remove_players(redis_conn: Redis,
     ]
 
     # add players
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     for player in players:
         await repo.add_player(game_id=dummy_game_id, user_info=player)
 
@@ -95,7 +95,7 @@ async def test_game_cache_repo_is_new_player(redis_conn: Redis,
     ]
 
     # add players
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     for player in players:
         await repo.add_player(game_id=dummy_game_id, user_info=player)
 
@@ -113,11 +113,11 @@ async def test_game_cache_repo_is_new_player(redis_conn: Redis,
 async def test_game_cache_repo_set_start_time(redis_conn: Redis,
                                               setting: Setting):
     dummy_game_id = 123123
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
 
     key = repo._gen_cache_key(game_id=dummy_game_id,
-                              cache_type=GameCacheType.COUNTDOWN)
+                              cache_type=LobbyCacheType.COUNTDOWN)
     ret: bytes = await redis_conn.get(key)
     assert ret
     assert datetime.fromisoformat(ret.decode()) == NOW
@@ -127,7 +127,7 @@ async def test_game_cache_repo_set_start_time(redis_conn: Redis,
 async def test_game_cache_repo_get_start_time(redis_conn: Redis,
                                               setting: Setting):
     dummy_game_id = 123123
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
 
     ret = await repo.get_start_time(game_id=dummy_game_id)
@@ -139,7 +139,7 @@ async def test_game_cache_repo_get_start_time(redis_conn: Redis,
 async def test_game_cache_repo_clear_cache(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
 
-    repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
+    repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     # set cache
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
     await repo.add_player(game_id=dummy_game_id,

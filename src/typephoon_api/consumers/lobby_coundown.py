@@ -8,7 +8,7 @@ from aio_pika import Message
 
 from ..types.errors import PublishNotAcknowledged
 
-from ..repositories.game_cache import GameCacheRepo, GameCacheType
+from ..repositories.lobby_cache import LobbyCacheRepo, LobbyCacheType
 
 from ..repositories.game import GameRepo
 
@@ -33,12 +33,6 @@ class LobbyCountdownConsumer(AbstractConsumer):
                       amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
-    async def _extend_game_cache_expiraton(self, game_id: int):
-        game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
-                                        setting=self._setting)
-        await game_cache_repo.touch_cache(
-            game_id=game_id, ex=self._setting.redis.in_game_cache_expire_time)
-
     async def _notify_all_users(self, game_id: int):
         notify_body = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
                                      game_id=game_id).slim_dump_json().encode()
@@ -57,7 +51,10 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
     async def _process(self, msg: LobbyNotifyMsg):
         await self._set_game_status(msg.game_id)
-        await self._extend_game_cache_expiraton(msg.game_id)
+        # await self._extend_game_cache_expiraton(msg.game_id)
+
+        # TODO: migrate from LobbyCache to GameCache
+
         await self._notify_all_users(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
