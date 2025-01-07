@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from redis.asyncio import Redis
 from enum import StrEnum
@@ -92,11 +92,15 @@ class GameCacheRepo:
         # countdown cache
         lobby_start_time = await lobby_cache_repo.get_start_time(game_id)
         if lobby_start_time:
+            game_start_time = lobby_start_time + timedelta(
+                seconds=self._setting.game.start_countdown)
+
             start_time_key = self._gen_cache_key(
                 game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
+
             await self._redis_conn.set(
                 name=start_time_key,
-                value=lobby_start_time.isoformat(),
+                value=game_start_time.isoformat(),
                 ex=self._setting.redis.in_game_cache_expire_time)
         else:
             logger.warning("lobby start time cache not found")

@@ -1,3 +1,4 @@
+from datetime import timedelta
 import pytest
 from redis.asyncio import Redis
 
@@ -40,7 +41,8 @@ async def test_game_cache_repo_populate_with_lobby_cache(
                                                        name=player.name)
 
     game_start_time = await game_repo.get_start_time(dummy_game_id)
-    assert game_start_time == NOW
+    assert game_start_time == NOW + timedelta(
+        seconds=setting.game.start_countdown)
 
 
 @pytest.mark.asyncio
@@ -74,7 +76,8 @@ async def test_game_cache_repo_populate_with_lobby_cache_auto_clean(
                                                        name=player.name)
 
     game_start_time = await game_repo.get_start_time(dummy_game_id)
-    assert game_start_time == NOW
+    assert game_start_time == NOW + timedelta(
+        seconds=setting.game.start_countdown)
 
     assert not await lobby_repo.get_players(dummy_game_id)
     assert not await lobby_repo.get_start_time(dummy_game_id)
