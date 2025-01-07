@@ -4,6 +4,8 @@ from typing import Annotated
 from fastapi import Cookie, Request
 from jwt.exceptions import PyJWTError
 
+from ..repositories.game_cache import GameCacheRepo
+
 from ..types.jwt import JWTPayload
 
 from ..types.enums import CookieNames
@@ -97,6 +99,8 @@ async def get_queue_in_service(request: Request) -> QueueInService:
                                       setting=app.setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=app.redis_conn,
                                       setting=app.setting)
+    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
+                                    setting=app.setting)
 
     service = QueueInService(setting=app.setting,
                              token_validator=token_validator,
@@ -106,6 +110,7 @@ async def get_queue_in_service(request: Request) -> QueueInService:
                              sessionmaker=app.sessionmaker,
                              amqp_notify_exchange=app.amqp_notify_exchange,
                              amqp_default_exchange=app.amqp_default_exchange,
+                             game_cache_repo=game_cache_repo,
                              lobby_cache_repo=lobby_cache_repo)
     return service
 
