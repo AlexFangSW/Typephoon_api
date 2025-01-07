@@ -94,6 +94,8 @@ pytest -v
             - data should exist in cache
 
 ## TODO
+Others:
+- `GameCacheRepo` should be `LobbyCacheRepo`
 Features:
 - lobby:
     - api for frontend to get lobby info
