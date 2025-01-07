@@ -44,12 +44,24 @@ class LobbyCountdownConsumer(AbstractConsumer):
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("game start notify publish failed")
 
-    async def _set_game_status(self, game_id: int):
+    async def _set_game_status(self, game_id: int) -> bool:
         async with self._sessionmaker() as session:
             game_repo = GameRepo(session=session,
                                  player_limit=self._setting.game.player_limit)
+
+            # check current status
+            game = await game_repo.get(game_id)
+            if not game:
+                logger.warning("game doesn't exist")
+                return False
+            if game.start_at is not None:
+                logger.debug("game already started")
+                return False
+
             await game_repo.start_game(game_id)
             await session.commit()
+
+        return True
 
     async def _populate_game_cache(self, game_id: int):
         game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
@@ -58,10 +70,12 @@ class LobbyCountdownConsumer(AbstractConsumer):
                                           setting=self._setting)
 
         await game_cache_repo.populate_with_lobby_cache(
-            game_id=game_id, lobby_cache_repo=lobby_cache_repo)
+            game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True)
 
     async def _process(self, msg: LobbyNotifyMsg):
-        await self._set_game_status(msg.game_id)
+        ok = await self._set_game_status(msg.game_id)
+        if not ok:
+            return
         await self._populate_game_cache(msg.game_id)
         await self._notify_all_users(msg.game_id)
 
