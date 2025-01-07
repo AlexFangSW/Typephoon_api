@@ -7,6 +7,8 @@ from jwt import PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..repositories.game_cache import GameCacheRepo
+
 from ..lib.lobby.base import LobbyBGNotifyMsg
 
 from ..types.amqp import LobbyCountdownMsg, LobbyNotifyType, LobbyNotifyMsg
@@ -63,6 +65,7 @@ class QueueInService:
         amqp_notify_exchange: AbstractExchange,
         amqp_default_exchange: AbstractExchange,
         lobby_cache_repo: LobbyCacheRepo,
+        game_cache_repo: GameCacheRepo,
     ) -> None:
         self._setting = setting
         self._token_generator = token_generator
@@ -73,6 +76,7 @@ class QueueInService:
         self._amqp_default_exchange = amqp_default_exchange
         self._amqp_notify_exchange = amqp_notify_exchange
         self._lobby_cache_repo = lobby_cache_repo
+        self._game_cache_repo = game_cache_repo
 
     async def _process_token(self, access_token: str | None) -> ProcessTokenRet:
         """
@@ -283,9 +287,8 @@ class QueueInService:
                 await game_repo.start_game(game_id)
                 await session.commit()
 
-            # extend game cache expiration
-            await self._lobby_cache_repo.touch_cache(
-                game_id=game_id,
-                ex=self._setting.redis.in_game_cache_expire_time)
+            # populate game cache
+            await self._game_cache_repo.populate_with_lobby_cache(
+                game_id=game_id, lobby_cache_repo=self._lobby_cache_repo)
 
             await self._send_start_msg(game_id)

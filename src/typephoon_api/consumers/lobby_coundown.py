@@ -6,9 +6,11 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from aio_pika import Message
 
+from ..repositories.game_cache import GameCacheRepo
+
 from ..types.errors import PublishNotAcknowledged
 
-from ..repositories.lobby_cache import LobbyCacheRepo, LobbyCacheType
+from ..repositories.lobby_cache import LobbyCacheRepo
 
 from ..repositories.game import GameRepo
 
@@ -49,12 +51,18 @@ class LobbyCountdownConsumer(AbstractConsumer):
             await game_repo.start_game(game_id)
             await session.commit()
 
+    async def _populate_game_cache(self, game_id: int):
+        game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
+                                        setting=self._setting)
+        lobby_cache_repo = LobbyCacheRepo(redis_conn=self._redis_conn,
+                                          setting=self._setting)
+
+        await game_cache_repo.populate_with_lobby_cache(
+            game_id=game_id, lobby_cache_repo=lobby_cache_repo)
+
     async def _process(self, msg: LobbyNotifyMsg):
         await self._set_game_status(msg.game_id)
-        # await self._extend_game_cache_expiraton(msg.game_id)
-
-        # TODO: migrate from LobbyCache to GameCache
-
+        await self._populate_game_cache(msg.game_id)
         await self._notify_all_users(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
