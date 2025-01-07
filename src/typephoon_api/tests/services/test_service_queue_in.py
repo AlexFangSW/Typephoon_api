@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...repositories.game_cache import GameCacheRepo
+
 from ...orm.game import GameStatus
 
 from ...types.amqp import LobbyCountdownMsg, LobbyNotifyMsg, LobbyNotifyType
@@ -44,6 +46,7 @@ async def test_service_queue_in(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
+    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_default_exchange: AbstractExchange = AsyncMock()
@@ -59,6 +62,7 @@ async def test_service_queue_in(
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
         amqp_default_exchange=amqp_default_exchange,
+        game_cache_repo=game_cache_repo,
         lobby_cache_repo=lobby_cache_repo,
     )
 
@@ -231,6 +235,10 @@ async def test_service_queue_in(
     ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
                         game_id=game_id)
 
+    # clean up
+    for game_id, manager in backgrond_bucket.items():
+        await manager.stop()
+
 
 @pytest.mark.asyncio
 async def test_service_queue_in_game_full(
@@ -244,6 +252,7 @@ async def test_service_queue_in_game_full(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
+    game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
 
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_default_exchange: AbstractExchange = AsyncMock()
@@ -259,6 +268,7 @@ async def test_service_queue_in_game_full(
         sessionmaker=sessionmaker,
         amqp_notify_exchange=amqp_notify_exchange,
         amqp_default_exchange=amqp_default_exchange,
+        game_cache_repo=game_cache_repo,
         lobby_cache_repo=lobby_cache_repo,
     )
 
@@ -288,3 +298,9 @@ async def test_service_queue_in_game_full(
         assert game
         assert game.player_count == setting.game.player_limit
         assert game.status == GameStatus.IN_GAME
+
+    # TODO: check game cache
+
+    # clean up
+    for game_id, manager in backgrond_bucket.items():
+        await manager.stop()
