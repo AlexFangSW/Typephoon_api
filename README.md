@@ -56,10 +56,10 @@ pytest -v
 - In game
     - websocket for in game
         - needs access_token (cookie) and game_id (query)
+        - also creates a background task like lobby
     - no reconnect, unless server says so, same as lobby reconnect.
     - In game countdown api
-        - start time + N seconds
-        - game type in query
+        - start time
     - In game
         - send each key stoke to server, server than broadcasts it 
             to all users. Frontend renders player location on reciving event.
@@ -95,11 +95,8 @@ pytest -v
 
 ## TODO
 Others:
-- `GameCacheRepo` should be `LobbyCacheRepo`
-Features:
-- lobby:
-    - api for frontend to get lobby info
 
+Features:
 - RabbitMQ deadletter policy for lobby countdown
     - random 
     - team
