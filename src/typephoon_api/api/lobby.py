@@ -3,15 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from starlette.applications import P
 
 from ..types.errors import InvalidCookieToken
 
-from ..orm.game import GameType
-
 from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
-
-from ..types.jwt import JWTPayload
 
 from ..services.lobby import LobbyService
 
