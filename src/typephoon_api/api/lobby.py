@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from starlette.applications import P
 
 from ..types.errors import InvalidCookieToken
 
@@ -58,7 +59,15 @@ async def queue_in(websocket: WebSocket,
         await websocket.close(reason=str(ex))
 
 
-@router.get("/players")
+@router.get("/players",
+            responses={
+                200: {
+                    "model": LobbyPlayersResponse
+                },
+                404: {
+                    "model": ErrorResponse
+                }
+            })
 @catch_error_async
 async def players(
     game_id: int,
@@ -86,7 +95,15 @@ async def players(
     return JSONResponse(msg, status_code=200)
 
 
-@router.post("/leave")
+@router.post("/leave",
+             responses={
+                 200: {
+                     "model": SuccessResponse
+                 },
+                 404: {
+                     "model": ErrorResponse
+                 }
+             })
 @catch_error_async
 async def leave(
     game_id: int,
@@ -111,7 +128,15 @@ async def leave(
     return JSONResponse(msg, status_code=200)
 
 
-@router.get("/countdown")
+@router.get("/countdown",
+            responses={
+                200: {
+                    "model": LobbyCountdownResponse
+                },
+                404: {
+                    "model": ErrorResponse
+                }
+            })
 @catch_error_async
 async def get_countdown(game_id: int,
                         service: LobbyService = Depends(get_lobby_service)):
