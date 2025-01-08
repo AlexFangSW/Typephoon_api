@@ -36,7 +36,6 @@ from .token_generator import TokenGenerator
 from ..services.auth import AuthService
 from .server import TypephoonServer
 from ..services.health_check import HealthCheckService
-from . import token_validator
 
 logger = getLogger(__name__)
 
