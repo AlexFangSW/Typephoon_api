@@ -36,7 +36,7 @@ router = APIRouter(tags=["Lobby"],
 
 @router.websocket("/queue-in/ws")
 async def queue_in(websocket: WebSocket,
-                   prev_game_id: int | None,
+                   prev_game_id: int | None = None,
                    queue_in_type: Annotated[QueueInType,
                                             Query()] = QueueInType.NEW,
                    service: QueueInService = Depends(get_queue_in_service)):
