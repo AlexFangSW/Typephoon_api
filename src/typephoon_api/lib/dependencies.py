@@ -4,6 +4,10 @@ from typing import Annotated
 from fastapi import Cookie, Request
 from jwt.exceptions import PyJWTError
 
+from ..services.game import GameService
+
+from ..services.game_evnet import GameEventService
+
 from ..repositories.game_cache import GameCacheRepo
 
 from ..types.jwt import JWTPayload
@@ -113,6 +117,14 @@ async def get_queue_in_service(request: Request) -> QueueInService:
                              game_cache_repo=game_cache_repo,
                              lobby_cache_repo=lobby_cache_repo)
     return service
+
+
+async def get_game_event_service() -> GameEventService:
+    ...
+
+
+async def get_game_service() -> GameService:
+    ...
 
 
 def get_setting(request: Request) -> Setting:

@@ -20,6 +20,8 @@ from ..lib.dependencies import GetAccessTokenInfoRet, get_access_token_info, get
 
 from ..lib.util import catch_error_async
 
+logger = getLogger(__name__)
+
 router = APIRouter(tags=["Lobby"],
                    prefix="/lobby",
                    responses={
@@ -31,12 +33,10 @@ router = APIRouter(tags=["Lobby"],
                        }
                    })
 
-logger = getLogger(__name__)
-
 
 @router.websocket("/queue-in/ws")
 async def queue_in(websocket: WebSocket,
-                   prev_game_id: Annotated[int | None, Query()],
+                   prev_game_id: int | None,
                    queue_in_type: Annotated[QueueInType,
                                             Query()] = QueueInType.NEW,
                    service: QueueInService = Depends(get_queue_in_service)):
