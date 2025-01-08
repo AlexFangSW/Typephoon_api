@@ -11,7 +11,7 @@ from ..lib.dependencies import GetAccessTokenInfoRet, get_access_token_info, get
 
 from ..services.game import GameService
 
-from ..services.game_evnet import GameEventService
+from ..services.game_event import GameEventService
 
 from ..types.requests.game import GameStatistics
 

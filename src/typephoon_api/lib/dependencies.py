@@ -6,7 +6,7 @@ from jwt.exceptions import PyJWTError
 
 from ..services.game import GameService
 
-from ..services.game_evnet import GameEventService
+from ..services.game_event import GameEventService
 
 from ..repositories.game_cache import GameCacheRepo
 
