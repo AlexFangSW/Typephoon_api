@@ -1,5 +1,4 @@
 from datetime import datetime
-from os import access
 
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession

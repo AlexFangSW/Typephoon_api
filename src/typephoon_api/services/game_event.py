@@ -1,6 +1,12 @@
+from collections import defaultdict
 from logging import getLogger
-from fastapi import WebSocket
+from fastapi import WebSocket, background
 from jwt.exceptions import PyJWTError
+
+from ..lib.game.game_background import GameBackground
+from ..types.common import GameUserInfo
+
+from ..lib.game.game_manager import GameBackgroundManager
 
 from ..repositories.game_cache import GameCacheRepo
 
@@ -12,10 +18,13 @@ logger = getLogger(__name__)
 
 class GameEventService:
 
-    def __init__(self, token_validator: TokenValidator,
-                 game_cache_repo: GameCacheRepo) -> None:
+    def __init__(
+            self, token_validator: TokenValidator,
+            game_cache_repo: GameCacheRepo,
+            background_bucket: defaultdict[int, GameBackgroundManager]) -> None:
         self._token_validator = token_validator
         self._game_cache_repo = game_cache_repo
+        self._background_bucket = background_bucket
 
     async def process(
         self,
@@ -48,14 +57,15 @@ class GameEventService:
             await websocket.close(reason=WSCloseReason.GAME_NOT_FOUND)
             return
 
-        if current_user.sub not in players:
+        user_id = current_user.sub
+        if user_id not in players:
             logger.warning(
                 "user does not participate in this game, game_id: %s, user_id: %s, users in this game: %s",
-                game_id, current_user.sub, players.keys())
+                game_id, user_id, players.keys())
             await websocket.close(reason=WSCloseReason.NOT_A_PARTICIPANT)
             return
 
-        # TODO: add to background task
-        ...
-
-    ...
+        # add to background task
+        bg = GameBackground(websocket=websocket, user_info=players[user_id])
+        await bg.start()
+        await self._background_bucket[game_id].add(bg)

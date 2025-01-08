@@ -1,0 +1,32 @@
+from logging import getLogger
+
+from .base import GameBGNotifyMsg
+
+from .game_background import GameBackground
+
+logger = getLogger(__name__)
+
+
+class GameBackgroundManager:
+
+    def __init__(self) -> None:
+        self._background_tasks: dict[str, GameBackground] = {}
+
+    async def add(self, bg: GameBackground):
+        self._background_tasks[bg.user_info.id] = bg
+
+    async def remove(self, user_id: str):
+        bg = self._background_tasks.get(user_id)
+        if not bg:
+            return
+
+        await bg.stop()
+        self._background_tasks.pop(user_id)
+
+    async def broadcast(self, msg: GameBGNotifyMsg):
+        for _, bg in self._background_tasks.items():
+            await bg.notifiy(msg)
+
+    async def stop(self, final_msg: GameBGNotifyMsg | None = None):
+        for _, bg in self._background_tasks.items():
+            await bg.stop(final_msg)

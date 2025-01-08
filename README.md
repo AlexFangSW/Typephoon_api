@@ -97,10 +97,8 @@ pytest -v
 Others:
 
 Features:
-
-- background manager and tasks for "in game"
 - consumer for "in game" notification
-- add user to background_bucket on ws connection
+- handle background task errors
 
 - RabbitMQ deadletter policy for lobby countdown
     - random 

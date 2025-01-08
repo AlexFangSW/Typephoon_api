@@ -8,6 +8,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
+from .game.game_manager import GameBackgroundManager
+
 from .lobby.base import LobbyBGNotifyMsg
 from ..types.amqp import LobbyNotifyType
 
@@ -67,6 +69,10 @@ class TypephoonServer(FastAPI):
         # lobby background tasks (key: game_id)
         self._lobby_background_bucket: defaultdict[
             int, LobbyBackgroundManager] = defaultdict(LobbyBackgroundManager)
+
+        # in game background tasks (key: game_id)
+        self._game_background_bucket: defaultdict[
+            int, GameBackgroundManager] = defaultdict(GameBackgroundManager)
 
         self._lobby_countdown_consumer = LobbyCountdownConsumer(
             setting=self._setting,

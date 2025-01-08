@@ -2,6 +2,19 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 
+class GameNotifyType(StrEnum):
+    KEY_STROKE = "KEY_STROKE"
+
+
+class GameNotifyMsg(BaseModel):
+    notify_type: GameNotifyType
+    game_id: int
+    user_id: str
+
+    def slim_dump_json(self) -> str:
+        return self.model_dump_json(exclude_none=True)
+
+
 class LobbyNotifyType(StrEnum):
     INIT = "INIT"
     USER_JOINED = "USER_JOINED"
