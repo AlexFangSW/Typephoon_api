@@ -56,4 +56,8 @@ class AMQPManager:
             durable=True,
             arguments={"x-queue-type": "quorum"})
 
+        await channel.declare_queue(name=self._setting.amqp.game_event_queue,
+                                    durable=True,
+                                    arguments={"x-queue-type": "quorum"})
+
         await channel.close()
