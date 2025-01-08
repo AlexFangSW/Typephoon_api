@@ -62,6 +62,8 @@ class GameService:
         self._sessionmaker = sessionmaker
 
     async def get_countdown(self, game_id: int) -> ServiceRet[float]:
+        logger.debug("game_id: %s", game_id)
+
         start_time = await self._game_cache_repo.get_start_time(game_id)
         if not start_time:
             logger.warning("start time not found, game_id: %s", game_id)
@@ -74,6 +76,9 @@ class GameService:
     async def write_statistics(self, statistics: GameStatistics, user_id: str,
                                username: str,
                                user_type: UserType) -> ServiceRet:
+        logger.debug("statistics: %s, user_id: %s, username: %s, user_type: %s",
+                     statistics.model_dump_json(), user_id, username,
+                     str(user_type))
 
         # write to database
         async with self._sessionmaker() as session:
@@ -120,6 +125,8 @@ class GameService:
         return ServiceRet(ok=True)
 
     async def get_result(self, game_id: int) -> ServiceRet[GetResultRet]:
+        logger.debug("game_id: %s", game_id)
+
         players = await self._game_cache_repo.get_players(game_id)
         if not players:
             logger.warning("start time not found, game_id: %s", game_id)
