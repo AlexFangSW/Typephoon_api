@@ -237,6 +237,7 @@ class QueueInService:
         try:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
             process_token_ret = await self._process_token(access_token)
+            await websocket.accept()
         except PyJWTError as ex:
             logger.warning("invalid token, error: %s", str(ex))
             await websocket.close(reason=WSCloseReason.INVALID_TOKEN)

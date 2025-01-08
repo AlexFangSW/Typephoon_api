@@ -45,7 +45,6 @@ async def queue_in(websocket: WebSocket,
     This endpoint is reponsible for sending lobby related events to users.
     """
     try:
-        await websocket.accept()
         await service.queue_in(websocket=websocket,
                                queue_in_type=queue_in_type,
                                prev_game_id=prev_game_id)
