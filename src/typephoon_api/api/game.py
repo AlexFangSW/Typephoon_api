@@ -1,6 +1,10 @@
 from logging import getLogger
 from typing import Annotated
 from fastapi import APIRouter, Depends, Query, WebSocket
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+
+from ..types.errors import InvalidCookieToken
 
 from ..lib.util import catch_error_async
 
@@ -12,11 +16,11 @@ from ..services.game_evnet import GameEventService
 
 from ..types.requests.game import GameStatistics
 
-from ..types.responses.game import GameCountdownResponse, GameResult
+from ..types.responses.game import GameCountdownResponse, GameResultResponse
 
-from ..types.enums import WSConnectionType
+from ..types.enums import ErrorCode, WSConnectionType
 
-from ..types.responses.base import ErrorResponse
+from ..types.responses.base import ErrorResponse, SuccessResponse
 
 logger = getLogger(__name__)
 
@@ -34,7 +38,7 @@ router = APIRouter(tags=["Game"],
 
 @router.websocket("/ws")
 async def ws(websocket: WebSocket,
-             prev_game_id: int | None,
+             prev_game_id: int | None = None,
              connection_type: Annotated[WSConnectionType,
                                         Query()] = WSConnectionType.NEW,
              service: GameEventService = Depends(get_game_event_service)):
@@ -42,7 +46,9 @@ async def ws(websocket: WebSocket,
     - send and recive each key stroke
     """
     try:
-        ...
+        await service.process(websocket=websocket,
+                              connection_type=connection_type,
+                              prev_game_id=prev_game_id)
     except Exception as ex:
         logger.exception("something went wrong")
         await websocket.close(reason=str(ex))
@@ -55,10 +61,22 @@ async def countdown(game_id: int,
     """
     game countdown in seconds
     """
-    ...
+    ret = await service.get_countdown(game_id)
+
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data
+    msg = jsonable_encoder(GameCountdownResponse(seconds_left=ret.data))
+    return JSONResponse(msg, status_code=200)
 
 
-@router.post("/statistics")
+@router.post("/statistics", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def statistics(
     statistics: GameStatistics,
@@ -69,10 +87,25 @@ async def statistics(
     - WPM, ACC ... etc
     - The ranking will be decided here
     """
-    ...
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
+
+    assert current_user.payload
+    ret = await service.write_statistics(statistics=statistics,
+                                         user_id=current_user.payload.sub)
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=400)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    msg = jsonable_encoder(SuccessResponse())
+    return JSONResponse(msg, status_code=200)
 
 
-@router.get("/result", responses={200: {"model": GameResult}})
+@router.get("/result", responses={200: {"model": GameResultResponse}})
 @catch_error_async
 async def result(game_id: int,
                  service: GameService = Depends(get_game_service)):
@@ -80,4 +113,16 @@ async def result(game_id: int,
     information for the result of this game
     - ranking, wpm, acc ... etc
     """
-    ...
+    ret = await service.get_result(game_id)
+
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data
+    msg = jsonable_encoder(GameResultResponse(ranking=ret.data.ranking))
+    return JSONResponse(msg, status_code=200)

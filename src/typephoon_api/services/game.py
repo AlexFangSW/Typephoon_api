@@ -16,7 +16,13 @@ class GetResultRetItem:
 
 @dataclass(slots=True)
 class GetResultRet:
+    """
+    players are sorted by their ranking
+    """
     ranking: list[GetResultRetItem] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.ranking = sorted(self.ranking, key=lambda x: x.ranking)
 
 
 class GameService:

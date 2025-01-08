@@ -1,13 +1,15 @@
 from pydantic import Field
+
 from .base import SuccessResponse
+from ...services.game import GetResultRetItem
 
 
 class GameCountdownResponse(SuccessResponse):
     seconds_left: float
 
 
-class GameResult(SuccessResponse):
+class GameResultResponse(SuccessResponse):
     """
     players: sorted by rank
     """
-    players: list = Field(default_factory=list)
+    ranking: list[GetResultRetItem] = Field(default_factory=list)
