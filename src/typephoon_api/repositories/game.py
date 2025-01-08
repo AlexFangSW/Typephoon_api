@@ -13,8 +13,10 @@ class GameRepo:
         self._session = session
         self._player_limit = player_limit
 
-    async def get(self, id: int) -> Game | None:
+    async def get(self, id: int, lock: bool = False) -> Game | None:
         query = select(Game).where(Game.id == id)
+        if lock:
+            query = query.with_for_update()
         return await self._session.scalar(query)
 
     async def start_game(self, id: int):

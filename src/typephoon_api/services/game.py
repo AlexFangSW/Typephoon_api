@@ -1,9 +1,14 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
+from os import stat
 from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from ..repositories.game import GameRepo
+
+from ..repositories.game_result import GameResultRepo
 
 from ..types.common import ErrorContext, GameUserInfo
 from ..types.enums import ErrorCode
@@ -67,11 +72,28 @@ class GameService:
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
         return ServiceRet(ok=True, data=seconds_left)
 
+    # TODO: xxxx
     async def write_statistics(self, statistics: GameStatistics,
                                user_id: str) -> ServiceRet:
         # write to database
         async with self._sessionmaker() as session:
-            ...
+            game_repo = GameRepo(session)
+            game = await game_repo.get(id=statistics.game_id, lock=True)
+            if not game:
+                logger.warning("game not found, game_id: %s", game)
+                return ServiceRet(
+                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+
+            result_repo = GameResultRepo(session)
+            game_result = await result_repo.create(
+                game_id=statistics.game_id,
+                user_id=user_id,
+                rank=999,
+                wpm_raw=statistics.wpm_raw,
+                wpm_currect=statistics.wpm,
+                accuracy=statistics.acc,
+                finished_at=datetime.now(UTC),
+            )
 
             await session.commit()
 
