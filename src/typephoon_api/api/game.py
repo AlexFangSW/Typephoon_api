@@ -38,17 +38,13 @@ router = APIRouter(tags=["Game"],
 
 @router.websocket("/ws")
 async def ws(websocket: WebSocket,
-             prev_game_id: int | None = None,
-             connection_type: Annotated[WSConnectionType,
-                                        Query()] = WSConnectionType.NEW,
+             game_id: int,
              service: GameEventService = Depends(get_game_event_service)):
     """
     - send and recive each key stroke
     """
     try:
-        await service.process(websocket=websocket,
-                              connection_type=connection_type,
-                              prev_game_id=prev_game_id)
+        await service.process(websocket=websocket, game_id=game_id)
     except Exception as ex:
         logger.exception("something went wrong")
         await websocket.close(reason=str(ex))

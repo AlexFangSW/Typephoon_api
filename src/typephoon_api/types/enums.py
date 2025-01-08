@@ -17,6 +17,9 @@ class CookieNames(StrEnum):
 
 class WSCloseReason(StrEnum):
     INVALID_TOKEN = "INVALID_TOKEN"
+    ACCESS_TOKEN_NOT_FOUND = "ACCESS_TOKEN_NOT_FOUND"
+    GAME_NOT_FOUND = "GAME_NOT_FOUND"
+    NOT_A_PARTICIPANT = "NOT_A_PARTICIPANT"
 
 
 class UserType(StrEnum):
@@ -24,12 +27,6 @@ class UserType(StrEnum):
     REGISTERED = "REGISTERED"
 
 
-# NOTE: replace QueueInType with WSConnectionType ?
 class QueueInType(StrEnum):
-    RECONNECT = "reconnect"
-    NEW = "new"
-
-
-class WSConnectionType(StrEnum):
     RECONNECT = "reconnect"
     NEW = "new"
