@@ -140,7 +140,9 @@ class GetAccessTokenInfoRet:
 
 def get_access_token_info(
     request: Request,
-    access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)]
+    access_token: Annotated[
+        str,
+        Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")],
 ) -> GetAccessTokenInfoRet:
     """
     validate 'access' token and return payload

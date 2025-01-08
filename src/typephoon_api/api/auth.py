@@ -80,8 +80,11 @@ async def login_redirect(
 @router.post("/logout", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def logout(
-    access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)],
-    service: AuthService = Depends(get_auth_service)):
+        access_token: Annotated[
+            str,
+            Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")],
+        service: AuthService = Depends(get_auth_service),
+):
 
     ret = await service.logout(access_token=access_token)
 
@@ -107,9 +110,12 @@ async def logout(
              })
 @catch_error_async
 async def token_refresh(
-    refresh_token: Annotated[str, Cookie(alias=CookieNames.REFRESH_TOKEN)],
-    setting: Setting = Depends(get_setting),
-    service: AuthService = Depends(get_auth_service)):
+        refresh_token: Annotated[str,
+                                 Cookie(alias=CookieNames.REFRESH_TOKEN,
+                                        description="refresh token")],
+        setting: Setting = Depends(get_setting),
+        service: AuthService = Depends(get_auth_service),
+):
 
     ret = await service.token_refresh(refresh_token)
 

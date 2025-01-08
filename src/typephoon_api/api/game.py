@@ -85,7 +85,7 @@ async def statistics(
     """
     on finish, users will send their statistics to the server
     - WPM, ACC ... etc
-    - The ranking will be decided here
+    - The ranking will be decided here by the server
     """
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
