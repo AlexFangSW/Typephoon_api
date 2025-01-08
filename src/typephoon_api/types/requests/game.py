@@ -6,4 +6,3 @@ class GameStatistics(BaseModel):
     wpm: float
     wpm_raw: float
     acc: float
-    acc_raw: float

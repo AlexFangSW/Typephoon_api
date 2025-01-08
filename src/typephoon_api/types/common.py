@@ -27,7 +27,6 @@ class GameUserInfo(BaseModel):
     wpm: float | None = None
     wpm_raw: float | None = None
     acc: float | None = None
-    acc_raw: float | None = None
 
     @classmethod
     def from_lobby_cache(cls, inpt: LobbyUserInfo) -> Self:

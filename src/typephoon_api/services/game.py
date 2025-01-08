@@ -25,7 +25,6 @@ class GetResultRetItem:
     wpm: float | None = None
     wpm_raw: float | None = None
     acc: float | None = None
-    acc_raw: float | None = None
 
     @classmethod
     def from_game_cache(cls, inpt: GameUserInfo) -> Self:
@@ -37,7 +36,6 @@ class GetResultRetItem:
             wpm=inpt.wpm,
             wpm_raw=inpt.wpm_raw,
             acc=inpt.acc,
-            acc_raw=inpt.acc_raw,
         )
 
 
