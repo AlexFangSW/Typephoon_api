@@ -96,9 +96,21 @@ pytest -v
 Others:
 
 Features:
-- consumer for "in game" notification
-- handle background task errors
-- add amqp setttings and queue related to in game
+- General
+    - handle background task errors
+
+- In Game:
+    - consumer for "in game" notification
+    - background tasks for in game needs to send amqp message
+    - add amqp setttings and queue related to in game
+        - fantout `game.event` exchange 
+        - per server `game.event.<server-name>` queue 
+    - tests for in game related stuff
+        - api 
+        - ws
+- Profile
+    - api 
+    - tests
 
 - RabbitMQ deadletter policy for lobby countdown
     - random 
