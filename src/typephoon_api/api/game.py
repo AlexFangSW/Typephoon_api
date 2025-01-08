@@ -1,6 +1,5 @@
 from logging import getLogger
-from typing import Annotated
-from fastapi import APIRouter, Depends, Query, WebSocket
+from fastapi import APIRouter, Depends, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -18,7 +17,7 @@ from ..types.requests.game import GameStatistics
 
 from ..types.responses.game import GameCountdownResponse, GameResultResponse
 
-from ..types.enums import ErrorCode, WSConnectionType
+from ..types.enums import ErrorCode
 
 from ..types.responses.base import ErrorResponse, SuccessResponse
 

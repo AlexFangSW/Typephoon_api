@@ -25,7 +25,7 @@ class LobbyNotifyConsumer(AbstractConsumer):
         self,
         setting: Setting,
         amqp_conn: AbstractRobustConnection,
-        background_bucket: defaultdict[str, LobbyBackgroundManager],
+        background_bucket: defaultdict[int, LobbyBackgroundManager],
     ) -> None:
         super().__init__(setting, amqp_conn)
         self._background_bucket = background_bucket
@@ -35,18 +35,16 @@ class LobbyNotifyConsumer(AbstractConsumer):
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
-        game_id = str(msg.game_id)
-
         bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type,
                                          user_id=msg.user_id)
 
         if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
-            logger.debug("game started, game_id: %s", game_id)
-            await self._background_bucket[game_id].stop(bg_notify_msg)
-            self._background_bucket.pop(game_id)
+            logger.debug("game started, game_id: %s", msg.game_id)
+            await self._background_bucket[msg.game_id].stop(bg_notify_msg)
+            self._background_bucket.pop(msg.game_id)
 
         else:
-            await self._background_bucket[game_id].broadcast(bg_notify_msg)
+            await self._background_bucket[msg.game_id].broadcast(bg_notify_msg)
 
     async def _on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")

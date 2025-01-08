@@ -66,7 +66,7 @@ class TypephoonServer(FastAPI):
 
         # lobby background tasks (key: game_id)
         self._lobby_background_bucket: defaultdict[
-            str, LobbyBackgroundManager] = defaultdict()
+            int, LobbyBackgroundManager] = defaultdict(LobbyBackgroundManager)
 
         self._lobby_countdown_consumer = LobbyCountdownConsumer(
             setting=self._setting,
@@ -135,7 +135,7 @@ class TypephoonServer(FastAPI):
 
     @property
     def lobby_background_bucket(
-            self) -> defaultdict[str, LobbyBackgroundManager]:
+            self) -> defaultdict[int, LobbyBackgroundManager]:
         return self._lobby_background_bucket
 
     @property

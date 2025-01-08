@@ -42,7 +42,7 @@ async def test_service_queue_in(
 ):
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
-    backgrond_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
+    backgrond_bucket: defaultdict[int, LobbyBackgroundManager] = defaultdict(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -132,7 +132,7 @@ async def test_service_queue_in(
         seconds=setting.game.lobby_countdown)
 
     # check background bucket
-    assert len(backgrond_bucket[str(game_id)]._background_tasks) == 1
+    assert len(backgrond_bucket[game_id]._background_tasks) == 1
 
     # ---------------------
     # find game (found)
@@ -161,7 +161,7 @@ async def test_service_queue_in(
     assert player_2 == ret[player_2.id]
 
     # check background bucket
-    assert len(backgrond_bucket[str(game_id)]._background_tasks) == 2
+    assert len(backgrond_bucket[game_id]._background_tasks) == 2
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -176,7 +176,7 @@ async def test_service_queue_in(
     # player_1 reconnect
     websocket.cookies = {CookieNames.ACCESS_TOKEN: player_1_access_token}
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
-    await backgrond_bucket[str(game_id)].remove(player_1.id)
+    await backgrond_bucket[game_id].remove(player_1.id)
 
     # run
     await service.queue_in(websocket=websocket,
@@ -196,7 +196,7 @@ async def test_service_queue_in(
     assert player_2 == ret[player_2.id]
 
     # check background bucket
-    assert len(backgrond_bucket[str(game_id)]._background_tasks) == 2
+    assert len(backgrond_bucket[game_id]._background_tasks) == 2
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -226,7 +226,7 @@ async def test_service_queue_in(
     assert len(ret.keys()) == 3
 
     # check background bucket
-    assert len(backgrond_bucket[str(game_id)]._background_tasks) == 3
+    assert len(backgrond_bucket[game_id]._background_tasks) == 3
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -248,7 +248,7 @@ async def test_service_queue_in_game_full(
 ):
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
-    backgrond_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
+    backgrond_bucket: defaultdict[int, LobbyBackgroundManager] = defaultdict(
         LobbyBackgroundManager)
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -289,8 +289,8 @@ async def test_service_queue_in_game_full(
 
     game_id = notify_msg.game_id
 
-    assert len(backgrond_bucket[str(
-        game_id)]._background_tasks) == setting.game.player_limit
+    assert len(backgrond_bucket[game_id]._background_tasks
+              ) == setting.game.player_limit
 
     async with sessionmaker() as session:
         repo = GameRepo(session)

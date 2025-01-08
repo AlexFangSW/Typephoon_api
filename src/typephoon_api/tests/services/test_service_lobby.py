@@ -1,8 +1,6 @@
-from collections import defaultdict
 from unittest.mock import AsyncMock
 
 from aio_pika.abc import AbstractExchange
-from alembic.util import status
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +12,6 @@ from ...repositories.game import GameRepo
 
 from ...types.common import LobbyUserInfo
 
-from ...lib.lobby.lobby_manager import LobbyBackgroundManager
 from ...repositories.lobby_cache import LobbyCacheRepo
 from ...services.lobby import LobbyService
 from ..helper import *
@@ -26,14 +23,11 @@ async def test_lobby_service_leave(
         sessionmaker: async_sessionmaker[AsyncSession]):
 
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
-    background_bucket: defaultdict[str, LobbyBackgroundManager] = defaultdict(
-        LobbyBackgroundManager)
     amqp_notify_exchange: AbstractExchange = AsyncMock()
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
 
     service = LobbyService(setting=setting,
                            lobby_cache_repo=lobby_cache_repo,
-                           background_bucket=background_bucket,
                            amqp_notify_exchange=amqp_notify_exchange,
                            sessionmaker=sessionmaker)
 

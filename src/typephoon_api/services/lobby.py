@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
@@ -11,8 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from ..types.errors import PublishNotAcknowledged
 
 from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
-
-from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from ..types.enums import ErrorCode
 
@@ -40,13 +37,11 @@ class LobbyService:
         setting: Setting,
         lobby_cache_repo: LobbyCacheRepo,
         sessionmaker: async_sessionmaker[AsyncSession],
-        background_bucket: defaultdict[str, LobbyBackgroundManager],
         amqp_notify_exchange: AbstractExchange,
     ) -> None:
         self._setting = setting
         self._lobby_cache_repo = lobby_cache_repo
         self._sessionmaker = sessionmaker
-        self._background_bucket = background_bucket
         self._amqp_notify_exchange = amqp_notify_exchange
 
     async def get_countdown(

@@ -59,7 +59,7 @@ class QueueInService:
         setting: Setting,
         token_generator: TokenGenerator,
         token_validator: TokenValidator,
-        background_bucket: defaultdict[str, LobbyBackgroundManager],
+        background_bucket: defaultdict[int, LobbyBackgroundManager],
         guest_token_repo: GuestTokenRepo,
         sessionmaker: async_sessionmaker[AsyncSession],
         amqp_notify_exchange: AbstractExchange,
@@ -194,7 +194,7 @@ class QueueInService:
         msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.INIT,
                                game_id=game_id)
         await bg.notifiy(msg)
-        await self._background_bucket[str(game_id)].add(bg)
+        await self._background_bucket[game_id].add(bg)
 
         # notify guest user to get their token
         if guest_token_key:
