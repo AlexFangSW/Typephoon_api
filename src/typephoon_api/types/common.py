@@ -23,7 +23,7 @@ class GameUserInfo(BaseModel):
 
     # populate after finish
     finished: str | None = None
-    rank: int | None = None
+    rank: int = -1
     wpm: float | None = None
     wpm_raw: float | None = None
     acc: float | None = None
