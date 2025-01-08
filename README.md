@@ -98,6 +98,7 @@ Others:
 Features:
 - consumer for "in game" notification
 - handle background task errors
+- add amqp setttings and queue related to in game
 
 - RabbitMQ deadletter policy for lobby countdown
     - random 
