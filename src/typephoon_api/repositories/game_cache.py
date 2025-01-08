@@ -37,6 +37,22 @@ class GameCacheRepo:
         lock = self._redis_conn.lock(name=lock_key)
         yield lock
 
+    async def update_player_cache(self, data: GameUserInfo, game_id: int):
+        """
+        update cache for a single player
+        """
+        key = self._gen_cache_key(game_id=game_id,
+                                  cache_type=GameCacheType.PLAYERS)
+
+        raw_data: bytes = await self._redis_conn.get(key)
+        current_data: dict[str, dict] = json.loads(raw_data)
+        current_data[data.id] = data.model_dump()
+
+        await self._redis_conn.set(
+            name=key,
+            value=json.dumps(current_data),
+            ex=self._setting.redis.result_cache_expire_time)
+
     async def get_players(self, game_id: int) -> dict[str, GameUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id,
                                   cache_type=GameCacheType.PLAYERS)

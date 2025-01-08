@@ -69,6 +69,13 @@ class GameRepo:
 
         return await self._session.scalar(query)
 
+    async def increase_finish_count(self, id: int) -> Game | None:
+        query = update(Game).where(Game.id == id).values({
+            "finish_count": Game.finish_count + 1
+        }).returning(Game)
+
+        return await self._session.scalar(query)
+
     async def increase_player_count(self, id: int) -> Game | None:
         query = update(Game).where(Game.id == id).values({
             "player_count": Game.player_count + 1

@@ -91,8 +91,12 @@ async def statistics(
         raise InvalidCookieToken(current_user.error)
 
     assert current_user.payload
-    ret = await service.write_statistics(statistics=statistics,
-                                         user_id=current_user.payload.sub)
+    ret = await service.write_statistics(
+        statistics=statistics,
+        username=current_user.payload.name,
+        user_type=current_user.payload.user_type,
+        user_id=current_user.payload.sub)
+
     if not ret.ok:
         assert ret.error
         if ret.error.code == ErrorCode.GAME_NOT_FOUND:

@@ -65,6 +65,7 @@ class RedisSetting(BaseModel):
     db: int = 0
     expire_time: int = 60
     in_game_cache_expire_time: int = 60 * 15
+    result_cache_expire_time: int = 60 * 15
 
 
 class CORSSetting(BaseModel):

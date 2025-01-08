@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
-from os import stat
 from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -11,7 +10,7 @@ from ..repositories.game import GameRepo
 from ..repositories.game_result import GameResultRepo
 
 from ..types.common import ErrorContext, GameUserInfo
-from ..types.enums import ErrorCode
+from ..types.enums import ErrorCode, UserType
 
 from ..repositories.game_cache import GameCacheRepo
 from ..types.requests.game import GameStatistics
@@ -72,32 +71,51 @@ class GameService:
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
         return ServiceRet(ok=True, data=seconds_left)
 
-    # TODO: xxxx
-    async def write_statistics(self, statistics: GameStatistics,
-                               user_id: str) -> ServiceRet:
+    async def write_statistics(self, statistics: GameStatistics, user_id: str,
+                               username: str,
+                               user_type: UserType) -> ServiceRet:
+
         # write to database
         async with self._sessionmaker() as session:
+            # get ranking
             game_repo = GameRepo(session)
-            game = await game_repo.get(id=statistics.game_id, lock=True)
+            game = await game_repo.increase_finish_count(id=statistics.game_id)
             if not game:
                 logger.warning("game not found, game_id: %s", game)
                 return ServiceRet(
                     ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
 
-            result_repo = GameResultRepo(session)
-            game_result = await result_repo.create(
-                game_id=statistics.game_id,
-                user_id=user_id,
-                rank=999,
-                wpm_raw=statistics.wpm_raw,
-                wpm_currect=statistics.wpm,
-                accuracy=statistics.acc,
-                finished_at=datetime.now(UTC),
-            )
+            finished_at = datetime.now(UTC)
+            rank = game.player_count
+
+            # record result for registered user
+            if user_type == UserType.REGISTERED:
+                result_repo = GameResultRepo(session)
+                await result_repo.create(
+                    game_id=statistics.game_id,
+                    user_id=user_id,
+                    rank=rank,
+                    wpm_raw=statistics.wpm_raw,
+                    wpm_currect=statistics.wpm,
+                    accuracy=statistics.acc,
+                    finished_at=finished_at,
+                )
 
             await session.commit()
 
-        # write to cache
+        # update cache
+        async with self._game_cache_repo.lock(game_id=statistics.game_id):
+            await self._game_cache_repo.update_player_cache(
+                game_id=statistics.game_id,
+                data=GameUserInfo(
+                    id=user_id,
+                    name=username,
+                    finished=finished_at.isoformat(),
+                    rank=rank,
+                    wpm=statistics.wpm,
+                    wpm_raw=statistics.wpm_raw,
+                    acc=statistics.acc,
+                ))
 
         return ServiceRet(ok=True)
 
