@@ -1,4 +1,4 @@
-from asyncio import Queue, Task, create_task, Event
+from asyncio import Queue, Task, create_task
 from logging import getLogger
 from fastapi import WebSocket
 
@@ -28,7 +28,6 @@ class GameBackground:
         self._queue: Queue[GameBGNotifyMsg] = Queue()
         self._send_queue = send_queue
         self._websocket = websocket
-        self._end_event = Event()
 
     @property
     def user_info(self) -> GameUserInfo:
@@ -60,9 +59,12 @@ class GameBackground:
         )
 
     async def stop(self, final_msg: GameBGNotifyMsg | None = None):
-        if final_msg:
-            await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
+        try:
+            if final_msg:
+                await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
 
-        self._recive_task.cancel()
-        self._send_task.cancel()
-        await self._websocket.close()
+            self._recive_task.cancel()
+            self._send_task.cancel()
+            await self._websocket.close()
+        except Exception as ex:
+            logger.warning("stop error: %s", str(ex))

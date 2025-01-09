@@ -38,8 +38,10 @@ class LobbyBackground:
         )
 
     async def stop(self, final_msg: LobbyBGNotifyMsg | None = None):
-        if final_msg:
-            await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
-
-        self._task.cancel()
-        await self._websocket.close()
+        try:
+            if final_msg:
+                await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
+            self._task.cancel()
+            await self._websocket.close()
+        except Exception as ex:
+            logger.warning("stop error: %s", str(ex))
