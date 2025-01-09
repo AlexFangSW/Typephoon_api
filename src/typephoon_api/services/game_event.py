@@ -1,10 +1,10 @@
-from collections import defaultdict
 from logging import getLogger
-from fastapi import WebSocket, background
+from fastapi import WebSocket
 from jwt.exceptions import PyJWTError
 
+from ..lib.async_defaultdict import AsyncDefaultdict
+
 from ..lib.game.game_background import GameBackground
-from ..types.common import GameUserInfo
 
 from ..lib.game.game_manager import GameBackgroundManager
 
@@ -19,9 +19,9 @@ logger = getLogger(__name__)
 class GameEventService:
 
     def __init__(
-            self, token_validator: TokenValidator,
-            game_cache_repo: GameCacheRepo,
-            background_bucket: defaultdict[int, GameBackgroundManager]) -> None:
+        self, token_validator: TokenValidator, game_cache_repo: GameCacheRepo,
+        background_bucket: AsyncDefaultdict[int,
+                                            GameBackgroundManager]) -> None:
         self._token_validator = token_validator
         self._game_cache_repo = game_cache_repo
         self._background_bucket = background_bucket
@@ -66,6 +66,9 @@ class GameEventService:
             return
 
         # add to background task
-        bg = GameBackground(websocket=websocket, user_info=players[user_id])
+        game_bg_manager = await self._background_bucket.get(game_id)
+        bg = GameBackground(websocket=websocket,
+                            user_info=players[user_id],
+                            send_queue=game_bg_manager.send_queue)
         await bg.start()
-        await self._background_bucket[game_id].add(bg)
+        await game_bg_manager.add(bg)

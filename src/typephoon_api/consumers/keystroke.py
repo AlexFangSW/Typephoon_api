@@ -1,8 +1,9 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from logging import getLogger
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
+
+from ..lib.async_defaultdict import AsyncDefaultdict
 
 from ..lib.game.base import GameBGNotifyMsg
 
@@ -11,7 +12,6 @@ from ..lib.game.game_manager import GameBackgroundManager
 from ..types.amqp import GameNotifyType, KeystrokeHeader, KeystrokeMsg
 from ..types.setting import Setting
 from .base import AbstractConsumer
-from ..types import amqp
 
 logger = getLogger(__name__)
 
@@ -28,7 +28,7 @@ class KeystrokeConsumer(AbstractConsumer):
         self,
         setting: Setting,
         amqp_conn: AbstractRobustConnection,
-        background_bucket: defaultdict[int, GameBackgroundManager],
+        background_bucket: AsyncDefaultdict[int, GameBackgroundManager],
     ) -> None:
         super().__init__(setting, amqp_conn)
         self._background_bucket = background_bucket
@@ -48,7 +48,8 @@ class KeystrokeConsumer(AbstractConsumer):
                                  user_id=msg.user_id,
                                  word_index=msg.word_index,
                                  char_index=msg.char_index)
-        await self._background_bucket[msg.game_id].broadcast(bg_msg)
+        manager = await self._background_bucket.get(msg.game_id)
+        await manager.broadcast(bg_msg)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on message")

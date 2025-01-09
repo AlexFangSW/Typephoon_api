@@ -98,16 +98,19 @@ Others:
 Features:
 - General
     - handle background task errors
+    - clean up on game finish
 
 - In Game:
     - [OK] consumer for "keystroke"
-    - background tasks for in game needs to send amqp message
+    - [OK] background tasks for in game needs to send amqp message on recive keystroke
     - [OK] add amqp setttings and queue related to in game
         - fantout `game.event` exchange 
         - per server `game.event.<server-name>` queue 
     - tests for in game related stuff
         - api 
         - ws
+
+
 - Profile
     - api 
     - tests

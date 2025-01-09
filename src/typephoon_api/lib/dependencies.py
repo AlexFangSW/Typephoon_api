@@ -117,12 +117,28 @@ async def get_queue_in_service(request: Request) -> QueueInService:
     return service
 
 
-async def get_game_event_service() -> GameEventService:
-    ...
+async def get_game_event_service(request: Request) -> GameEventService:
+    app: TypephoonServer = request.app
+
+    token_validator = TokenValidator(app.setting)
+    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
+                                    setting=app.setting)
+
+    service = GameEventService(token_validator=token_validator,
+                               background_bucket=app.game_background_bucket,
+                               game_cache_repo=game_cache_repo)
+    return service
 
 
-async def get_game_service() -> GameService:
-    ...
+async def get_game_service(request: Request) -> GameService:
+    app: TypephoonServer = request.app
+
+    game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn,
+                                    setting=app.setting)
+
+    service = GameService(sessionmaker=app.sessionmaker,
+                          game_cache_repo=game_cache_repo)
+    return service
 
 
 def get_setting(request: Request) -> Setting:

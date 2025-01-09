@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 class GameNotifyType(StrEnum):
     KEY_STROKE = "KEY_STROKE"
+    RECONNECT = "RECONNECT"
 
 
 class KeystrokeHeader(BaseModel):
