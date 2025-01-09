@@ -14,29 +14,40 @@ class AMQPManager:
     async def setup(self):
         channel = await self._amqp_conn.channel()
 
-        countdown_exchange = await channel.declare_exchange(
+        lobby_countdown_exchange = await channel.declare_exchange(
             name=self._setting.amqp.countdown_direct_exchange,
             type=ExchangeType.DIRECT,
             durable=True)
 
-        notify_exchange = await channel.declare_exchange(
+        lobby_notify_exchange = await channel.declare_exchange(
             name=self._setting.amqp.lobby_notify_fanout_exchange,
             type=ExchangeType.FANOUT,
             durable=True)
 
-        # notify exchange is fanout, no need for routing key
-        notify_queue = await channel.declare_queue(
+        game_event_exchange = await channel.declare_exchange(
+            name=self._setting.amqp.game_event_fanout_exchange,
+            type=ExchangeType.FANOUT,
+            durable=True)
+
+        game_event_queue = await channel.declare_queue(
             name=self._setting.amqp.lobby_notify_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
-        await notify_queue.bind(exchange=notify_exchange)
+        await game_event_queue.bind(exchange=game_event_exchange)
 
-        countdown_queue = await channel.declare_queue(
+        # notify exchange is fanout, no need for routing key
+        lobby_notify_queue = await channel.declare_queue(
+            name=self._setting.amqp.lobby_notify_queue,
+            durable=True,
+            arguments={"x-queue-type": "quorum"})
+        await lobby_notify_queue.bind(exchange=lobby_notify_exchange)
+
+        lobby_countdown_queue = await channel.declare_queue(
             name=self._setting.amqp.lobby_countdown_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
-        await countdown_queue.bind(exchange=countdown_exchange,
-                                   routing_key="countdown")
+        await lobby_countdown_queue.bind(exchange=lobby_countdown_exchange,
+                                         routing_key="countdown")
 
         # use default exchange to publish to this queue
         # NEED dead letter policy

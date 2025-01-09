@@ -127,6 +127,7 @@ class AMQPSetting(AMQPCredentials):
     # exchanges
     lobby_notify_fanout_exchange: str = "lobby.notify"
     countdown_direct_exchange: str = "lobby.countdown"
+    game_event_fanout_exchange: str = "game.event"
 
     # queues with consumers
     lobby_notify_queue: str = "lobby.notify"
@@ -151,6 +152,7 @@ class AMQPSetting(AMQPCredentials):
         server_name = getenv("SERVER_NAME", None)
         if server_name:
             self.lobby_notify_queue = f"{self.lobby_notify_queue}.{server_name}"
+            self.game_event_queue = f"{self.game_event_queue}.{server_name}"
 
 
 class SecretSetting(BaseModel):
