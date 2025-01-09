@@ -53,16 +53,15 @@ class GameBackground:
 
     async def start(self):
         self._recive_task: Task = create_task(
-            self._recive_loop(),
-            name=f"game-background-recive-{self._user_info.id}")
+            self._recive_loop(), name=f"game-background-recive-{self._user_info.id}"
+        )
         self._send_task: Task = create_task(
-            self._send_loop(),
-            name=f"game-background-send-{self._user_info.id}")
+            self._send_loop(), name=f"game-background-send-{self._user_info.id}"
+        )
 
     async def stop(self, final_msg: GameBGNotifyMsg | None = None):
         if final_msg:
-            await self._websocket.send_bytes(
-                final_msg.slim_dump_json().encode())
+            await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
 
         self._recive_task.cancel()
         self._send_task.cancel()

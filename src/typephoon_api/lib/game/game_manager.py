@@ -51,9 +51,9 @@ class GameBackgroundManager:
 
             amqp_msg = Message(
                 body=msg.model_dump_json().encode(),
-                headers=KeystrokeHeader(
-                    source=self._setting.server_name).model_dump(),
-                delivery_mode=DeliveryMode.PERSISTENT)
+                headers=KeystrokeHeader(source=self._setting.server_name).model_dump(),
+                delivery_mode=DeliveryMode.PERSISTENT,
+            )
 
             confirm = await self._exchange.publish(amqp_msg, routing_key="")
             if not isinstance(confirm, Basic.Ack):
@@ -73,9 +73,11 @@ class GameBackgroundManager:
     async def prepare(self):
         self._channel = await self._amqp_conn.channel()
         self._exchange = await self._channel.get_exchange(
-            self._setting.amqp.game_keystroke_fanout_exchange)
-        self._publish_task = create_task(self._publish_loop(),
-                                         name=f"game-bg-manager-publish-loop")
+            self._setting.amqp.game_keystroke_fanout_exchange
+        )
+        self._publish_task = create_task(
+            self._publish_loop(), name=f"game-bg-manager-publish-loop"
+        )
 
     async def broadcast(self, msg: GameBGNotifyMsg):
         for _, bg in self._background_tasks.items():

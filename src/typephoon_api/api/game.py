@@ -7,7 +7,12 @@ from ..types.errors import InvalidCookieToken
 
 from ..lib.util import catch_error_async
 
-from ..lib.dependencies import GetAccessTokenInfoRet, get_access_token_info, get_game_event_service, get_game_service
+from ..lib.dependencies import (
+    GetAccessTokenInfoRet,
+    get_access_token_info,
+    get_game_event_service,
+    get_game_service,
+)
 
 from ..services.game import GameService
 
@@ -23,22 +28,19 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 logger = getLogger(__name__)
 
-router = APIRouter(tags=["Game"],
-                   prefix="/game",
-                   responses={
-                       500: {
-                           "model": ErrorResponse
-                       },
-                       400: {
-                           "model": ErrorResponse
-                       }
-                   })
+router = APIRouter(
+    tags=["Game"],
+    prefix="/game",
+    responses={500: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
+)
 
 
 @router.websocket("/ws")
-async def ws(websocket: WebSocket,
-             game_id: int,
-             service: GameEventService = Depends(get_game_event_service)):
+async def ws(
+    websocket: WebSocket,
+    game_id: int,
+    service: GameEventService = Depends(get_game_event_service),
+):
     """
     - send and recive each key stroke
     """
@@ -51,8 +53,7 @@ async def ws(websocket: WebSocket,
 
 @router.get("/countdown", responses={200: {"model": GameCountdownResponse}})
 @catch_error_async
-async def countdown(game_id: int,
-                    service: GameService = Depends(get_game_service)):
+async def countdown(game_id: int, service: GameService = Depends(get_game_service)):
     """
     game countdown in seconds
     """
@@ -76,7 +77,8 @@ async def countdown(game_id: int,
 async def statistics(
     statistics: GameStatistics,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
-    service: GameService = Depends(get_game_service)):
+    service: GameService = Depends(get_game_service),
+):
     """
     on finish, users will send their statistics to the server
     - WPM, ACC ... etc
@@ -90,7 +92,8 @@ async def statistics(
         statistics=statistics,
         username=current_user.payload.name,
         user_type=current_user.payload.user_type,
-        user_id=current_user.payload.sub)
+        user_id=current_user.payload.sub,
+    )
 
     if not ret.ok:
         assert ret.error
@@ -106,8 +109,7 @@ async def statistics(
 
 @router.get("/result", responses={200: {"model": GameResultResponse}})
 @catch_error_async
-async def result(game_id: int,
-                 service: GameService = Depends(get_game_service)):
+async def result(game_id: int, service: GameService = Depends(get_game_service)):
     """
     information for the result of this game
     - ranking, wpm, acc ... etc

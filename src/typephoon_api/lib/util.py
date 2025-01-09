@@ -29,12 +29,14 @@ def sanitized_dsn(dsn: str) -> Url:
     temp_url = Url(dsn)
     assert temp_url.host
     assert temp_url.path
-    url = Url.build(scheme=temp_url.scheme,
-                    username=temp_url.username,
-                    password="***",
-                    host=temp_url.host,
-                    port=temp_url.port,
-                    path=temp_url.path.lstrip("/"))
+    url = Url.build(
+        scheme=temp_url.scheme,
+        username=temp_url.username,
+        password="***",
+        host=temp_url.host,
+        port=temp_url.port,
+        path=temp_url.path.lstrip("/"),
+    )
     return url
 
 

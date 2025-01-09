@@ -22,10 +22,7 @@ REDIS_DB = int(getenv("REDIS_DB", 0))
 API_PREFIX = "/api/v1"
 
 tmp_now = datetime.now(UTC)
-NOW = datetime(year=tmp_now.year,
-               month=tmp_now.month,
-               day=tmp_now.day,
-               tzinfo=UTC)
+NOW = datetime(year=tmp_now.year, month=tmp_now.month, day=tmp_now.day, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -67,12 +64,14 @@ def setting() -> Setting:
 
 @pytest_asyncio.fixture
 async def sessionmaker(db_migration, setting):
-    engine = create_async_engine(url=setting.db.async_dsn,
-                                 echo=setting.db.echo,
-                                 pool_size=setting.db.pool_size,
-                                 pool_pre_ping=True,
-                                 pool_recycle=3600,
-                                 isolation_level="READ COMMITTED")
+    engine = create_async_engine(
+        url=setting.db.async_dsn,
+        echo=setting.db.echo,
+        pool_size=setting.db.pool_size,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        isolation_level="READ COMMITTED",
+    )
     sessionmaker = async_sessionmaker(engine)
 
     yield sessionmaker
@@ -82,9 +81,9 @@ async def sessionmaker(db_migration, setting):
 
 @pytest_asyncio.fixture
 async def redis_conn(setting: Setting):
-    redis_conn = Redis(host=setting.redis.host,
-                       port=setting.redis.port,
-                       db=setting.redis.db)
+    redis_conn = Redis(
+        host=setting.redis.host, port=setting.redis.port, db=setting.redis.db
+    )
 
     yield redis_conn
 
@@ -99,6 +98,5 @@ async def client(db_migration, setting):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         base_url = f"http://localhost:{setting.server.port}"
-        async with AsyncClient(transport=transport,
-                               base_url=base_url) as client:
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
             yield client

@@ -20,18 +20,20 @@ class GameRepo:
         return await self._session.scalar(query)
 
     async def start_game(self, id: int):
-        query = update(Game).values({
-            "status": GameStatus.IN_GAME,
-            "start_at": datetime.now(UTC)
-        }).where(Game.id == id)
+        query = (
+            update(Game)
+            .values({"status": GameStatus.IN_GAME, "start_at": datetime.now(UTC)})
+            .where(Game.id == id)
+        )
 
         await self._session.execute(query)
 
     async def create(self, game_type: GameType, status: GameStatus) -> Game:
-        query = insert(Game).values({
-            "game_type": game_type,
-            "status": status
-        }).returning(Game)
+        query = (
+            insert(Game)
+            .values({"game_type": game_type, "status": status})
+            .returning(Game)
+        )
 
         ret = await self._session.scalar(query)
         assert ret
@@ -39,26 +41,31 @@ class GameRepo:
         return ret
 
     async def get_one_available(self, lock: bool = False) -> Game | None:
-        query = select(Game).where(
-            and_(
-                Game.status == GameStatus.LOBBY,
-                Game.player_count < self._player_limit,
-            )).limit(1)
+        query = (
+            select(Game)
+            .where(
+                and_(
+                    Game.status == GameStatus.LOBBY,
+                    Game.player_count < self._player_limit,
+                )
+            )
+            .limit(1)
+        )
 
         if lock:
             query = query.with_for_update()
 
         return await self._session.scalar(query)
 
-    async def is_available(self,
-                           id: int,
-                           lock: bool = False,
-                           new_player: bool = False) -> Game | None:
+    async def is_available(
+        self, id: int, lock: bool = False, new_player: bool = False
+    ) -> Game | None:
         query = select(Game).where(
             and_(
                 Game.status == GameStatus.LOBBY,
                 Game.id == id,
-            ))
+            )
+        )
         if new_player:
             query = query.where(Game.player_count < self._player_limit)
         else:
@@ -70,22 +77,31 @@ class GameRepo:
         return await self._session.scalar(query)
 
     async def increase_finish_count(self, id: int) -> Game | None:
-        query = update(Game).where(Game.id == id).values({
-            "finish_count": Game.finish_count + 1
-        }).returning(Game)
+        query = (
+            update(Game)
+            .where(Game.id == id)
+            .values({"finish_count": Game.finish_count + 1})
+            .returning(Game)
+        )
 
         return await self._session.scalar(query)
 
     async def increase_player_count(self, id: int) -> Game | None:
-        query = update(Game).where(Game.id == id).values({
-            "player_count": Game.player_count + 1
-        }).returning(Game)
+        query = (
+            update(Game)
+            .where(Game.id == id)
+            .values({"player_count": Game.player_count + 1})
+            .returning(Game)
+        )
 
         return await self._session.scalar(query)
 
     async def decrease_player_count(self, id: int) -> Game | None:
-        query = update(Game).where(Game.id == id).values({
-            "player_count": Game.player_count - 1
-        }).returning(Game)
+        query = (
+            update(Game)
+            .where(Game.id == id)
+            .values({"player_count": Game.player_count - 1})
+            .returning(Game)
+        )
 
         return await self._session.scalar(query)

@@ -43,7 +43,8 @@ async def test_service_queue_in(
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
     backgrond_bucket: defaultdict[int, LobbyBackgroundManager] = defaultdict(
-        LobbyBackgroundManager)
+        LobbyBackgroundManager
+    )
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -74,8 +75,7 @@ async def test_service_queue_in(
 
     await service.queue_in(websocket=websocket, queue_in_type=QueueInType.NEW)
     assert websocket.close.called
-    assert websocket.close.call_args.kwargs[
-        'reason'] == WSCloseReason.INVALID_TOKEN
+    assert websocket.close.call_args.kwargs["reason"] == WSCloseReason.INVALID_TOKEN
 
     # ---------------------
     # create game
@@ -84,9 +84,8 @@ async def test_service_queue_in(
     # prepare access token
     player_1 = LobbyUserInfo(id="1", name="player_1")
     player_1_access_token = token_generator.gen_access_token(
-        user_id=player_1.id,
-        username=player_1.name,
-        user_type=UserType.REGISTERED)
+        user_id=player_1.id, username=player_1.name, user_type=UserType.REGISTERED
+    )
 
     # mocks
     websocket.cookies = {CookieNames.ACCESS_TOKEN: player_1_access_token}
@@ -100,18 +99,22 @@ async def test_service_queue_in(
     assert amqp_notify_exchange.publish.called
 
     p1_notify_msg = LobbyNotifyMsg.model_validate_json(
-        amqp_notify_exchange.publish.call_args.kwargs["message"].body)
+        amqp_notify_exchange.publish.call_args.kwargs["message"].body
+    )
     assert p1_notify_msg.notify_type == LobbyNotifyType.USER_JOINED
 
     game_id = p1_notify_msg.game_id
 
     # check countdown exchange
     assert amqp_default_exchange.publish.called
-    assert amqp_default_exchange.publish.call_args.kwargs[
-        "routing_key"] == setting.amqp.lobby_multi_countdown_wait_queue
+    assert (
+        amqp_default_exchange.publish.call_args.kwargs["routing_key"]
+        == setting.amqp.lobby_multi_countdown_wait_queue
+    )
 
     p1_countdown_msg = LobbyCountdownMsg.model_validate_json(
-        amqp_default_exchange.publish.call_args.kwargs["message"].body)
+        amqp_default_exchange.publish.call_args.kwargs["message"].body
+    )
     assert p1_countdown_msg.game_id == game_id
 
     # check game player count
@@ -129,7 +132,8 @@ async def test_service_queue_in(
     start_ts = await lobby_cache_repo.get_start_time(game_id)
     assert start_ts
     assert start_ts == datetime.now(UTC) + timedelta(
-        seconds=setting.game.lobby_countdown)
+        seconds=setting.game.lobby_countdown
+    )
 
     # check background bucket
     assert len(backgrond_bucket[game_id]._background_tasks) == 1
@@ -139,9 +143,8 @@ async def test_service_queue_in(
     # ---------------------
     player_2 = LobbyUserInfo(id="2", name="player_2")
     player_2_access_token = token_generator.gen_access_token(
-        user_id=player_2.id,
-        username=player_2.name,
-        user_type=UserType.REGISTERED)
+        user_id=player_2.id, username=player_2.name, user_type=UserType.REGISTERED
+    )
     websocket.cookies = {CookieNames.ACCESS_TOKEN: player_2_access_token}
     amqp_notify_exchange.publish = AsyncMock(return_value=Basic.Ack())
 
@@ -167,8 +170,7 @@ async def test_service_queue_in(
     assert amqp_notify_exchange.publish.called
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
-    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
-                        game_id=game_id)
+    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED, game_id=game_id)
 
     # ---------------------
     # find game (found, reconnect)
@@ -179,9 +181,9 @@ async def test_service_queue_in(
     await backgrond_bucket[game_id].remove(player_1.id)
 
     # run
-    await service.queue_in(websocket=websocket,
-                           queue_in_type=QueueInType.RECONNECT,
-                           prev_game_id=game_id)
+    await service.queue_in(
+        websocket=websocket, queue_in_type=QueueInType.RECONNECT, prev_game_id=game_id
+    )
 
     # check game player count
     async with sessionmaker() as session:
@@ -202,8 +204,7 @@ async def test_service_queue_in(
     assert amqp_notify_exchange.publish.called
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
-    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
-                        game_id=game_id)
+    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED, game_id=game_id)
 
     # ---------------------
     # guest user
@@ -232,8 +233,7 @@ async def test_service_queue_in(
     assert amqp_notify_exchange.publish.called
     assert LobbyNotifyMsg.model_validate_json(
         amqp_notify_exchange.publish.call_args.kwargs["message"].body
-    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED,
-                        game_id=game_id)
+    ) == LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED, game_id=game_id)
 
     # clean up
     for game_id, manager in backgrond_bucket.items():
@@ -249,7 +249,8 @@ async def test_service_queue_in_game_full(
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
     backgrond_bucket: defaultdict[int, LobbyBackgroundManager] = defaultdict(
-        LobbyBackgroundManager)
+        LobbyBackgroundManager
+    )
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -278,19 +279,18 @@ async def test_service_queue_in_game_full(
 
     # run
     for _ in range(setting.game.player_limit):
-        await service.queue_in(websocket=websocket,
-                               queue_in_type=QueueInType.NEW)
+        await service.queue_in(websocket=websocket, queue_in_type=QueueInType.NEW)
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
     notify_msg = LobbyNotifyMsg.model_validate_json(
-        amqp_notify_exchange.publish.call_args.kwargs["message"].body)
+        amqp_notify_exchange.publish.call_args.kwargs["message"].body
+    )
     assert notify_msg.notify_type == LobbyNotifyType.GAME_START
 
     game_id = notify_msg.game_id
 
-    assert len(backgrond_bucket[game_id]._background_tasks
-              ) == setting.game.player_limit
+    assert len(backgrond_bucket[game_id]._background_tasks) == setting.game.player_limit
 
     async with sessionmaker() as session:
         repo = GameRepo(session)

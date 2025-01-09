@@ -12,4 +12,5 @@ class GameResultResponse(SuccessResponse):
     """
     players: sorted by rank
     """
+
     ranking: list[GetResultRetItem] = Field(default_factory=list)

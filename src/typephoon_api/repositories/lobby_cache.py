@@ -46,8 +46,7 @@ class LobbyCacheRepo:
         }
         ```
         """
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.PLAYERS)
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         new_player = False
 
         # get current status
@@ -62,14 +61,15 @@ class LobbyCacheRepo:
 
         # set new status
         current_status[user_info.id] = user_info.model_dump()
-        await self._redis_conn.set(name=key,
-                                   value=json.dumps(current_status),
-                                   ex=self._setting.redis.expire_time)
+        await self._redis_conn.set(
+            name=key,
+            value=json.dumps(current_status),
+            ex=self._setting.redis.expire_time,
+        )
         return new_player
 
     async def is_new_player(self, game_id: int, user_id: str) -> bool:
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.PLAYERS)
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         new_player = False
         ret = await self._redis_conn.get(name=key)
 
@@ -87,10 +87,12 @@ class LobbyCacheRepo:
         """
         Update the expire time
         """
-        player_key = self._gen_cache_key(game_id=game_id,
-                                         cache_type=LobbyCacheType.PLAYERS)
-        countdown_key = self._gen_cache_key(game_id=game_id,
-                                            cache_type=LobbyCacheType.COUNTDOWN)
+        player_key = self._gen_cache_key(
+            game_id=game_id, cache_type=LobbyCacheType.PLAYERS
+        )
+        countdown_key = self._gen_cache_key(
+            game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN
+        )
         pipeline = self._redis_conn.pipeline()
         pipeline.expire(player_key, time=ex)
         pipeline.expire(countdown_key, time=ex)
@@ -100,19 +102,17 @@ class LobbyCacheRepo:
         """
         Set start time for countdown pooling
         """
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.COUNTDOWN)
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
 
-        await self._redis_conn.set(name=key,
-                                   value=start_time.isoformat(),
-                                   ex=self._setting.redis.expire_time)
+        await self._redis_conn.set(
+            name=key, value=start_time.isoformat(), ex=self._setting.redis.expire_time
+        )
 
     async def get_start_time(self, game_id: int) -> datetime | None:
         """
         Get start time for countdown pooling
         """
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.COUNTDOWN)
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
 
         ret: bytes = await self._redis_conn.get(name=key)
         if not ret:
@@ -126,15 +126,16 @@ class LobbyCacheRepo:
         Clear all cache for the game
         """
         player_cache_key = self._gen_cache_key(
-            game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
+            game_id=game_id, cache_type=LobbyCacheType.PLAYERS
+        )
         countdown_cache_key = self._gen_cache_key(
-            game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
+            game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN
+        )
 
         await self._redis_conn.delete(player_cache_key, countdown_cache_key)
 
     async def remove_player(self, game_id: int, user_id: str):
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.PLAYERS)
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
         if not ret:
             logger.warning("game not found, game_id: %s", game_id)
@@ -142,14 +143,12 @@ class LobbyCacheRepo:
 
         data: dict = json.loads(ret)
         data.pop(user_id)
-        await self._redis_conn.set(name=key,
-                                   value=json.dumps(data),
-                                   ex=self._setting.redis.expire_time)
+        await self._redis_conn.set(
+            name=key, value=json.dumps(data), ex=self._setting.redis.expire_time
+        )
 
-    async def get_players(self,
-                          game_id: int) -> dict[str, LobbyUserInfo] | None:
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=LobbyCacheType.PLAYERS)
+    async def get_players(self, game_id: int) -> dict[str, LobbyUserInfo] | None:
+        key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         ret = await self._redis_conn.get(name=key)
         if not ret:
             logger.warning("game not found, game_id: %s", game_id)

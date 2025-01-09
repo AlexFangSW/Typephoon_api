@@ -9,6 +9,7 @@ class GameResult(Base):
     """
     Game result (per user)
     """
+
     __tablename__ = "game_results"
     __table_args__ = (PrimaryKeyConstraint("game_id", "user_id"),)
 

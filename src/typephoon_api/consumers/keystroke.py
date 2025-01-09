@@ -34,8 +34,7 @@ class KeystrokeConsumer(AbstractConsumer):
         self._background_bucket = background_bucket
 
     def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LoadMsgRet:
-        result = LoadMsgRet(
-            body=KeystrokeMsg.model_validate_json(amqp_msg.body))
+        result = LoadMsgRet(body=KeystrokeMsg.model_validate_json(amqp_msg.body))
 
         headers = KeystrokeHeader.model_validate(amqp_msg.headers)
         if headers.source == self._setting.server_name:
@@ -44,10 +43,12 @@ class KeystrokeConsumer(AbstractConsumer):
         return result
 
     async def _process(self, msg: KeystrokeMsg):
-        bg_msg = GameBGNotifyMsg(notify_type=GameNotifyType.KEY_STROKE,
-                                 user_id=msg.user_id,
-                                 word_index=msg.word_index,
-                                 char_index=msg.char_index)
+        bg_msg = GameBGNotifyMsg(
+            notify_type=GameNotifyType.KEY_STROKE,
+            user_id=msg.user_id,
+            word_index=msg.word_index,
+            char_index=msg.char_index,
+        )
         manager = await self._background_bucket.get(msg.game_id)
         await manager.broadcast(bg_msg)
 
@@ -79,11 +80,11 @@ class KeystrokeConsumer(AbstractConsumer):
 
     async def prepare(self):
         self._channel = await self._amqp_conn.channel()
-        await self._channel.set_qos(
-            prefetch_count=self._setting.amqp.prefetch_count)
+        await self._channel.set_qos(prefetch_count=self._setting.amqp.prefetch_count)
 
         self._queue = await self._channel.get_queue(
-            self._setting.amqp.game_keystroke_queue)
+            self._setting.amqp.game_keystroke_queue
+        )
 
     async def start(self):
         self._consumer_tag = await self._queue.consume(self.on_message)

@@ -7,10 +7,11 @@ from .base import Base
 class User(Base):
     """
     Attributes:
-        id: User ID 
+        id: User ID
             - {PREFIX}-{ID}
             - ex: google-1234567890
     """
+
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(

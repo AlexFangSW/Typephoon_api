@@ -30,13 +30,13 @@ class LobbyNotifyConsumer(AbstractConsumer):
         super().__init__(setting, amqp_conn)
         self._background_bucket = background_bucket
 
-    def _load_message(self,
-                      amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
+    def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
-        bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type,
-                                         user_id=msg.user_id)
+        bg_notify_msg = LobbyBGNotifyMsg(
+            notify_type=msg.notify_type, user_id=msg.user_id
+        )
 
         if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
             logger.debug("game started, game_id: %s", msg.game_id)
@@ -73,7 +73,8 @@ class LobbyNotifyConsumer(AbstractConsumer):
         logger.info("prepare")
         self._channel = await self._amqp_conn.channel()
         self._queue = await self._channel.get_queue(
-            self._setting.amqp.lobby_notify_queue)
+            self._setting.amqp.lobby_notify_queue
+        )
 
     async def start(self):
         logger.info("start")

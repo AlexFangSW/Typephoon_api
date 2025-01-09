@@ -10,8 +10,7 @@ from ..helper import *
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_add_players(redis_conn: Redis,
-                                            setting: Setting):
+async def test_lobby_cache_repo_add_players(redis_conn: Redis, setting: Setting):
 
     dummy_game_id = 123123
     players = [
@@ -29,8 +28,7 @@ async def test_lobby_cache_repo_add_players(redis_conn: Redis,
     assert not ret
 
     # check
-    key = repo._gen_cache_key(game_id=dummy_game_id,
-                              cache_type=LobbyCacheType.PLAYERS)
+    key = repo._gen_cache_key(game_id=dummy_game_id, cache_type=LobbyCacheType.PLAYERS)
     ret = await redis_conn.get(key)
     assert ret
     data: dict = json.loads(ret)
@@ -40,8 +38,7 @@ async def test_lobby_cache_repo_add_players(redis_conn: Redis,
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_get_players(redis_conn: Redis,
-                                            setting: Setting):
+async def test_lobby_cache_repo_get_players(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")
@@ -61,8 +58,7 @@ async def test_lobby_cache_repo_get_players(redis_conn: Redis,
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_remove_players(redis_conn: Redis,
-                                               setting: Setting):
+async def test_lobby_cache_repo_remove_players(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")
@@ -88,8 +84,7 @@ async def test_lobby_cache_repo_remove_players(redis_conn: Redis,
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_is_new_player(redis_conn: Redis,
-                                              setting: Setting):
+async def test_lobby_cache_repo_is_new_player(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")
@@ -105,29 +100,26 @@ async def test_lobby_cache_repo_is_new_player(redis_conn: Redis,
     assert result
     assert len(result.keys()) == len(players)
 
-    assert await repo.is_new_player(game_id=dummy_game_id,
-                                    user_id="does not exist")
-    assert not await repo.is_new_player(game_id=dummy_game_id,
-                                        user_id=players[0].id)
+    assert await repo.is_new_player(game_id=dummy_game_id, user_id="does not exist")
+    assert not await repo.is_new_player(game_id=dummy_game_id, user_id=players[0].id)
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_set_start_time(redis_conn: Redis,
-                                               setting: Setting):
+async def test_lobby_cache_repo_set_start_time(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
     repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
 
-    key = repo._gen_cache_key(game_id=dummy_game_id,
-                              cache_type=LobbyCacheType.COUNTDOWN)
+    key = repo._gen_cache_key(
+        game_id=dummy_game_id, cache_type=LobbyCacheType.COUNTDOWN
+    )
     ret: bytes = await redis_conn.get(key)
     assert ret
     assert datetime.fromisoformat(ret.decode()) == NOW
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_get_start_time(redis_conn: Redis,
-                                               setting: Setting):
+async def test_lobby_cache_repo_get_start_time(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
     repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
@@ -138,15 +130,15 @@ async def test_lobby_cache_repo_get_start_time(redis_conn: Redis,
 
 
 @pytest.mark.asyncio
-async def test_lobby_cache_repo_clear_cache(redis_conn: Redis,
-                                            setting: Setting):
+async def test_lobby_cache_repo_clear_cache(redis_conn: Redis, setting: Setting):
     dummy_game_id = 123123
 
     repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
     # set cache
     await repo.set_start_time(game_id=dummy_game_id, start_time=NOW)
-    await repo.add_player(game_id=dummy_game_id,
-                          user_info=LobbyUserInfo(id="1", name="player-1"))
+    await repo.add_player(
+        game_id=dummy_game_id, user_info=LobbyUserInfo(id="1", name="player-1")
+    )
     # clear
     await repo.clear_cache(dummy_game_id)
 

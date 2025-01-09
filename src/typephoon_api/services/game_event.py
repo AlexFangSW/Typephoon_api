@@ -19,9 +19,11 @@ logger = getLogger(__name__)
 class GameEventService:
 
     def __init__(
-        self, token_validator: TokenValidator, game_cache_repo: GameCacheRepo,
-        background_bucket: AsyncDefaultdict[int,
-                                            GameBackgroundManager]) -> None:
+        self,
+        token_validator: TokenValidator,
+        game_cache_repo: GameCacheRepo,
+        background_bucket: AsyncDefaultdict[int, GameBackgroundManager],
+    ) -> None:
         self._token_validator = token_validator
         self._game_cache_repo = game_cache_repo
         self._background_bucket = background_bucket
@@ -38,8 +40,7 @@ class GameEventService:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
             if not access_token:
                 logger.warning("no access token")
-                await websocket.close(
-                    reason=WSCloseReason.ACCESS_TOKEN_NOT_FOUND)
+                await websocket.close(reason=WSCloseReason.ACCESS_TOKEN_NOT_FOUND)
                 return
 
             current_user = self._token_validator.validate(access_token)
@@ -61,14 +62,19 @@ class GameEventService:
         if user_id not in players:
             logger.warning(
                 "user does not participate in this game, game_id: %s, user_id: %s, users in this game: %s",
-                game_id, user_id, players.keys())
+                game_id,
+                user_id,
+                players.keys(),
+            )
             await websocket.close(reason=WSCloseReason.NOT_A_PARTICIPANT)
             return
 
         # add to background task
         game_bg_manager = await self._background_bucket.get(game_id)
-        bg = GameBackground(websocket=websocket,
-                            user_info=players[user_id],
-                            send_queue=game_bg_manager.send_queue)
+        bg = GameBackground(
+            websocket=websocket,
+            user_info=players[user_id],
+            send_queue=game_bg_manager.send_queue,
+        )
         await bg.start()
         await game_bg_manager.add(bg)

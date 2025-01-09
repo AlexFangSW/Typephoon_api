@@ -11,26 +11,15 @@ def default_logger() -> dict:
         "disable_existing_loggers": False,
         "version": 1,
         "handlers": {
-            "default": {
-                "class": "logging.StreamHandler",
-                "formatter": "default"
-            }
+            "default": {"class": "logging.StreamHandler", "formatter": "default"}
         },
         "formatters": {
             "default": {
-                "format":
-                    "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
+                "format": "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
             }
         },
-        "root": {
-            "level": "INFO",
-            "handlers": ["default"]
-        },
-        "loggers": {
-            "typephoon_api": {
-                "level": "INFO"
-            }
-        }
+        "root": {"level": "INFO", "handlers": ["default"]},
+        "loggers": {"typephoon_api": {"level": "INFO"}},
     }
 
 
@@ -80,6 +69,7 @@ class TokenPK(BaseModel):
     """
     Token public / private keys
     """
+
     public_key: str = ""
     private_key: str = ""
 
@@ -92,6 +82,7 @@ class TokenSetting(TokenPK):
     - refresh_duration: (seconds)
         - duration for the refresh token
     """
+
     refresh_endpoint: str = "/api/v1/auth/token-refresh"
     access_duration: int = int(timedelta(minutes=5).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
@@ -160,8 +151,7 @@ class AMQPSetting(AMQPCredentials):
 
 
 class SecretSetting(BaseModel):
-    google_credential: GoogleCredentials = Field(
-        default_factory=GoogleCredentials)
+    google_credential: GoogleCredentials = Field(default_factory=GoogleCredentials)
     token_pk: TokenPK = Field(default_factory=TokenPK)
     db: DBCredentialsSetting = Field(default_factory=DBCredentialsSetting)
     amqp: AMQPCredentials = Field(default_factory=AMQPCredentials)
@@ -196,9 +186,9 @@ class Setting(BaseModel):
         self.amqp.merge(inpt.amqp)
 
     @classmethod
-    def from_file(cls,
-                  base: str = "setting.yaml",
-                  secret: str = "setting.secret.yaml") -> Self:
+    def from_file(
+        cls, base: str = "setting.yaml", secret: str = "setting.secret.yaml"
+    ) -> Self:
 
         with open(base, "r") as f:
             loaded = yaml.safe_load(f)

@@ -27,8 +27,9 @@ async def test_lobby_background_manager(setting: Setting):
         await bg_manager.add(bg)
     assert len(bg_manager._background_tasks.keys()) == setting.game.player_limit
 
-    await bg_manager.broadcast(msg=LobbyBGNotifyMsg(
-        notify_type=LobbyNotifyType.USER_JOINED))
+    await bg_manager.broadcast(
+        msg=LobbyBGNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED)
+    )
 
     for bg in background_tasks:
         assert isinstance(bg.notifiy, AsyncMock)

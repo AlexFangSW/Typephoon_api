@@ -7,6 +7,7 @@ class JWTPayload(BaseModel):
     """
     sub: user id
     """
+
     sub: str
     name: str
     exp: int

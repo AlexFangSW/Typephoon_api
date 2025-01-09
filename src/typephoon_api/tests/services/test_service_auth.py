@@ -29,8 +29,8 @@ from ..helper import *
 
 @pytest.mark.asyncio
 async def test_auth_service_login_redirect(
-        setting: Setting, sessionmaker: async_sessionmaker[AsyncSession],
-        redis_conn: Redis):
+    setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
+):
 
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
@@ -43,17 +43,20 @@ async def test_auth_service_login_redirect(
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
 
-    service = AuthService(setting=setting,
-                          sessionmaker=sessionmaker,
-                          token_generator=token_generator,
-                          token_validator=token_validator,
-                          oauth_provider=oauth_provider)
+    service = AuthService(
+        setting=setting,
+        sessionmaker=sessionmaker,
+        token_generator=token_generator,
+        token_validator=token_validator,
+        oauth_provider=oauth_provider,
+    )
 
     # -------------------------------------------
     # failed
     # -------------------------------------------
     oauth_provider.handle_authorization_response = AsyncMock(
-        return_value=VerifyTokenRet(ok=False))
+        return_value=VerifyTokenRet(ok=False)
+    )
 
     ret = await service.login_redirect(dummy_state, dummy_code)
     assert not ret.ok
@@ -63,7 +66,9 @@ async def test_auth_service_login_redirect(
     # -------------------------------------------
     oauth_provider.handle_authorization_response = AsyncMock(
         return_value=VerifyTokenRet(
-            ok=True, user_id=dummy_user_id, username=dummy_username))
+            ok=True, user_id=dummy_user_id, username=dummy_username
+        )
+    )
 
     ret = await service.login_redirect(dummy_state, dummy_code)
     assert ret.ok
@@ -83,8 +88,8 @@ async def test_auth_service_login_redirect(
 
 @pytest.mark.asyncio
 async def test_auth_service_logout(
-        setting: Setting, sessionmaker: async_sessionmaker[AsyncSession],
-        redis_conn: Redis):
+    setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
+):
 
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
@@ -97,16 +102,20 @@ async def test_auth_service_logout(
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
 
-    service = AuthService(setting=setting,
-                          sessionmaker=sessionmaker,
-                          token_generator=token_generator,
-                          token_validator=token_validator,
-                          oauth_provider=oauth_provider)
+    service = AuthService(
+        setting=setting,
+        sessionmaker=sessionmaker,
+        token_generator=token_generator,
+        token_validator=token_validator,
+        oauth_provider=oauth_provider,
+    )
 
     # login
     oauth_provider.handle_authorization_response = AsyncMock(
         return_value=VerifyTokenRet(
-            ok=True, user_id=dummy_user_id, username=dummy_username))
+            ok=True, user_id=dummy_user_id, username=dummy_username
+        )
+    )
     login_info = await service.login_redirect(dummy_state, dummy_code)
     assert login_info.data
 
@@ -123,8 +132,8 @@ async def test_auth_service_logout(
 @pytest.mark.asyncio
 @time_machine.travel(NOW, tick=False)
 async def test_auth_service_token_refresh(
-        setting: Setting, sessionmaker: async_sessionmaker[AsyncSession],
-        redis_conn: Redis):
+    setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
+):
 
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
@@ -137,16 +146,20 @@ async def test_auth_service_token_refresh(
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
 
-    service = AuthService(setting=setting,
-                          sessionmaker=sessionmaker,
-                          token_generator=token_generator,
-                          token_validator=token_validator,
-                          oauth_provider=oauth_provider)
+    service = AuthService(
+        setting=setting,
+        sessionmaker=sessionmaker,
+        token_generator=token_generator,
+        token_validator=token_validator,
+        oauth_provider=oauth_provider,
+    )
 
     # login
     oauth_provider.handle_authorization_response = AsyncMock(
         return_value=VerifyTokenRet(
-            ok=True, user_id=dummy_user_id, username=dummy_username))
+            ok=True, user_id=dummy_user_id, username=dummy_username
+        )
+    )
     login_info = await service.login_redirect(dummy_state, dummy_code)
     assert login_info.data
 
@@ -164,8 +177,7 @@ async def test_auth_service_token_refresh(
     assert ret.error.code == ErrorCode.REFRESH_TOKEN_MISSMATCH
 
     # refresh (fail, invalid token)
-    with time_machine.travel(NOW +
-                             timedelta(seconds=setting.token.refresh_duration)):
+    with time_machine.travel(NOW + timedelta(seconds=setting.token.refresh_duration)):
         ret = await service.token_refresh(login_info.data.refresh_token)
         assert ret.ok is False
         assert ret.error

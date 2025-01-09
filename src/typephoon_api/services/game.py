@@ -48,6 +48,7 @@ class GetResultRet:
     """
     players are sorted by their ranking
     """
+
     ranking: list[GetResultRetItem] = field(default_factory=list)
 
     def __post_init__(self):
@@ -56,8 +57,11 @@ class GetResultRet:
 
 class GameService:
 
-    def __init__(self, game_cache_repo: GameCacheRepo,
-                 sessionmaker: async_sessionmaker[AsyncSession]):
+    def __init__(
+        self,
+        game_cache_repo: GameCacheRepo,
+        sessionmaker: async_sessionmaker[AsyncSession],
+    ):
         self._game_cache_repo = game_cache_repo
         self._sessionmaker = sessionmaker
 
@@ -67,18 +71,27 @@ class GameService:
         start_time = await self._game_cache_repo.get_start_time(game_id)
         if not start_time:
             logger.warning("start time not found, game_id: %s", game_id)
-            return ServiceRet(ok=False,
-                              error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
 
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
         return ServiceRet(ok=True, data=seconds_left)
 
-    async def write_statistics(self, statistics: GameStatistics, user_id: str,
-                               username: str,
-                               user_type: UserType) -> ServiceRet:
-        logger.debug("statistics: %s, user_id: %s, username: %s, user_type: %s",
-                     statistics.model_dump_json(), user_id, username,
-                     str(user_type))
+    async def write_statistics(
+        self,
+        statistics: GameStatistics,
+        user_id: str,
+        username: str,
+        user_type: UserType,
+    ) -> ServiceRet:
+        logger.debug(
+            "statistics: %s, user_id: %s, username: %s, user_type: %s",
+            statistics.model_dump_json(),
+            user_id,
+            username,
+            str(user_type),
+        )
 
         # write to database
         async with self._sessionmaker() as session:
@@ -88,7 +101,8 @@ class GameService:
             if not game:
                 logger.warning("game not found, game_id: %s", game)
                 return ServiceRet(
-                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+                )
 
             finished_at = datetime.now(UTC)
             rank = game.player_count
@@ -120,7 +134,8 @@ class GameService:
                     wpm=statistics.wpm,
                     wpm_raw=statistics.wpm_raw,
                     acc=statistics.acc,
-                ))
+                ),
+            )
 
         return ServiceRet(ok=True)
 
@@ -130,8 +145,9 @@ class GameService:
         players = await self._game_cache_repo.get_players(game_id)
         if not players:
             logger.warning("start time not found, game_id: %s", game_id)
-            return ServiceRet(ok=False,
-                              error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
 
         temp_list: list[GetResultRetItem] = []
         for _, player_info in players.items():

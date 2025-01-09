@@ -24,30 +24,38 @@ logger = getLogger(__name__)
 
 class LobbyCountdownConsumer(AbstractConsumer):
 
-    def __init__(self, setting: Setting, amqp_conn: AbstractRobustConnection,
-                 sessionmaker: async_sessionmaker[AsyncSession],
-                 redis_conn: Redis) -> None:
+    def __init__(
+        self,
+        setting: Setting,
+        amqp_conn: AbstractRobustConnection,
+        sessionmaker: async_sessionmaker[AsyncSession],
+        redis_conn: Redis,
+    ) -> None:
         super().__init__(setting, amqp_conn)
         self._sessionmaker = sessionmaker
         self._redis_conn = redis_conn
 
-    def _load_message(self,
-                      amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
+    def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _notify_all_users(self, game_id: int):
-        notify_body = LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START,
-                                     game_id=game_id).slim_dump_json().encode()
+        notify_body = (
+            LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START, game_id=game_id)
+            .slim_dump_json()
+            .encode()
+        )
         notify_msg = Message(notify_body, delivery_mode=DeliveryMode.PERSISTENT)
-        confirm = await self._notify_exchange.publish(message=notify_msg,
-                                                      routing_key="")
+        confirm = await self._notify_exchange.publish(
+            message=notify_msg, routing_key=""
+        )
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("game start notify publish failed")
 
     async def _set_game_status(self, game_id: int) -> bool:
         async with self._sessionmaker() as session:
-            game_repo = GameRepo(session=session,
-                                 player_limit=self._setting.game.player_limit)
+            game_repo = GameRepo(
+                session=session, player_limit=self._setting.game.player_limit
+            )
 
             # check current status
             game = await game_repo.get(game_id)
@@ -64,13 +72,16 @@ class LobbyCountdownConsumer(AbstractConsumer):
         return True
 
     async def _populate_game_cache(self, game_id: int):
-        game_cache_repo = GameCacheRepo(redis_conn=self._redis_conn,
-                                        setting=self._setting)
-        lobby_cache_repo = LobbyCacheRepo(redis_conn=self._redis_conn,
-                                          setting=self._setting)
+        game_cache_repo = GameCacheRepo(
+            redis_conn=self._redis_conn, setting=self._setting
+        )
+        lobby_cache_repo = LobbyCacheRepo(
+            redis_conn=self._redis_conn, setting=self._setting
+        )
 
         await game_cache_repo.populate_with_lobby_cache(
-            game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True)
+            game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True
+        )
 
     async def _process(self, msg: LobbyNotifyMsg):
         ok = await self._set_game_status(msg.game_id)
@@ -107,10 +118,10 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
         # lobby countdown
         self._channel = await self._amqp_conn.channel()
-        await self._channel.set_qos(
-            prefetch_count=self._setting.amqp.prefetch_count)
+        await self._channel.set_qos(prefetch_count=self._setting.amqp.prefetch_count)
         self._queue = await self._channel.get_queue(
-            self._setting.amqp.lobby_countdown_queue)
+            self._setting.amqp.lobby_countdown_queue
+        )
 
         # default exchange
         self._default_publish_channel = await self._amqp_conn.channel()
@@ -119,7 +130,8 @@ class LobbyCountdownConsumer(AbstractConsumer):
         # notify fanout exchange
         self._notify_publish_channel = await self._amqp_conn.channel()
         self._notify_exchange = await self._notify_publish_channel.get_exchange(
-            self._setting.amqp.lobby_notify_fanout_exchange)
+            self._setting.amqp.lobby_notify_fanout_exchange
+        )
 
     async def start(self):
         logger.info("start")

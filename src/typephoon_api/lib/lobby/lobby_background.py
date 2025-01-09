@@ -34,12 +34,12 @@ class LobbyBackground:
 
     async def start(self):
         self._task: Task = create_task(
-            self._loop(), name=f"lobby_background-{self._user_info.id}")
+            self._loop(), name=f"lobby_background-{self._user_info.id}"
+        )
 
     async def stop(self, final_msg: LobbyBGNotifyMsg | None = None):
         if final_msg:
-            await self._websocket.send_bytes(
-                final_msg.slim_dump_json().encode())
+            await self._websocket.send_bytes(final_msg.slim_dump_json().encode())
 
         self._task.cancel()
         await self._websocket.close()

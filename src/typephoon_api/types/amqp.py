@@ -11,6 +11,7 @@ class KeystrokeHeader(BaseModel):
     """
     source: server name
     """
+
     source: str | None = None
 
 
@@ -44,4 +45,5 @@ class LobbyCountdownMsg(BaseModel):
     This message is basically a trigger to let the server
     know when to start the game.
     """
+
     game_id: int

@@ -41,8 +41,7 @@ class GameCacheRepo:
         """
         update cache for a single player
         """
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+        key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.PLAYERS)
 
         raw_data: bytes = await self._redis_conn.get(key)
         current_data: dict[str, dict] = json.loads(raw_data)
@@ -51,11 +50,11 @@ class GameCacheRepo:
         await self._redis_conn.set(
             name=key,
             value=json.dumps(current_data),
-            ex=self._setting.redis.result_cache_expire_time)
+            ex=self._setting.redis.result_cache_expire_time,
+        )
 
     async def get_players(self, game_id: int) -> dict[str, GameUserInfo] | None:
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.PLAYERS)
+        key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.PLAYERS)
         ret = await self._redis_conn.get(key)
         if not ret:
             logger.warning("cache not found, game_id: %s", game_id)
@@ -69,8 +68,7 @@ class GameCacheRepo:
         return result
 
     async def get_start_time(self, game_id: int) -> datetime | None:
-        key = self._gen_cache_key(game_id=game_id,
-                                  cache_type=GameCacheType.COUNTDOWN)
+        key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
         ret: bytes = await self._redis_conn.get(key)
         if not ret:
             logger.warning("cache not found, game_id: %s", game_id)
@@ -79,10 +77,9 @@ class GameCacheRepo:
         data = ret.decode()
         return datetime.fromisoformat(data)
 
-    async def populate_with_lobby_cache(self,
-                                        game_id: int,
-                                        lobby_cache_repo: LobbyCacheRepo,
-                                        auto_clean: bool = False):
+    async def populate_with_lobby_cache(
+        self, game_id: int, lobby_cache_repo: LobbyCacheRepo, auto_clean: bool = False
+    ):
         """
         - auto_clean: clean up lobby cache after populating game cache
         """
@@ -93,14 +90,17 @@ class GameCacheRepo:
 
             for user_id, user_info in lobby_players.items():
                 game_players[user_id] = GameUserInfo.from_lobby_cache(
-                    user_info).model_dump()
+                    user_info
+                ).model_dump()
 
-            player_key = self._gen_cache_key(game_id=game_id,
-                                             cache_type=GameCacheType.PLAYERS)
+            player_key = self._gen_cache_key(
+                game_id=game_id, cache_type=GameCacheType.PLAYERS
+            )
             await self._redis_conn.set(
                 name=player_key,
                 value=json.dumps(game_players),
-                ex=self._setting.redis.in_game_cache_expire_time)
+                ex=self._setting.redis.in_game_cache_expire_time,
+            )
 
         else:
             logger.warning("lobby player cache not found")
@@ -109,15 +109,18 @@ class GameCacheRepo:
         lobby_start_time = await lobby_cache_repo.get_start_time(game_id)
         if lobby_start_time:
             game_start_time = lobby_start_time + timedelta(
-                seconds=self._setting.game.start_countdown)
+                seconds=self._setting.game.start_countdown
+            )
 
             start_time_key = self._gen_cache_key(
-                game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
+                game_id=game_id, cache_type=GameCacheType.COUNTDOWN
+            )
 
             await self._redis_conn.set(
                 name=start_time_key,
                 value=game_start_time.isoformat(),
-                ex=self._setting.redis.in_game_cache_expire_time)
+                ex=self._setting.redis.in_game_cache_expire_time,
+            )
         else:
             logger.warning("lobby start time cache not found")
 

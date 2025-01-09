@@ -53,8 +53,9 @@ class LobbyService:
         start_time = await self._lobby_cache_repo.get_start_time(game_id)
         if not start_time:
             logger.warning("start time not found, game_id: %s", game_id)
-            return ServiceRet(ok=False,
-                              error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
 
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
         return ServiceRet(ok=True, data=seconds_left)
@@ -73,20 +74,25 @@ class LobbyService:
             if not game:
                 logger.warning("game not found, game_id: %s", game_id)
                 return ServiceRet(
-                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+                )
 
             await session.commit()
 
-        await self._lobby_cache_repo.remove_player(game_id=game_id,
-                                                   user_id=user_id)
+        await self._lobby_cache_repo.remove_player(game_id=game_id, user_id=user_id)
 
         # notify all servers
-        msg = LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_LEFT,
-                             game_id=game_id,
-                             user_id=user_id).model_dump_json().encode()
+        msg = (
+            LobbyNotifyMsg(
+                notify_type=LobbyNotifyType.USER_LEFT, game_id=game_id, user_id=user_id
+            )
+            .model_dump_json()
+            .encode()
+        )
         amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
-        confirm = await self._amqp_notify_exchange.publish(message=amqp_msg,
-                                                           routing_key="")
+        confirm = await self._amqp_notify_exchange.publish(
+            message=amqp_msg, routing_key=""
+        )
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish user join message failed")
 
@@ -104,8 +110,9 @@ class LobbyService:
 
         if not players:
             logger.warning("game not found, game_id: %s", game_id)
-            return ServiceRet(ok=False,
-                              error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND))
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
 
         for id, info in players.items():
             if id == user_id:

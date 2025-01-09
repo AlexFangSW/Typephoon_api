@@ -20,15 +20,21 @@ class GameResultRepo:
         accuracy: float,
         finished_at: datetime,
     ) -> GameResult:
-        query = insert(GameResult).values({
-            "game_id": game_id,
-            "user_id": user_id,
-            "rank": rank,
-            "wpm_raw": wpm_raw,
-            "wpm_correct": wpm_currect,
-            'accuracy': accuracy,
-            "finished_at": finished_at,
-        }).returning(GameResult)
+        query = (
+            insert(GameResult)
+            .values(
+                {
+                    "game_id": game_id,
+                    "user_id": user_id,
+                    "rank": rank,
+                    "wpm_raw": wpm_raw,
+                    "wpm_correct": wpm_currect,
+                    "accuracy": accuracy,
+                    "finished_at": finished_at,
+                }
+            )
+            .returning(GameResult)
+        )
 
         ret = await self._session.scalar(query)
         assert ret

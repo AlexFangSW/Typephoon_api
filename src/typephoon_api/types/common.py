@@ -18,6 +18,7 @@ class GameUserInfo(BaseModel):
     """
     - finished: ISO 8061 format timestamp
     """
+
     id: str
     name: str
 

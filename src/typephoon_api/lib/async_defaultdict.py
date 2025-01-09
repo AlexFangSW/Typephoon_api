@@ -1,11 +1,8 @@
 from collections.abc import Callable, Coroutine
-from typing import Any, Generic, TypeVar
-
-K = TypeVar("K")
-V = TypeVar("V")
+from typing import Any
 
 
-class AsyncDefaultdict(Generic[K, V]):
+class AsyncDefaultdict[K, V]:
 
     def __init__(
         self,
