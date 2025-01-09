@@ -15,7 +15,7 @@ class AMQPManager:
         channel = await self._amqp_conn.channel()
 
         lobby_countdown_exchange = await channel.declare_exchange(
-            name=self._setting.amqp.countdown_direct_exchange,
+            name=self._setting.amqp.lobby_countdown_direct_exchange,
             type=ExchangeType.DIRECT,
             durable=True)
 
@@ -24,16 +24,16 @@ class AMQPManager:
             type=ExchangeType.FANOUT,
             durable=True)
 
-        game_event_exchange = await channel.declare_exchange(
-            name=self._setting.amqp.game_event_fanout_exchange,
+        game_keystroke_exchange = await channel.declare_exchange(
+            name=self._setting.amqp.game_keystroke_fanout_exchange,
             type=ExchangeType.FANOUT,
             durable=True)
 
-        game_event_queue = await channel.declare_queue(
-            name=self._setting.amqp.lobby_notify_queue,
+        game_keystroke_queue = await channel.declare_queue(
+            name=self._setting.amqp.game_keystroke_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
-        await game_event_queue.bind(exchange=game_event_exchange)
+        await game_keystroke_queue.bind(exchange=game_keystroke_exchange)
 
         # notify exchange is fanout, no need for routing key
         lobby_notify_queue = await channel.declare_queue(
@@ -66,9 +66,5 @@ class AMQPManager:
             name=self._setting.amqp.lobby_team_countdown_wait_queue,
             durable=True,
             arguments={"x-queue-type": "quorum"})
-
-        await channel.declare_queue(name=self._setting.amqp.game_event_queue,
-                                    durable=True,
-                                    arguments={"x-queue-type": "quorum"})
 
         await channel.close()

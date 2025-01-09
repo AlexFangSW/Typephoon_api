@@ -119,6 +119,10 @@ class AMQPCredentials(BaseModel):
     password: str = "guest"
 
 
+def get_server_name() -> str | None:
+    return getenv("SERVER_NAME", None)
+
+
 class AMQPSetting(AMQPCredentials):
     host: str = "localhost"
     vhost: str = "typephoon"
@@ -126,8 +130,8 @@ class AMQPSetting(AMQPCredentials):
 
     # exchanges
     lobby_notify_fanout_exchange: str = "lobby.notify"
-    countdown_direct_exchange: str = "lobby.countdown"
-    game_event_fanout_exchange: str = "game.event"
+    lobby_countdown_direct_exchange: str = "lobby.countdown"
+    game_keystroke_fanout_exchange: str = "game.keystroke"
 
     # queues with consumers
     lobby_notify_queue: str = "lobby.notify"
@@ -136,7 +140,7 @@ class AMQPSetting(AMQPCredentials):
     lobby_countdown_queue: str = "lobby.countdown"
     lobby_countdown_queue_routing_key: str = "lobby.countdown"
 
-    game_event_queue: str = "game.event"
+    game_keystroke_queue: str = "game.keystroke"
 
     # "wait queues" use deadletter policies to connect with exchanges.
     # no consumers, publish only.
@@ -149,10 +153,10 @@ class AMQPSetting(AMQPCredentials):
 
     def model_post_init(self, _: Any) -> None:
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
-        server_name = getenv("SERVER_NAME", None)
+        server_name = get_server_name()
         if server_name:
             self.lobby_notify_queue = f"{self.lobby_notify_queue}.{server_name}"
-            self.game_event_queue = f"{self.game_event_queue}.{server_name}"
+            self.game_keystroke_queue = f"{self.game_keystroke_queue}.{server_name}"
 
 
 class SecretSetting(BaseModel):
@@ -182,6 +186,8 @@ class Setting(BaseModel):
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
+
+    server_name: str | None = Field(default_factory=get_server_name)
 
     def merge(self, inpt: SecretSetting):
         self.google.merge(inpt.google_credential)
