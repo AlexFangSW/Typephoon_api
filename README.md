@@ -99,8 +99,9 @@ Others:
 
 Features:
 - General
-    - handle background task errors
-    - clean up on game finish
+    - background tasks
+        - auto clean up on websocket disconnect
+        - periodic clean up
 
 - In Game:
     - [OK] consumer for "keystroke"
