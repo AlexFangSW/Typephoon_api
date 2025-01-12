@@ -266,10 +266,14 @@ class BG[T: BGMsg](ABC):
 
     async def stop(self, final_msg: T | None = None):
         logger.debug("stop")
-        if final_msg:
-            await self._send(final_msg)
         self._send_task.cancel()
         self._recv_task.cancel()
+        try:
+            if final_msg:
+                await self._send(final_msg)
+            await self._ws.close()
+        except Exception as ex:
+            logger.warning("stop error: %s", str(ex))
 
     async def ping(self):
         logger.debug("ping")
