@@ -98,10 +98,16 @@ pytest -v
 Others:
 
 Features:
-- General
-    - background tasks
-        - auto clean up on websocket disconnect
-        - periodic clean up
+- General:
+    - refector background tasks 
+        - [OK] base 
+            - BGManager
+            - BGGroup
+            - BG
+        - implementations (BG)
+            - lobby
+            - game
+
 
 - In Game:
     - [OK] consumer for "keystroke"
