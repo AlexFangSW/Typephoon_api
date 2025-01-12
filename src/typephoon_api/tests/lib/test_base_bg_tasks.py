@@ -1,7 +1,8 @@
-from asyncio import Queue, sleep
+from asyncio import Future, Queue, sleep
 from typing import Type
 
 from fastapi import WebSocket
+
 from ...lib.background_tasks.base import (
     BG,
     BGGroup,
@@ -12,12 +13,12 @@ from ...lib.background_tasks.base import (
     _BGMsg,
 )
 from ..helper import *
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_bg_manager_get():
+async def test_bg_manager_get(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         async def _send(self, msg: T):
             pass
@@ -26,7 +27,9 @@ async def test_bg_manager_get():
             pass
 
     game_id = 123
-    bg_manager = BGManager[BGMsg, DummyBG](msg_type=BGMsg, bg_type=DummyBG)
+    bg_manager = BGManager[BGMsg, DummyBG](
+        msg_type=BGMsg, bg_type=DummyBG, setting=setting
+    )
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
@@ -38,7 +41,7 @@ async def test_bg_manager_get():
 
 
 @pytest.mark.asyncio
-async def test_bg_manager_remove():
+async def test_bg_manager_remove(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         async def _send(self, msg: T):
             pass
@@ -48,7 +51,9 @@ async def test_bg_manager_remove():
 
     game_id = 123
     ping = BGMsg(event=BGMsgEvent.PING)
-    bg_manager = BGManager[BGMsg, DummyBG](msg_type=BGMsg, bg_type=DummyBG)
+    bg_manager = BGManager[BGMsg, DummyBG](
+        msg_type=BGMsg, bg_type=DummyBG, setting=setting
+    )
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
@@ -61,7 +66,7 @@ async def test_bg_manager_remove():
 
 
 @pytest.mark.asyncio
-async def test_bg_manager_manage_loop():
+async def test_bg_manager_manage_loop(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         async def _send(self, msg: T):
             pass
@@ -71,11 +76,14 @@ async def test_bg_manager_manage_loop():
 
     game_id = 123
     user_id = "123"
-    bg_manager = BGManager[BGMsg, DummyBG](msg_type=BGMsg, bg_type=DummyBG)
+    bg_manager = BGManager[BGMsg, DummyBG](
+        msg_type=BGMsg, bg_type=DummyBG, setting=setting
+    )
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
-    await bg_group.add(user_id=user_id, ws= AsyncMock())
+    bg = DummyBG[BGMsg](ws=AsyncMock(), user_id=user_id, msg_type=BGMsg)
+    await bg_group.add(bg)
 
     # none existing game
     await bg_manager._queue.put(
@@ -101,7 +109,7 @@ async def test_bg_manager_manage_loop():
 
 
 @pytest.mark.asyncio
-async def test_bg_manager_stop():
+async def test_bg_manager_stop(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         async def _send(self, msg: T):
             pass
@@ -110,7 +118,9 @@ async def test_bg_manager_stop():
             pass
 
     games = [111, 222]
-    bg_manager = BGManager[BGMsg, DummyBG](msg_type=BGMsg, bg_type=DummyBG)
+    bg_manager = BGManager[BGMsg, DummyBG](
+        msg_type=BGMsg, bg_type=DummyBG, setting=setting
+    )
     ping = BGMsg(event=BGMsgEvent.PING)
     await bg_manager.start()
 
@@ -130,7 +140,7 @@ async def test_bg_manager_stop():
 
 
 @pytest.mark.asyncio
-async def test_bg_group_add():
+async def test_bg_group_add(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         send_history: list[T] = []
 
@@ -143,14 +153,20 @@ async def test_bg_group_add():
     queue = Queue()
     game_id = 123
     user_id = "123"
-    ws = AsyncMock()
     ping = BGMsg(event=BGMsgEvent.PING)
 
+    ws = AsyncMock()
+    ws.receive_bytes = MagicMock(return_value=Future())
+    bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+
     bg_group = BGGroup[BGMsg, DummyBG](
-        queue=queue, game_id=game_id, msg_type=BGMsg, bg_type=DummyBG
+        queue=queue, game_id=game_id, msg_type=BGMsg, setting=setting
     )
 
-    await bg_group.add(user_id=user_id, ws=ws, init_msg=ping)
+    ws = AsyncMock()
+    ws.receive_bytes = MagicMock(return_value=Future())
+    bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+    await bg_group.add(bg=bg, init_msg=ping)
 
     await sleep(0.01)
 
@@ -171,7 +187,7 @@ async def test_bg_group_add():
 
 
 @pytest.mark.asyncio
-async def test_bg_group_healthcheck_fail():
+async def test_bg_group_healthcheck_fail(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
 
         async def _send(self, msg: T):
@@ -188,10 +204,13 @@ async def test_bg_group_healthcheck_fail():
     user_id = "123"
 
     bg_group = BGGroup[BGMsg, DummyBG](
-        queue=queue, game_id=game_id, msg_type=BGMsg, bg_type=DummyBG
+        queue=queue, game_id=game_id, msg_type=BGMsg, setting=setting
     )
 
-    await bg_group.add(user_id=user_id, ws=AsyncMock())
+    ws = AsyncMock()
+    ws.receive_bytes = MagicMock(return_value=Future())
+    bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+    await bg_group.add(bg)
 
     await sleep(0.01)
 
@@ -211,7 +230,7 @@ async def test_bg_group_healthcheck_fail():
 
 
 @pytest.mark.asyncio
-async def test_bg_group_remove():
+async def test_bg_group_remove(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
         send_history: list[T] = []
 
@@ -227,10 +246,13 @@ async def test_bg_group_remove():
     pong = BGMsg(event=BGMsgEvent.PONG)
 
     bg_group = BGGroup[BGMsg, DummyBG](
-        queue=queue, game_id=game_id, msg_type=BGMsg, bg_type=DummyBG
+        queue=queue, game_id=game_id, msg_type=BGMsg, setting=setting
     )
 
-    await bg_group.add(user_id=user_id, ws=AsyncMock())
+    ws = AsyncMock()
+    ws.receive_bytes = MagicMock(return_value=Future())
+    bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+    await bg_group.add(bg)
     bg = bg_group._bg_bucket[user_id]
     await bg_group.remove(user_id=user_id, final_msg=pong)
 
@@ -260,10 +282,10 @@ async def test_bg_group_remove():
 
 
 @pytest.mark.asyncio
-async def test_bg_group_broadcast():
+async def test_bg_group_broadcast(setting: Setting):
     class DummyBG[T: BGMsg](BG[T]):
-        def __init__(self, ws: WebSocket, msg_type: Type[T]) -> None:
-            super().__init__(ws, msg_type)
+        def __init__(self, ws: WebSocket, msg_type: Type[T], user_id: str) -> None:
+            super().__init__(ws, msg_type, user_id)
             self.send_history: list[T] = []
 
         async def _send(self, msg: T):
@@ -278,11 +300,14 @@ async def test_bg_group_broadcast():
     ping = BGMsg(event=BGMsgEvent.PING)
 
     bg_group = BGGroup[BGMsg, DummyBG](
-        queue=queue, game_id=game_id, msg_type=BGMsg, bg_type=DummyBG
+        queue=queue, game_id=game_id, msg_type=BGMsg, setting=setting
     )
 
     for user_id in users:
-        await bg_group.add(user_id=user_id, ws=AsyncMock())
+        ws = AsyncMock()
+        ws.receive_bytes = MagicMock(return_value=Future())
+        bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+        await bg_group.add(bg)
     await bg_group.broadcast(ping)
 
     await sleep(0.01)
@@ -295,10 +320,11 @@ async def test_bg_group_broadcast():
 
 
 @pytest.mark.asyncio
-async def test_bg_group_stop():
-    class DummyBG[T: BGMsg](BG[T]):
-        def __init__(self, ws: WebSocket, msg_type: Type[T]) -> None:
-            super().__init__(ws, msg_type)
+async def test_bg_group_stop(setting: Setting):
+    class DummyBG[T: BGMsg[BGMsgEvent]](BG[T]):
+
+        def __init__(self, ws: WebSocket, msg_type: Type[T], user_id: str) -> None:
+            super().__init__(ws, msg_type, user_id)
             self.send_history: list[T] = []
 
         async def _send(self, msg: T):
@@ -313,12 +339,15 @@ async def test_bg_group_stop():
     ping = BGMsg(event=BGMsgEvent.PING)
 
     bg_group = BGGroup[BGMsg, DummyBG](
-        queue=queue, game_id=game_id, msg_type=BGMsg, bg_type=DummyBG
+        queue=queue, game_id=game_id, msg_type=BGMsg, setting=setting
     )
 
     bg_tmp: list[DummyBG] = []
     for user_id in users:
-        await bg_group.add(user_id=user_id, ws=AsyncMock())
+        ws = AsyncMock()
+        ws.receive_bytes = MagicMock(return_value=Future())
+        bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
+        await bg_group.add(bg)
         bg_tmp.append(bg_group._bg_bucket[user_id])
 
     await sleep(0.01)
@@ -335,7 +364,7 @@ async def test_bg_group_stop():
 
 @pytest.mark.asyncio
 async def test_bg():
-    class DummyBG[T: BGMsg](BG[T]):
+    class DummyBG[T: BGMsg[BGMsgEvent]](BG[T]):
         send_history: list[T] = []
         recv_history: list[T] = []
 
@@ -349,7 +378,7 @@ async def test_bg():
     ping = BGMsg(event=BGMsgEvent.PING)
     pong = BGMsg(event=BGMsgEvent.PONG)
     ws.receive_bytes = AsyncMock(side_effect=[pong.model_dump_json().encode()])
-    bg = DummyBG[BGMsg](ws=ws, msg_type=BGMsg)
+    bg = DummyBG(ws=ws, msg_type=BGMsg, user_id="123")
 
     await bg.start(ping)
     await bg.ping()

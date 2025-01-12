@@ -4,15 +4,18 @@ Automatically cleans up on websocket desconnect.
 """
 
 from __future__ import annotations
+from enum import StrEnum
 from abc import ABC, abstractmethod
 from asyncio import Queue, Task, create_task, sleep
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum, IntEnum
 from logging import getLogger
 from typing import Type
 
 from fastapi import WebSocket
 from pydantic import BaseModel
+
+from ...types.setting import Setting
 
 
 logger = getLogger(__name__)
@@ -35,19 +38,21 @@ class _GroupBucketItem[MT: BGMsg, BT: BG]:
     group: BGGroup[MT, BT]
 
     @property
-    def connections(self)-> int:
+    def connections(self) -> int:
         return len(self.group._bg_bucket)
+
 
 class BGManager[MT: BGMsg, BT: BG]:
     """
     background manager
     """
 
-    def __init__(self, msg_type: Type[MT], bg_type: Type[BT]) -> None:
+    def __init__(self, msg_type: Type[MT], bg_type: Type[BT], setting: Setting) -> None:
         self._queue: Queue[_BGMsg] = Queue()
         self._group_bucket: dict[int, _GroupBucketItem[MT, BT]] = {}
         self._msg_type = msg_type
         self._bg_type = bg_type
+        self._setting = setting
 
     async def get(self, game_id: int) -> BGGroup:
         """
@@ -63,7 +68,7 @@ class BGManager[MT: BGMsg, BT: BG]:
                 queue=self._queue,
                 game_id=game_id,
                 msg_type=self._msg_type,
-                bg_type=self._bg_type,
+                setting=self._setting,
             )
         )
         return self._group_bucket[game_id].group
@@ -125,31 +130,28 @@ class BGGroup[MT: BGMsg, BT: BG]:
         queue: Queue[_BGMsg],
         game_id: int,
         msg_type: Type[MT],
-        bg_type: Type[BT],
-        ping_interval: float = 30,
+        setting: Setting,
     ) -> None:
         self._game_id = game_id
         self._queue = queue
         self._bg_bucket: dict[str, BT] = {}
         self._healthcheck_bucket: dict[str, Task] = {}
-        self._ping_interval = ping_interval
         self._msg_type = msg_type
-        self._bg_type = bg_type
+        self._setting = setting
 
     @property
     def _name(self) -> str:
         return type(self).__name__
 
-    async def add(self, user_id: str, ws: WebSocket, init_msg: MT | None = None):
-        logger.debug("add bg, user_id: %s, init_msg: %s", user_id, init_msg)
-        bg = self._bg_type(ws=ws, msg_type=self._msg_type)
+    async def add(self, bg: BT, init_msg: MT | None = None):
+        logger.debug("add bg, user_id: %s, init_msg: %s", bg.user_id, init_msg)
         await bg.start(init_msg)
-        self._bg_bucket[user_id] = bg
-        self._healthcheck_bucket[user_id] = create_task(
-            self._healthcheck_loop(user_id), name=f"{self._name}-healthcheck-loop"
+        self._bg_bucket[bg.user_id] = bg
+        self._healthcheck_bucket[bg.user_id] = create_task(
+            self._healthcheck_loop(bg.user_id), name=f"{self._name}-healthcheck-loop"
         )
         await self._queue.put(
-            _BGMsg(game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.UPDATE)
+            _BGMsg(game_id=self._game_id, user_id=bg.user_id, event=_BGMsgEvent.UPDATE)
         )
 
     async def remove(self, user_id: str, final_msg: MT | None = None):
@@ -159,9 +161,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
             await bg.stop(final_msg)
             self._bg_bucket.pop(user_id)
             await self._queue.put(
-                _BGMsg(
-                    game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.UPDATE
-                )
+                _BGMsg(game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.UPDATE)
             )
             logger.debug("bg removed, user_id: %s, final_msg: %s", user_id, final_msg)
 
@@ -198,16 +198,25 @@ class BGGroup[MT: BGMsg, BT: BG]:
                     )
                 )
                 break
-            await sleep(self._ping_interval)
+            await sleep(self._setting.bg.ping_interval)
 
 
-class BGMsgEvent(IntEnum):
-    PING = 0
-    PONG = 1
+class BGMsgEvent(StrEnum):
+    """
+    all message event enums must have this attributes
+    """
+
+    PING = "PING"
+    PONG = "PONG"
+    RECONNECT = "RECONNECT"
 
 
-class BGMsg(BaseModel):
-    event: BGMsgEvent
+class BGMsg[T](BaseModel):
+
+    event: T
+
+    def slim_dump_json(self) -> str:
+        return self.model_dump_json(exclude_none=True)
 
 
 class BG[T: BGMsg](ABC):
@@ -215,10 +224,15 @@ class BG[T: BGMsg](ABC):
     background instance
     """
 
-    def __init__(self, ws: WebSocket, msg_type: Type[T]) -> None:
+    def __init__(self, ws: WebSocket, msg_type: Type[T], user_id: str) -> None:
         self._ws = ws
         self._queue: Queue[T] = Queue()
         self._msg_type = msg_type
+        self._user_id = user_id
+
+    @property
+    def user_id(self) -> str:
+        return self._user_id
 
     @property
     def _name(self) -> str:
@@ -233,9 +247,13 @@ class BG[T: BGMsg](ABC):
 
     async def _send_loop(self):
         logger.debug("_send_loop start")
-        while True:
-            msg = await self._queue.get()
-            await self._send(msg)
+        try:
+            while True:
+                msg = await self._queue.get()
+                await self._send(msg)
+        except:
+            logger.exception("%s, send loop error", self._name)
+            await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
 
     @abstractmethod
     async def _recv(self, msg: T):
@@ -246,10 +264,14 @@ class BG[T: BGMsg](ABC):
 
     async def _recv_loop(self):
         logger.debug("_recv_loop start")
-        while True:
-            raw_msg = await self._ws.receive_bytes()
-            msg = self._msg_type.model_validate_json(raw_msg)
-            await self._recv(msg)
+        try:
+            while True:
+                raw_msg = await self._ws.receive_bytes()
+                msg = self._msg_type.model_validate_json(raw_msg)
+                await self._recv(msg)
+        except:
+            logger.exception("%s, recv loop error", self._name)
+            await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
 
     async def put_msg(self, msg: T):
         """

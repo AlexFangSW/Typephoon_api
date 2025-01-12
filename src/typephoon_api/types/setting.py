@@ -163,6 +163,10 @@ class GameSetting(BaseModel):
     player_limit: int = 5
 
 
+class BGSetting(BaseModel):
+    ping_interval: float = 30
+
+
 class Setting(BaseModel):
     db: DBSetting = Field(default_factory=DBSetting)
     redis: RedisSetting = Field(default_factory=RedisSetting)
@@ -173,6 +177,7 @@ class Setting(BaseModel):
     token: TokenSetting = Field(default_factory=TokenSetting)
     amqp: AMQPSetting = Field(default_factory=AMQPSetting)
     game: GameSetting = Field(default_factory=GameSetting)
+    bg: BGSetting = Field(default_factory=BGSetting)
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
