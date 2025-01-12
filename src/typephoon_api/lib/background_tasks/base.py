@@ -19,9 +19,8 @@ logger = getLogger(__name__)
 
 
 class _BGMsgEvent(IntEnum):
-    ADD = 0
-    SUBSTRACT = 1
-    HEALTHCHECK_FAIL = 2
+    UPDATE = 0
+    HEALTHCHECK_FAIL = 1
 
 
 @dataclass(slots=True, frozen=True)
@@ -34,8 +33,10 @@ class _BGMsg:
 @dataclass(slots=True)
 class _GroupBucketItem[MT: BGMsg, BT: BG]:
     group: BGGroup[MT, BT]
-    connections: int = 0
 
+    @property
+    def connections(self)-> int:
+        return len(self.group._bg_bucket)
 
 class BGManager[MT: BGMsg, BT: BG]:
     """
@@ -50,7 +51,7 @@ class BGManager[MT: BGMsg, BT: BG]:
 
     async def get(self, game_id: int) -> BGGroup:
         """
-        act like default dict, either create or return existing instance
+        act like defaultdict, either create or return existing instance
         """
         if bucket_item := self._group_bucket.get(game_id):
             logger.debug("found bg_group, game_id: %s", game_id)
@@ -85,17 +86,8 @@ class BGManager[MT: BGMsg, BT: BG]:
                 logger.debug("game not found, game_id: %s", msg.game_id)
                 continue
 
-            if msg.event == _BGMsgEvent.ADD:
-                bucket_item.connections += 1
-
-            elif msg.event == _BGMsgEvent.SUBSTRACT:
-                bucket_item.connections -= 1
-
-            elif msg.event == _BGMsgEvent.HEALTHCHECK_FAIL:
+            if msg.event == _BGMsgEvent.HEALTHCHECK_FAIL:
                 await bucket_item.group.remove(msg.user_id)
-
-            else:
-                raise ValueError("unknown event: %s", msg.event)
 
             logger.debug(
                 "game_id: %s, connections: %s",
@@ -103,7 +95,7 @@ class BGManager[MT: BGMsg, BT: BG]:
                 bucket_item.connections,
             )
 
-            if bucket_item.connections <= 0:
+            if bucket_item.connections == 0:
                 await self.remove(msg.game_id)
 
     @property
@@ -157,7 +149,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
             self._healthcheck_loop(user_id), name=f"{self._name}-healthcheck-loop"
         )
         await self._queue.put(
-            _BGMsg(game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.ADD)
+            _BGMsg(game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.UPDATE)
         )
 
     async def remove(self, user_id: str, final_msg: MT | None = None):
@@ -168,7 +160,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
             self._bg_bucket.pop(user_id)
             await self._queue.put(
                 _BGMsg(
-                    game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.SUBSTRACT
+                    game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.UPDATE
                 )
             )
             logger.debug("bg removed, user_id: %s, final_msg: %s", user_id, final_msg)

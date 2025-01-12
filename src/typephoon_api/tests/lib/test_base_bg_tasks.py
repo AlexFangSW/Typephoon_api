@@ -75,28 +75,24 @@ async def test_bg_manager_manage_loop():
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
-    bg_group.remove = AsyncMock()
+    await bg_group.add(user_id=user_id, ws= AsyncMock())
 
     # none existing game
     await bg_manager._queue.put(
-        _BGMsg(game_id=9999, user_id=user_id, event=_BGMsgEvent.ADD)
+        _BGMsg(game_id=9999, user_id=user_id, event=_BGMsgEvent.UPDATE)
     )
 
+    # make sure it doesn't wrongly remove
     await bg_manager._queue.put(
-        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.ADD)
+        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE)
     )
     await sleep(0.01)
     assert bg_manager._group_bucket[game_id].connections == 1
 
+    # healthcheck fail removes one connection, total connectoins left is 0,
+    # the bg_group is removed.
     await bg_manager._queue.put(
         _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.HEALTHCHECK_FAIL)
-    )
-    await sleep(0.01)
-    assert bg_group.remove.called
-    assert bg_group.remove.call_args.args == (user_id,)
-
-    await bg_manager._queue.put(
-        _BGMsg(game_id=game_id, user_id="123", event=_BGMsgEvent.SUBSTRACT)
     )
     await sleep(0.01)
     assert bg_manager._group_bucket.get(game_id) is None
@@ -161,7 +157,7 @@ async def test_bg_group_add():
     # message sent to manager
     assert queue.qsize() == 1
     msg = await queue.get()
-    assert msg == _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.ADD)
+    assert msg == _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE)
 
     # health check loop
     health_check_task = bg_group._healthcheck_bucket[user_id]
@@ -207,7 +203,7 @@ async def test_bg_group_healthcheck_fail():
         queue_msg.append(msg)
 
     assert queue_msg == [
-        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.ADD),
+        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE),
         _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.HEALTHCHECK_FAIL),
     ]
 
@@ -256,8 +252,8 @@ async def test_bg_group_remove():
         queue_msg.append(msg)
 
     assert queue_msg == [
-        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.ADD),
-        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.SUBSTRACT),
+        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE),
+        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE),
     ]
 
     await bg_group.stop()
