@@ -88,31 +88,21 @@ class BGManager[MT: BGMsg, BT: BG]:
             if msg.event == _BGMsgEvent.CONNECT:
                 bucket_item.connections += 1
 
-                logger.debug(
-                    "connect, game_id: %s, connections: %s",
-                    msg.game_id,
-                    bucket_item.connections,
-                )
-
             elif msg.event == _BGMsgEvent.DISCONNECT:
-                logger.debug("disconnect, game_id: %s")
-
                 bucket_item.connections -= 1
                 await bucket_item.group.remove(msg.user_id)
 
-                logger.debug(
-                    "disconnect, game_id: %s, connections: %s",
-                    msg.game_id,
-                    bucket_item.connections,
-                )
-
-                if bucket_item.connections == 0:
-                    logger.debug(
-                        "not connections left, remove group, game_id: %s", msg.game_id
-                    )
-                    await self.remove(msg.game_id)
             else:
                 raise ValueError("unknown event: %s", msg.event)
+
+            logger.debug(
+                "game_id: %s, connections: %s",
+                msg.game_id,
+                bucket_item.connections,
+            )
+
+            if bucket_item.connections <= 0:
+                await self.remove(msg.game_id)
 
     @property
     def _name(self) -> str:
@@ -277,4 +267,5 @@ class BG[T: BGMsg](ABC):
         self._recv_task.cancel()
 
     async def ping(self):
+        logger.debug("ping")
         await self._send(self._msg_type(event=BGMsgEvent.PING))
