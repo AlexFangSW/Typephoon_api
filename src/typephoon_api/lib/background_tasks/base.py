@@ -4,7 +4,7 @@ Automatically cleans up on websocket desconnect.
 """
 
 from __future__ import annotations
-from abc import ABC
+from abc import ABC, abstractmethod
 from asyncio import Queue, Task, create_task, sleep
 from dataclasses import dataclass
 from enum import IntEnum
@@ -31,23 +31,24 @@ class _BGMsg:
 
 
 @dataclass(slots=True)
-class _GroupBucketItem[T: BGMsg]:
-    group: BGGroup[T]
+class _GroupBucketItem[MT: BGMsg, BT: BG]:
+    group: BGGroup[MT, BT]
     connections: int = 0
 
 
 # NOTE: maybe we should use TRACE level for logging ?
 
 
-class BGManager[T: BGMsg]:
+class BGManager[MT: BGMsg, BT: BG]:
     """
     background manager
     """
 
-    def __init__(self, msg_type: Type[T]) -> None:
+    def __init__(self, msg_type: Type[MT], bg_type: Type[BT]) -> None:
         self._queue: Queue[_BGMsg] = Queue()
-        self._group_bucket: dict[int, _GroupBucketItem[T]] = {}
+        self._group_bucket: dict[int, _GroupBucketItem[MT, BT]] = {}
         self._msg_type = msg_type
+        self._bg_type = bg_type
 
     async def get(self, game_id: int) -> BGGroup:
         """
@@ -59,13 +60,16 @@ class BGManager[T: BGMsg]:
 
         logger.debug("create bg_group, game_id: %s", game_id)
         self._group_bucket[game_id] = _GroupBucketItem(
-            group=BGGroup[self._msg_type](
-                queue=self._queue, game_id=game_id, msg_type=self._msg_type
+            group=BGGroup[self._msg_type, self._bg_type](
+                queue=self._queue,
+                game_id=game_id,
+                msg_type=self._msg_type,
+                bg_type=self._bg_type,
             )
         )
         return self._group_bucket[game_id].group
 
-    async def remove(self, game_id: int, final_msg: T | None = None):
+    async def remove(self, game_id: int, final_msg: MT | None = None):
         if bucket_item := self._group_bucket.get(game_id):
             await bucket_item.group.stop(final_msg)
             self._group_bucket.pop(game_id)
@@ -120,14 +124,14 @@ class BGManager[T: BGMsg]:
             self._manage_loop(), name=f"{self._name}-manage-loop"
         )
 
-    async def stop(self, final_msg: T | None = None):
+    async def stop(self, final_msg: MT | None = None):
         logger.debug("stop")
         self._listener_task.cancel()
         for game_id in self._group_bucket:
             await self.remove(game_id=game_id, final_msg=final_msg)
 
 
-class BGGroup[T: BGMsg]:
+class BGGroup[MT: BGMsg, BT: BG]:
     """
     background group
     """
@@ -136,31 +140,32 @@ class BGGroup[T: BGMsg]:
         self,
         queue: Queue[_BGMsg],
         game_id: int,
-        msg_type: Type[T],
+        msg_type: Type[MT],
+        bg_type: Type[BT],
         ping_interval: float = 30,
     ) -> None:
         self._game_id = game_id
         self._queue = queue
-        self._bg_bucket: dict[str, BG] = {}
+        self._bg_bucket: dict[str, BT] = {}
         self._health_check_bucket: dict[str, Task] = {}
         self._ping_interval = ping_interval
         self._msg_type = msg_type
+        self._bg_type = bg_type
 
     @property
     def _name(self) -> str:
         return type(self).__name__
 
-    async def add(self, user_id: str, ws: WebSocket, init_msg: T | None = None):
+    async def add(self, user_id: str, ws: WebSocket, init_msg: MT | None = None):
         logger.debug("add bg, user_id: %s, init_msg: %s", user_id, init_msg)
-        # TODO: change this, should not directaly use 'BG'
-        bg = BG[self._msg_type](ws=ws, msg_type=self._msg_type)
+        bg = self._bg_type(ws=ws, msg_type=self._msg_type)
         await bg.start(init_msg)
         self._bg_bucket[user_id] = bg
         self._health_check_bucket[user_id] = create_task(
             self._health_check_loop(user_id), name=f"{self._name}-health-check-loop"
         )
 
-    async def remove(self, user_id: str, final_msg: T | None = None):
+    async def remove(self, user_id: str, final_msg: MT | None = None):
         if bg := self._bg_bucket.get(user_id):
             self._health_check_bucket[user_id].cancel()
             self._health_check_bucket.pop(user_id)
@@ -168,12 +173,12 @@ class BGGroup[T: BGMsg]:
             self._bg_bucket.pop(user_id)
             logger.debug("bg removed, user_id: %s, final_msg: %s", user_id, final_msg)
 
-    async def broadcast(self, msg: T):
+    async def broadcast(self, msg: MT):
         for user_id, bg in self._bg_bucket.items():
             logger.debug("put msg, user_id: %s, msg: %s", user_id, msg)
             await bg.put_msg(msg)
 
-    async def stop(self, final_msg: T | None = None):
+    async def stop(self, final_msg: MT | None = None):
         for user_id in self._bg_bucket:
             await self.remove(user_id=user_id, final_msg=final_msg)
 
@@ -226,6 +231,7 @@ class BG[T: BGMsg](ABC):
     def _name(self) -> str:
         return type(self).__name__
 
+    @abstractmethod
     async def _send(self, msg: T):
         """
         send logic
@@ -237,6 +243,7 @@ class BG[T: BGMsg](ABC):
             msg = await self._queue.get()
             await self._send(msg)
 
+    @abstractmethod
     async def _recv(self, msg: T):
         """
         receive logic
