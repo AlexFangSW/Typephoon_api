@@ -19,8 +19,9 @@ logger = getLogger(__name__)
 
 
 class _BGMsgEvent(IntEnum):
-    CONNECT = 0
-    DISCONNECT = 1
+    ADD = 0
+    SUBSTRACT = 1
+    HEALTHCHECK_FAIL = 2
 
 
 @dataclass(slots=True, frozen=True)
@@ -34,9 +35,6 @@ class _BGMsg:
 class _GroupBucketItem[MT: BGMsg, BT: BG]:
     group: BGGroup[MT, BT]
     connections: int = 0
-
-
-# NOTE: maybe we should use TRACE level for logging ?
 
 
 class BGManager[MT: BGMsg, BT: BG]:
@@ -73,7 +71,9 @@ class BGManager[MT: BGMsg, BT: BG]:
         if bucket_item := self._group_bucket.get(game_id):
             await bucket_item.group.stop(final_msg)
             self._group_bucket.pop(game_id)
-            logger.debug("bg_group removed, game_id: %s", game_id)
+            logger.debug(
+                "bg_group removed, game_id: %s, final_msg: %s", game_id, final_msg
+            )
 
     async def _manage_loop(self):
         logger.debug("_manage_loop started")
@@ -85,11 +85,13 @@ class BGManager[MT: BGMsg, BT: BG]:
                 logger.debug("game not found, game_id: %s", msg.game_id)
                 continue
 
-            if msg.event == _BGMsgEvent.CONNECT:
+            if msg.event == _BGMsgEvent.ADD:
                 bucket_item.connections += 1
 
-            elif msg.event == _BGMsgEvent.DISCONNECT:
+            elif msg.event == _BGMsgEvent.SUBSTRACT:
                 bucket_item.connections -= 1
+
+            elif msg.event == _BGMsgEvent.HEALTHCHECK_FAIL:
                 await bucket_item.group.remove(msg.user_id)
 
             else:
@@ -117,7 +119,7 @@ class BGManager[MT: BGMsg, BT: BG]:
     async def stop(self, final_msg: MT | None = None):
         logger.debug("stop")
         self._listener_task.cancel()
-        for game_id in self._group_bucket:
+        for game_id in list(self._group_bucket.keys()):
             await self.remove(game_id=game_id, final_msg=final_msg)
 
 
@@ -137,7 +139,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
         self._game_id = game_id
         self._queue = queue
         self._bg_bucket: dict[str, BT] = {}
-        self._health_check_bucket: dict[str, Task] = {}
+        self._healthcheck_bucket: dict[str, Task] = {}
         self._ping_interval = ping_interval
         self._msg_type = msg_type
         self._bg_type = bg_type
@@ -151,16 +153,24 @@ class BGGroup[MT: BGMsg, BT: BG]:
         bg = self._bg_type(ws=ws, msg_type=self._msg_type)
         await bg.start(init_msg)
         self._bg_bucket[user_id] = bg
-        self._health_check_bucket[user_id] = create_task(
-            self._health_check_loop(user_id), name=f"{self._name}-health-check-loop"
+        self._healthcheck_bucket[user_id] = create_task(
+            self._healthcheck_loop(user_id), name=f"{self._name}-healthcheck-loop"
+        )
+        await self._queue.put(
+            _BGMsg(game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.ADD)
         )
 
     async def remove(self, user_id: str, final_msg: MT | None = None):
         if bg := self._bg_bucket.get(user_id):
-            self._health_check_bucket[user_id].cancel()
-            self._health_check_bucket.pop(user_id)
+            self._healthcheck_bucket[user_id].cancel()
+            self._healthcheck_bucket.pop(user_id)
             await bg.stop(final_msg)
             self._bg_bucket.pop(user_id)
+            await self._queue.put(
+                _BGMsg(
+                    game_id=self._game_id, user_id=user_id, event=_BGMsgEvent.SUBSTRACT
+                )
+            )
             logger.debug("bg removed, user_id: %s, final_msg: %s", user_id, final_msg)
 
     async def broadcast(self, msg: MT):
@@ -169,10 +179,10 @@ class BGGroup[MT: BGMsg, BT: BG]:
             await bg.put_msg(msg)
 
     async def stop(self, final_msg: MT | None = None):
-        for user_id in self._bg_bucket:
+        for user_id in list(self._bg_bucket.keys()):
             await self.remove(user_id=user_id, final_msg=final_msg)
 
-    async def _health_check_loop(self, user_id: str):
+    async def _healthcheck_loop(self, user_id: str):
         """
         checks connection for specified user.
         if the connection is broken, notify background manager for clean up.
@@ -184,7 +194,6 @@ class BGGroup[MT: BGMsg, BT: BG]:
             return
 
         while True:
-            await sleep(self._ping_interval)
             try:
                 await bg.ping()
             except Exception as ex:
@@ -193,14 +202,16 @@ class BGGroup[MT: BGMsg, BT: BG]:
                     _BGMsg(
                         game_id=self._game_id,
                         user_id=user_id,
-                        event=_BGMsgEvent.DISCONNECT,
+                        event=_BGMsgEvent.HEALTHCHECK_FAIL,
                     )
                 )
                 break
+            await sleep(self._ping_interval)
 
 
 class BGMsgEvent(IntEnum):
     PING = 0
+    PONG = 1
 
 
 class BGMsg(BaseModel):
@@ -229,6 +240,7 @@ class BG[T: BGMsg](ABC):
         raise NotImplemented()
 
     async def _send_loop(self):
+        logger.debug("_send_loop start")
         while True:
             msg = await self._queue.get()
             await self._send(msg)
@@ -241,6 +253,7 @@ class BG[T: BGMsg](ABC):
         raise NotImplemented()
 
     async def _recv_loop(self):
+        logger.debug("_recv_loop start")
         while True:
             raw_msg = await self._ws.receive_bytes()
             msg = self._msg_type.model_validate_json(raw_msg)
