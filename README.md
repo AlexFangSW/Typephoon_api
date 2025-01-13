@@ -104,7 +104,7 @@ Features:
             - BGManager
             - BGGroup
             - BG
-        - implementations (BG)
+        - [OK] implementations (BG)
             - lobby
             - game
 
