@@ -3,13 +3,10 @@ from logging import getLogger
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
-from ..lib.async_defaultdict import AsyncDefaultdict
+from ..lib.background_tasks.base import BGManager
+from ..lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
 
-from ..lib.game.base import GameBGNotifyMsg
-
-from ..lib.game.game_manager import GameBackgroundManager
-
-from ..types.amqp import GameNotifyType, KeystrokeHeader, KeystrokeMsg
+from ..types.amqp import KeystrokeHeader, KeystrokeMsg
 from ..types.setting import Setting
 from .base import AbstractConsumer
 
@@ -28,10 +25,10 @@ class KeystrokeConsumer(AbstractConsumer):
         self,
         setting: Setting,
         amqp_conn: AbstractRobustConnection,
-        background_bucket: AsyncDefaultdict[int, GameBackgroundManager],
+        bg_manager: BGManager[GameBGMsg, GameBG],
     ) -> None:
         super().__init__(setting, amqp_conn)
-        self._background_bucket = background_bucket
+        self._bg_manager = bg_manager
 
     def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LoadMsgRet:
         result = LoadMsgRet(body=KeystrokeMsg.model_validate_json(amqp_msg.body))
@@ -43,13 +40,13 @@ class KeystrokeConsumer(AbstractConsumer):
         return result
 
     async def _process(self, msg: KeystrokeMsg):
-        bg_msg = GameBGNotifyMsg(
-            notify_type=GameNotifyType.KEY_STROKE,
+        bg_msg = GameBGMsg(
+            event=GameBGMsgEvent.KEY_STOKE,
             user_id=msg.user_id,
             word_index=msg.word_index,
             char_index=msg.char_index,
         )
-        manager = await self._background_bucket.get(msg.game_id)
+        manager = await self._bg_manager.get(msg.game_id)
         await manager.broadcast(bg_msg)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):

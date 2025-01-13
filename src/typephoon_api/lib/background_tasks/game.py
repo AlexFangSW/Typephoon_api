@@ -3,7 +3,7 @@ from enum import StrEnum
 from logging import getLogger
 from typing import Type
 from aio_pika import DeliveryMode, Message
-from aio_pika.abc import AbstractConnection
+from aio_pika.abc import AbstractConnection, AbstractExchange
 from fastapi import WebSocket
 from pamqp.commands import Basic
 
@@ -26,24 +26,24 @@ class GameBGMsgEvent(StrEnum):
 
 
 class GameBGMsg(BGMsg[GameBGMsgEvent]):
+    user_id: str | None = None
     word_index: int | None = None
     char_index: int | None = None
 
 
-# TODO: actually use it
 class GameBG(BG[GameBGMsg]):
     def __init__(
         self,
         ws: WebSocket,
-        msg_type: Type[GameBGMsg],
         user_id: str,
-        amqp_conn: AbstractConnection,
+        exchange: AbstractExchange,
         setting: Setting,
         game_id: int,
-        server_name: str,
+        server_name: str | None,
+        msg_type: Type[GameBGMsg] = GameBGMsg,
     ) -> None:
         super().__init__(ws, msg_type, user_id)
-        self._amqp_conn = amqp_conn
+        self._exchange = exchange
         self._setting = setting
         self._game_id = game_id
         self._server_name = server_name
@@ -82,14 +82,3 @@ class GameBG(BG[GameBGMsg]):
         """
         logger.debug("got msg: %s", msg)
         await self._ws.send_bytes(msg.slim_dump_json().encode())
-
-    async def start(self, init_msg: GameBGMsg | None = None):
-        self._channel = await self._amqp_conn.channel()
-        self._exchange = await self._channel.get_exchange(
-            self._setting.amqp.game_keystroke_fanout_exchange
-        )
-        return await super().start(init_msg)
-
-    async def stop(self, final_msg: GameBGMsg | None = None):
-        await self._channel.close()
-        return await super().stop(final_msg)

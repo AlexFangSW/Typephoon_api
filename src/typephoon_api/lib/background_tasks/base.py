@@ -54,7 +54,7 @@ class BGManager[MT: BGMsg, BT: BG]:
         self._bg_type = bg_type
         self._setting = setting
 
-    async def get(self, game_id: int) -> BGGroup:
+    async def get(self, game_id: int) -> BGGroup[MT, BT]:
         """
         act like defaultdict, either create or return existing instance
         """

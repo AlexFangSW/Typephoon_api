@@ -131,8 +131,10 @@ async def get_game_event_service(request: Request) -> GameEventService:
 
     service = GameEventService(
         token_validator=token_validator,
-        background_bucket=app.game_background_bucket,
         game_cache_repo=game_cache_repo,
+        bg_manager=app.game_bg_manager,
+        keystroke_exchange=app.amqp_keystroke_exchange,
+        setting=app.setting,
     )
     return service
 
