@@ -4,7 +4,9 @@ from aio_pika.abc import AbstractExchange
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...types.amqp import LobbyNotifyMsg, LobbyNotifyType
+from ...lib.background_tasks.lobby import LobbyBGMsgEvent
+
+from ...types.amqp import LobbyNotifyMsg
 
 from ...orm.game import GameStatus, GameType
 
@@ -70,7 +72,7 @@ async def test_lobby_service_leave(
     assert amqp_notify_exchange.publish.called
     notify_msg = (
         LobbyNotifyMsg(
-            notify_type=LobbyNotifyType.USER_LEFT, game_id=game_id, user_id=user_id
+            notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
         )
         .model_dump_json()
         .encode()

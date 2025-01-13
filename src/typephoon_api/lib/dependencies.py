@@ -112,7 +112,7 @@ async def get_queue_in_service(request: Request) -> QueueInService:
         setting=app.setting,
         token_validator=token_validator,
         token_generator=token_generator,
-        background_bucket=app.lobby_background_bucket,
+        bg_manager=app.lobby_bg_manager,
         guest_token_repo=guest_token_repo,
         sessionmaker=app.sessionmaker,
         amqp_notify_exchange=app.amqp_notify_exchange,

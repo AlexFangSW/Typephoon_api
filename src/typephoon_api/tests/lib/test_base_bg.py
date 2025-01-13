@@ -38,6 +38,7 @@ async def test_bg_manager_get(setting: Setting):
     assert bg_manager._group_bucket[game_id]
 
     await bg_manager.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -57,12 +58,14 @@ async def test_bg_manager_remove(setting: Setting):
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
+    assert bg_group
     bg_group.stop = AsyncMock()
     await bg_manager.remove(game_id=game_id, final_msg=ping)
     assert bg_group.stop.called
     assert bg_group.stop.call_args.args == (ping,)
 
     await bg_manager.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -82,6 +85,7 @@ async def test_bg_manager_manage_loop(setting: Setting):
     await bg_manager.start()
 
     bg_group = await bg_manager.get(game_id)
+    assert bg_group
     bg = DummyBG[BGMsg](ws=AsyncMock(), user_id=user_id, msg_type=BGMsg)
     await bg_group.add(bg)
 
@@ -106,6 +110,7 @@ async def test_bg_manager_manage_loop(setting: Setting):
     assert bg_manager._group_bucket.get(game_id) is None
 
     await bg_manager.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -127,10 +132,12 @@ async def test_bg_manager_stop(setting: Setting):
     bg_groups: list[BGGroup] = []
     for game_id in games:
         group = await bg_manager.get(game_id)
+        assert group
         group.stop = AsyncMock()
         bg_groups.append(group)
 
     await bg_manager.stop(ping)
+    await sleep(0.01)
 
     assert bg_manager._group_bucket == {}
 
@@ -184,6 +191,7 @@ async def test_bg_group_add(setting: Setting):
     assert len(bg.send_history) == 2
 
     await bg_group.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -227,6 +235,7 @@ async def test_bg_group_healthcheck_fail(setting: Setting):
     ]
 
     await bg_group.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -279,6 +288,7 @@ async def test_bg_group_remove(setting: Setting):
     ]
 
     await bg_group.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -317,6 +327,7 @@ async def test_bg_group_broadcast(setting: Setting):
         assert len(bg.send_history) == 2
 
     await bg_group.stop()
+    await sleep(0.01)
 
 
 @pytest.mark.asyncio
@@ -353,9 +364,10 @@ async def test_bg_group_stop(setting: Setting):
     await sleep(0.01)
 
     await bg_group.stop(ping)
+    await sleep(0.01)
 
     for bg in bg_tmp:
-        assert len(bg.send_history) == 2
+        assert len(bg.send_history) == 4
 
     for user_id in users:
         assert bg_group._healthcheck_bucket.get(user_id) is None
@@ -387,6 +399,7 @@ async def test_bg():
     await sleep(0.01)
 
     await bg.stop(ping)
+    await sleep(0.01)
 
     assert len(bg.send_history) == 4
     assert len(bg.recv_history) == 1

@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
@@ -6,16 +5,16 @@ from fastapi import WebSocket
 from jwt import PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.sql.base import event
+
+from ..lib.background_tasks.base import BGManager
+from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
 
 from ..repositories.game_cache import GameCacheRepo
 
-from ..lib.lobby.base import LobbyBGNotifyMsg
-
-from ..types.amqp import LobbyCountdownMsg, LobbyNotifyType, LobbyNotifyMsg
+from ..types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
 
 from ..orm.game import Game, GameStatus, GameType
-
-from ..lib.lobby.lobby_background import LobbyBackground
 
 from ..repositories.lobby_cache import LobbyCacheRepo
 
@@ -31,7 +30,6 @@ from ..lib.util import gen_guest_user_info
 
 from ..types.enums import CookieNames, QueueInType, WSCloseReason
 
-from ..lib.lobby.lobby_manager import LobbyBackgroundManager
 
 from aio_pika.abc import AbstractExchange
 from aio_pika import Message
@@ -59,7 +57,7 @@ class QueueInService:
         setting: Setting,
         token_generator: TokenGenerator,
         token_validator: TokenValidator,
-        background_bucket: defaultdict[int, LobbyBackgroundManager],
+        bg_manager: BGManager[LobbyBGMsg, LobbyBG],
         guest_token_repo: GuestTokenRepo,
         sessionmaker: async_sessionmaker[AsyncSession],
         amqp_notify_exchange: AbstractExchange,
@@ -69,7 +67,7 @@ class QueueInService:
     ) -> None:
         self._setting = setting
         self._token_generator = token_generator
-        self._background_bucket = background_bucket
+        self._bg_manager = bg_manager
         self._token_validator = token_validator
         self._guest_token_repo = guest_token_repo
         self._sessionmaker = sessionmaker
@@ -206,11 +204,12 @@ class QueueInService:
         )
 
         # notify user their game id
-        bg = LobbyBackground(websocket=websocket, user_info=user_info)
-        await bg.start()
-        msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.INIT, game_id=game_id)
-        await bg.notifiy(msg)
-        await self._background_bucket[game_id].add(bg)
+        bg = LobbyBG(ws=websocket, user_id=user_info.id)
+        bg_group = await self._bg_manager.get(game_id)
+        assert bg_group
+        await bg_group.add(
+            bg=bg, init_msg=LobbyBGMsg(event=LobbyBGMsgEvent.INIT, game_id=game_id)
+        )
 
         # notify guest user to get their token
         if guest_token_key:
@@ -220,16 +219,17 @@ class QueueInService:
                 game_id,
                 guest_token_key,
             )
-            msg = LobbyBGNotifyMsg(
-                notify_type=LobbyNotifyType.GET_TOKEN, guest_token_key=guest_token_key
+            await bg.put_msg(
+                LobbyBGMsg(
+                    event=LobbyBGMsgEvent.GET_TOKEN, guest_token_key=guest_token_key
+                )
             )
-            await bg.notifiy(msg)
 
     async def _notify_user_join(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
         msg = (
-            LobbyNotifyMsg(notify_type=LobbyNotifyType.USER_JOINED, game_id=game_id)
+            LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.USER_JOINED, game_id=game_id)
             .slim_dump_json()
             .encode()
         )
@@ -244,7 +244,7 @@ class QueueInService:
         logger.debug("game_id: %s", game_id)
 
         msg = (
-            LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START, game_id=game_id)
+            LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.GAME_START, game_id=game_id)
             .slim_dump_json()
             .encode()
         )

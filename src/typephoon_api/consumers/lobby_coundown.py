@@ -6,6 +6,8 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from aio_pika import Message
 
+from ..lib.background_tasks.lobby import LobbyBGMsgEvent
+
 from ..repositories.game_cache import GameCacheRepo
 
 from ..types.errors import PublishNotAcknowledged
@@ -16,7 +18,7 @@ from ..repositories.game import GameRepo
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
+from ..types.amqp import LobbyNotifyMsg
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -40,7 +42,7 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
     async def _notify_all_users(self, game_id: int):
         notify_body = (
-            LobbyNotifyMsg(notify_type=LobbyNotifyType.GAME_START, game_id=game_id)
+            LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.GAME_START, game_id=game_id)
             .slim_dump_json()
             .encode()
         )

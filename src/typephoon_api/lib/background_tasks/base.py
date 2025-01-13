@@ -8,7 +8,7 @@ from enum import StrEnum
 from abc import ABC, abstractmethod
 from asyncio import Queue, Task, create_task, sleep
 from dataclasses import dataclass
-from enum import Enum, IntEnum
+from enum import IntEnum
 from logging import getLogger
 from typing import Type
 
@@ -54,13 +54,18 @@ class BGManager[MT: BGMsg, BT: BG]:
         self._bg_type = bg_type
         self._setting = setting
 
-    async def get(self, game_id: int) -> BGGroup[MT, BT]:
+    async def get(
+        self, game_id: int, auto_create: bool = True
+    ) -> BGGroup[MT, BT] | None:
         """
         act like defaultdict, either create or return existing instance
         """
         if bucket_item := self._group_bucket.get(game_id):
             logger.debug("found bg_group, game_id: %s", game_id)
             return bucket_item.group
+
+        if not auto_create:
+            return
 
         logger.debug("create bg_group, game_id: %s", game_id)
         self._group_bucket[game_id] = _GroupBucketItem(
@@ -148,7 +153,8 @@ class BGGroup[MT: BGMsg, BT: BG]:
         await bg.start(init_msg)
         self._bg_bucket[bg.user_id] = bg
         self._healthcheck_bucket[bg.user_id] = create_task(
-            self._healthcheck_loop(bg.user_id), name=f"{self._name}-healthcheck-loop"
+            self._healthcheck_loop(bg.user_id),
+            name=f"{self._name}-healthcheck-loop-{bg.user_id}",
         )
         await self._queue.put(
             _BGMsg(game_id=self._game_id, user_id=bg.user_id, event=_BGMsgEvent.UPDATE)
@@ -252,7 +258,9 @@ class BG[T: BGMsg](ABC):
                 msg = await self._queue.get()
                 await self._send(msg)
         except:
-            logger.exception("%s, send loop error", self._name)
+            logger.exception(
+                "%s, send loop error, user_id: %s", self._name, self._user_id
+            )
             await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
 
     @abstractmethod
@@ -270,7 +278,9 @@ class BG[T: BGMsg](ABC):
                 msg = self._msg_type.model_validate_json(raw_msg)
                 await self._recv(msg)
         except:
-            logger.exception("%s, recv loop error", self._name)
+            logger.exception(
+                "%s, recv loop error, user_id: %s", self._name, self._user_id
+            )
             await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
 
     async def put_msg(self, msg: T):
@@ -283,8 +293,12 @@ class BG[T: BGMsg](ABC):
         logger.debug("start")
         if init_msg:
             await self._send(init_msg)
-        self._recv_task = create_task(self._recv_loop(), name=f"{self._name}-recv-loop")
-        self._send_task = create_task(self._send_loop(), name=f"{self._name}-send-loop")
+        self._recv_task = create_task(
+            self._recv_loop(), name=f"{self._name}-recv-loop-{self._user_id}"
+        )
+        self._send_task = create_task(
+            self._send_loop(), name=f"{self._name}-send-loop-{self._user_id}"
+        )
 
     async def stop(self, final_msg: T | None = None):
         logger.debug("stop")

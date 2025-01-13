@@ -7,9 +7,11 @@ from aio_pika.abc import AbstractExchange
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..lib.background_tasks.lobby import LobbyBGMsgEvent
+
 from ..types.errors import PublishNotAcknowledged
 
-from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
+from ..types.amqp import LobbyNotifyMsg
 
 from ..types.enums import ErrorCode
 
@@ -84,7 +86,7 @@ class LobbyService:
         # notify all servers
         msg = (
             LobbyNotifyMsg(
-                notify_type=LobbyNotifyType.USER_LEFT, game_id=game_id, user_id=user_id
+                notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
             )
             .model_dump_json()
             .encode()

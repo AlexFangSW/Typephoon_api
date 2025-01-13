@@ -74,7 +74,7 @@ class GameEventService:
             return
 
         # add to background task
-        game_bg_manager = await self._bg_manager.get(game_id)
+        bg_group = await self._bg_manager.get(game_id)
         bg = GameBG(
             ws=websocket,
             user_id=user_id,
@@ -83,4 +83,5 @@ class GameEventService:
             game_id=game_id,
             server_name=self._setting.server_name,
         )
-        await game_bg_manager.add(bg)
+        assert bg_group
+        await bg_group.add(bg)
