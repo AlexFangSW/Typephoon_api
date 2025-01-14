@@ -1,12 +1,12 @@
 from logging import getLogger
+from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from jwt.exceptions import PyJWTError
 
-from ..lib.async_defaultdict import AsyncDefaultdict
+from ..types.setting import Setting
 
-from ..lib.game.game_background import GameBackground
-
-from ..lib.game.game_manager import GameBackgroundManager
+from ..lib.background_tasks.base import BGManager
+from ..lib.background_tasks.game import GameBG, GameBGMsg
 
 from ..repositories.game_cache import GameCacheRepo
 
@@ -22,11 +22,15 @@ class GameEventService:
         self,
         token_validator: TokenValidator,
         game_cache_repo: GameCacheRepo,
-        background_bucket: AsyncDefaultdict[int, GameBackgroundManager],
+        bg_manager: BGManager[GameBGMsg, GameBG],
+        keystroke_exchange: AbstractExchange,
+        setting: Setting,
     ) -> None:
         self._token_validator = token_validator
         self._game_cache_repo = game_cache_repo
-        self._background_bucket = background_bucket
+        self._bg_manager = bg_manager
+        self._keystroke_exchange = keystroke_exchange
+        self._setting = setting
 
     async def process(
         self,
@@ -70,11 +74,14 @@ class GameEventService:
             return
 
         # add to background task
-        game_bg_manager = await self._background_bucket.get(game_id)
-        bg = GameBackground(
-            websocket=websocket,
-            user_info=players[user_id],
-            send_queue=game_bg_manager.send_queue,
+        bg_group = await self._bg_manager.get(game_id)
+        bg = GameBG(
+            ws=websocket,
+            user_id=user_id,
+            exchange=self._keystroke_exchange,
+            setting=self._setting,
+            game_id=game_id,
+            server_name=self._setting.server_name,
         )
-        await bg.start()
-        await game_bg_manager.add(bg)
+        assert bg_group
+        await bg_group.add(bg)

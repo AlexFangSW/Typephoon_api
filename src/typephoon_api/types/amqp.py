@@ -1,6 +1,8 @@
 from enum import StrEnum
 from pydantic import BaseModel
 
+from ..lib.background_tasks.lobby import LobbyBGMsgEvent
+
 
 class GameNotifyType(StrEnum):
     KEY_STROKE = "KEY_STROKE"
@@ -22,17 +24,8 @@ class KeystrokeMsg(BaseModel):
     char_index: int
 
 
-class LobbyNotifyType(StrEnum):
-    INIT = "INIT"
-    USER_JOINED = "USER_JOINED"
-    USER_LEFT = "USER_LEFT"
-    GET_TOKEN = "GET_TOKEN"
-    GAME_START = "GAME_START"
-    RECONNECT = "RECONNECT"
-
-
 class LobbyNotifyMsg(BaseModel):
-    notify_type: LobbyNotifyType
+    notify_type: LobbyBGMsgEvent
     game_id: int
     user_id: str | None = None
 

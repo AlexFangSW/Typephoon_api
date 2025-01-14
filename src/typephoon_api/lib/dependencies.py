@@ -112,7 +112,7 @@ async def get_queue_in_service(request: Request) -> QueueInService:
         setting=app.setting,
         token_validator=token_validator,
         token_generator=token_generator,
-        background_bucket=app.lobby_background_bucket,
+        bg_manager=app.lobby_bg_manager,
         guest_token_repo=guest_token_repo,
         sessionmaker=app.sessionmaker,
         amqp_notify_exchange=app.amqp_notify_exchange,
@@ -131,8 +131,10 @@ async def get_game_event_service(request: Request) -> GameEventService:
 
     service = GameEventService(
         token_validator=token_validator,
-        background_bucket=app.game_background_bucket,
         game_cache_repo=game_cache_repo,
+        bg_manager=app.game_bg_manager,
+        keystroke_exchange=app.amqp_keystroke_exchange,
+        setting=app.setting,
     )
     return service
 

@@ -98,10 +98,16 @@ pytest -v
 Others:
 
 Features:
-- General
-    - background tasks
-        - auto clean up on websocket disconnect
-        - periodic clean up
+- General:
+    - refector background tasks 
+        - [OK] base 
+            - BGManager
+            - BGGroup
+            - BG
+        - [OK] implementations (BG)
+            - lobby
+            - game
+
 
 - In Game:
     - [OK] consumer for "keystroke"
@@ -110,7 +116,7 @@ Features:
         - fantout `game.event` exchange 
         - per server `game.event.<server-name>` queue 
     - tests for in game related stuff
-        - api 
+        - [OK] api 
         - ws
 
 

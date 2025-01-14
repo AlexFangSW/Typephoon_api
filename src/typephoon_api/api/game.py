@@ -67,14 +67,14 @@ async def countdown(game_id: int, service: GameService = Depends(get_game_servic
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(GameCountdownResponse(seconds_left=ret.data))
     return JSONResponse(msg, status_code=200)
 
 
 @router.post("/statistics", responses={200: {"model": SuccessResponse}})
 @catch_error_async
-async def statistics(
+async def write_statistics(
     statistics: GameStatistics,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
     service: GameService = Depends(get_game_service),

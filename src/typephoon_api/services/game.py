@@ -76,7 +76,7 @@ class GameService:
             )
 
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
-        return ServiceRet(ok=True, data=seconds_left)
+        return ServiceRet(ok=True, data=seconds_left if seconds_left >= 0 else 0)
 
     async def write_statistics(
         self,
@@ -105,7 +105,7 @@ class GameService:
                 )
 
             finished_at = datetime.now(UTC)
-            rank = game.player_count
+            rank = game.finish_count
 
             # record result for registered user
             if user_type == UserType.REGISTERED:

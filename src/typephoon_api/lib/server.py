@@ -1,5 +1,4 @@
 from asyncio import timeout
-from collections import defaultdict
 from logging import getLogger
 from aio_pika import connect_robust
 from aio_pika.abc import AbstractExchange
@@ -8,16 +7,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
+from .background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
+
+from .background_tasks.base import BGManager
+from .background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
+
 from ..consumers.keystroke import KeystrokeConsumer
 
-from .async_defaultdict import AsyncDefaultdict
-
-from .game.base import GameBGNotifyMsg
-
-from .game.game_manager import GameBackgroundManager, init_game_background_manager
-
-from .lobby.base import LobbyBGNotifyMsg
-from ..types.amqp import GameNotifyType, LobbyNotifyType
 
 from ..consumers.lobby_notify import LobbyNotifyConsumer
 
@@ -26,11 +22,7 @@ from ..consumers.lobby_coundown import LobbyCountdownConsumer
 from .amqp_manager import AMQPManager
 
 from ..types.errors import AMQPNotReady
-
-from .lobby.lobby_manager import LobbyBackgroundManager
-
 from ..types.setting import Setting
-from ..types import setting
 
 logger = getLogger(__name__)
 
@@ -73,25 +65,27 @@ class TypephoonServer(FastAPI):
 
         self._default_channel = await self._amqp_conn.channel()
         self._notify_channel = await self._amqp_conn.channel()
+        self._keystroke_channel = await self._amqp_conn.channel()
+
         self._default_exchange = self._default_channel.default_exchange
         self._notify_exchange = await self._notify_channel.get_exchange(
             self._setting.amqp.lobby_notify_fanout_exchange
         )
+        self._keystroke_exchange = await self._keystroke_channel.get_exchange(
+            self._setting.amqp.game_keystroke_fanout_exchange
+        )
 
         # lobby background tasks (key: game_id)
-        self._lobby_background_bucket: defaultdict[int, LobbyBackgroundManager] = (
-            defaultdict(LobbyBackgroundManager)
+        self._lobby_bg_manager = BGManager[LobbyBGMsg, LobbyBG](
+            msg_type=LobbyBGMsg, bg_type=LobbyBG, setting=self._setting
         )
+        await self._lobby_bg_manager.start()
 
-        # in game background tasks (key: game_id)
-        self._game_background_bucket: AsyncDefaultdict[
-            int,
-            GameBackgroundManager,
-        ] = AsyncDefaultdict[int, GameBackgroundManager](
-            lambda: init_game_background_manager(
-                amqp_conn=self._amqp_conn, setting=self._setting
-            )
+        # in game background tasks
+        self._game_bg_manager = BGManager[GameBGMsg, GameBG](
+            msg_type=GameBGMsg, bg_type=GameBG, setting=self._setting
         )
+        await self._game_bg_manager.start()
 
         self._lobby_countdown_consumer = LobbyCountdownConsumer(
             setting=self._setting,
@@ -105,7 +99,7 @@ class TypephoonServer(FastAPI):
         self._lobby_notify_consumer = LobbyNotifyConsumer(
             setting=self._setting,
             amqp_conn=self._amqp_conn,
-            background_bucket=self._lobby_background_bucket,
+            bg_manager=self._lobby_bg_manager,
         )
         await self._lobby_notify_consumer.prepare()
         await self._lobby_notify_consumer.start()
@@ -113,7 +107,7 @@ class TypephoonServer(FastAPI):
         self._keystroke_consumer = KeystrokeConsumer(
             setting=self._setting,
             amqp_conn=self._amqp_conn,
-            background_bucket=self._game_background_bucket,
+            bg_manager=self._game_bg_manager,
         )
         await self._keystroke_consumer.prepare()
         await self._keystroke_consumer.start()
@@ -123,20 +117,14 @@ class TypephoonServer(FastAPI):
         await self._lobby_countdown_consumer.stop()
         await self._keystroke_consumer.stop()
 
-        for game_id, manager in self._lobby_background_bucket.items():
-            logger.debug("cleaning lobby: %s", game_id)
-            msg = LobbyBGNotifyMsg(notify_type=LobbyNotifyType.RECONNECT)
-            await manager.stop(msg)
-
-        for game_id, manager in self._game_background_bucket.items():
-            logger.debug("cleaning game: %s", game_id)
-            msg = GameBGNotifyMsg(notify_type=GameNotifyType.RECONNECT)
-            await manager.stop(msg)
+        await self._lobby_bg_manager.stop(LobbyBGMsg(event=LobbyBGMsgEvent.RECONNECT))
+        await self._game_bg_manager.stop(GameBGMsg(event=GameBGMsgEvent.RECONNECT))
 
         await self._engine.dispose()
         await self._redis_conn.aclose()
         await self._default_channel.close()
         await self._notify_channel.close()
+        await self._keystroke_channel.close()
         await self._amqp_conn.close()
 
     async def ready(self) -> bool:
@@ -175,8 +163,8 @@ class TypephoonServer(FastAPI):
         return self._setting
 
     @property
-    def lobby_background_bucket(self) -> defaultdict[int, LobbyBackgroundManager]:
-        return self._lobby_background_bucket
+    def lobby_bg_manager(self) -> BGManager[LobbyBGMsg, LobbyBG]:
+        return self._lobby_bg_manager
 
     @property
     def amqp_default_exchange(self) -> AbstractExchange:
@@ -187,5 +175,9 @@ class TypephoonServer(FastAPI):
         return self._notify_exchange
 
     @property
-    def game_background_bucket(self) -> AsyncDefaultdict[int, GameBackgroundManager]:
-        return self._game_background_bucket
+    def amqp_keystroke_exchange(self) -> AbstractExchange:
+        return self._keystroke_exchange
+
+    @property
+    def game_bg_manager(self) -> BGManager[GameBGMsg, GameBG]:
+        return self._game_bg_manager
