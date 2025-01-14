@@ -74,7 +74,7 @@ async def countdown(game_id: int, service: GameService = Depends(get_game_servic
 
 @router.post("/statistics", responses={200: {"model": SuccessResponse}})
 @catch_error_async
-async def statistics(
+async def write_statistics(
     statistics: GameStatistics,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
     service: GameService = Depends(get_game_service),

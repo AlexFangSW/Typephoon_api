@@ -105,7 +105,7 @@ class GameService:
                 )
 
             finished_at = datetime.now(UTC)
-            rank = game.player_count
+            rank = game.finish_count
 
             # record result for registered user
             if user_type == UserType.REGISTERED:
