@@ -40,9 +40,9 @@ def downgrade() -> None:
     op.drop_column("games", "player_count")
     op.add_column(
         "game_results",
-        sa.Column("role", sa.INTEGER(), autoincrement=False, nullable=False),
+        sa.Column("role", sa.INTEGER(), autoincrement=False, nullable=True),
     )
     op.add_column(
         "game_results",
-        sa.Column("status", sa.INTEGER(), autoincrement=False, nullable=False),
+        sa.Column("status", sa.INTEGER(), autoincrement=False, nullable=True),
     )
