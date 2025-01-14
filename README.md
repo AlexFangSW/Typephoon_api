@@ -116,7 +116,7 @@ Features:
         - fantout `game.event` exchange 
         - per server `game.event.<server-name>` queue 
     - tests for in game related stuff
-        - api 
+        - [OK] api 
         - ws
 
 
