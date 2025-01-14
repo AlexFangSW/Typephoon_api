@@ -148,6 +148,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
     def _name(self) -> str:
         return type(self).__name__
 
+    # NOTE: might need to remove old background task before adding ?
     async def add(self, bg: BT, init_msg: MT | None = None):
         logger.debug("add bg, user_id: %s, init_msg: %s", bg.user_id, init_msg)
         await bg.start(init_msg)

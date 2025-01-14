@@ -3,7 +3,7 @@ from enum import StrEnum
 from logging import getLogger
 from typing import Type
 from aio_pika import DeliveryMode, Message
-from aio_pika.abc import AbstractConnection, AbstractExchange
+from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from pamqp.commands import Basic
 
@@ -32,6 +32,7 @@ class GameBGMsg(BGMsg[GameBGMsgEvent]):
 
 
 class GameBG(BG[GameBGMsg]):
+
     def __init__(
         self,
         ws: WebSocket,
@@ -39,7 +40,7 @@ class GameBG(BG[GameBGMsg]):
         exchange: AbstractExchange,
         setting: Setting,
         game_id: int,
-        server_name: str | None,
+        server_name: str | None = None,
         msg_type: Type[GameBGMsg] = GameBGMsg,
     ) -> None:
         super().__init__(ws, msg_type, user_id)
@@ -68,7 +69,11 @@ class GameBG(BG[GameBGMsg]):
 
             amqp_msg = Message(
                 body=keystroke_msg.model_dump_json().encode(),
-                headers=KeystrokeHeader(source=self._server_name).model_dump(),
+                headers=(
+                    KeystrokeHeader(source=self._server_name).model_dump()
+                    if self._server_name
+                    else None
+                ),
                 delivery_mode=DeliveryMode.PERSISTENT,
             )
 
