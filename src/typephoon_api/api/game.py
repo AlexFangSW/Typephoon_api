@@ -67,7 +67,7 @@ async def countdown(game_id: int, service: GameService = Depends(get_game_servic
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(GameCountdownResponse(seconds_left=ret.data))
     return JSONResponse(msg, status_code=200)
 
