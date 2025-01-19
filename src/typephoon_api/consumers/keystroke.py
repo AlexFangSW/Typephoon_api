@@ -77,6 +77,7 @@ class KeystrokeConsumer(AbstractConsumer):
         logger.debug("ack message")
 
     async def prepare(self):
+        logger.info("prepare")
         self._channel = await self._amqp_conn.channel()
         await self._channel.set_qos(prefetch_count=self._setting.amqp.prefetch_count)
 
@@ -85,8 +86,10 @@ class KeystrokeConsumer(AbstractConsumer):
         )
 
     async def start(self):
+        logger.info("start")
         self._consumer_tag = await self._queue.consume(self.on_message)
 
     async def stop(self):
+        logger.info("stop")
         await self._queue.cancel(self._consumer_tag)
         await self._channel.close()
