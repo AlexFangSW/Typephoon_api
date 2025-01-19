@@ -11,26 +11,15 @@ def default_logger() -> dict:
         "disable_existing_loggers": False,
         "version": 1,
         "handlers": {
-            "default": {
-                "class": "logging.StreamHandler",
-                "formatter": "default"
-            }
+            "default": {"class": "logging.StreamHandler", "formatter": "default"}
         },
         "formatters": {
             "default": {
-                "format":
-                    "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
+                "format": "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
             }
         },
-        "root": {
-            "level": "INFO",
-            "handlers": ["default"]
-        },
-        "loggers": {
-            "typephoon_api": {
-                "level": "INFO"
-            }
-        }
+        "root": {"level": "INFO", "handlers": ["default"]},
+        "loggers": {"typephoon_api": {"level": "INFO"}},
     }
 
 
@@ -65,6 +54,7 @@ class RedisSetting(BaseModel):
     db: int = 0
     expire_time: int = 60
     in_game_cache_expire_time: int = 60 * 15
+    result_cache_expire_time: int = 60 * 15
 
 
 class CORSSetting(BaseModel):
@@ -79,6 +69,7 @@ class TokenPK(BaseModel):
     """
     Token public / private keys
     """
+
     public_key: str = ""
     private_key: str = ""
 
@@ -91,6 +82,7 @@ class TokenSetting(TokenPK):
     - refresh_duration: (seconds)
         - duration for the refresh token
     """
+
     refresh_endpoint: str = "/api/v1/auth/token-refresh"
     access_duration: int = int(timedelta(minutes=5).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
@@ -118,6 +110,10 @@ class AMQPCredentials(BaseModel):
     password: str = "guest"
 
 
+def get_server_name() -> str | None:
+    return getenv("SERVER_NAME", None)
+
+
 class AMQPSetting(AMQPCredentials):
     host: str = "localhost"
     vhost: str = "typephoon"
@@ -125,7 +121,8 @@ class AMQPSetting(AMQPCredentials):
 
     # exchanges
     lobby_notify_fanout_exchange: str = "lobby.notify"
-    countdown_direct_exchange: str = "lobby.countdown"
+    lobby_countdown_direct_exchange: str = "lobby.countdown"
+    game_keystroke_fanout_exchange: str = "game.keystroke"
 
     # queues with consumers
     lobby_notify_queue: str = "lobby.notify"
@@ -133,6 +130,8 @@ class AMQPSetting(AMQPCredentials):
 
     lobby_countdown_queue: str = "lobby.countdown"
     lobby_countdown_queue_routing_key: str = "lobby.countdown"
+
+    game_keystroke_queue: str = "game.keystroke"
 
     # "wait queues" use deadletter policies to connect with exchanges.
     # no consumers, publish only.
@@ -145,14 +144,14 @@ class AMQPSetting(AMQPCredentials):
 
     def model_post_init(self, _: Any) -> None:
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
-        server_name = getenv("SERVER_NAME", None)
+        server_name = get_server_name()
         if server_name:
             self.lobby_notify_queue = f"{self.lobby_notify_queue}.{server_name}"
+            self.game_keystroke_queue = f"{self.game_keystroke_queue}.{server_name}"
 
 
 class SecretSetting(BaseModel):
-    google_credential: GoogleCredentials = Field(
-        default_factory=GoogleCredentials)
+    google_credential: GoogleCredentials = Field(default_factory=GoogleCredentials)
     token_pk: TokenPK = Field(default_factory=TokenPK)
     db: DBCredentialsSetting = Field(default_factory=DBCredentialsSetting)
     amqp: AMQPCredentials = Field(default_factory=AMQPCredentials)
@@ -162,6 +161,10 @@ class GameSetting(BaseModel):
     start_countdown: int = 5
     lobby_countdown: int = 30
     player_limit: int = 5
+
+
+class BGSetting(BaseModel):
+    ping_interval: float = 30
 
 
 class Setting(BaseModel):
@@ -174,9 +177,12 @@ class Setting(BaseModel):
     token: TokenSetting = Field(default_factory=TokenSetting)
     amqp: AMQPSetting = Field(default_factory=AMQPSetting)
     game: GameSetting = Field(default_factory=GameSetting)
+    bg: BGSetting = Field(default_factory=BGSetting)
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
+
+    server_name: str | None = Field(default_factory=get_server_name)
 
     def merge(self, inpt: SecretSetting):
         self.google.merge(inpt.google_credential)
@@ -185,9 +191,9 @@ class Setting(BaseModel):
         self.amqp.merge(inpt.amqp)
 
     @classmethod
-    def from_file(cls,
-                  base: str = "setting.yaml",
-                  secret: str = "setting.secret.yaml") -> Self:
+    def from_file(
+        cls, base: str = "setting.yaml", secret: str = "setting.secret.yaml"
+    ) -> Self:
 
         with open(base, "r") as f:
             loaded = yaml.safe_load(f)

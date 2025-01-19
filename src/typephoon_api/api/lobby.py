@@ -6,11 +6,7 @@ from fastapi.responses import JSONResponse
 
 from ..types.errors import InvalidCookieToken
 
-from ..orm.game import GameType
-
 from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
-
-from ..types.jwt import JWTPayload
 
 from ..services.lobby import LobbyService
 
@@ -20,57 +16,60 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 from ..types.enums import ErrorCode, QueueInType
 
-from ..lib.dependencies import GetAccessTokenInfoRet, get_access_token_info, get_lobby_service, get_queue_in_service
+from ..lib.dependencies import (
+    GetAccessTokenInfoRet,
+    get_access_token_info,
+    get_lobby_service,
+    get_queue_in_service,
+)
 
 from ..lib.util import catch_error_async
 
-router = APIRouter(tags=["Lobby"],
-                   prefix="/lobby",
-                   responses={
-                       500: {
-                           "model": ErrorResponse
-                       },
-                       400: {
-                           "model": ErrorResponse
-                       }
-                   })
-
 logger = getLogger(__name__)
 
+router = APIRouter(
+    tags=["Lobby"],
+    prefix="/lobby",
+    responses={500: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
+)
 
-@router.websocket("/queue-in")
-async def queue_in(websocket: WebSocket,
-                   prev_game_id: Annotated[int | None, Query()],
-                   queue_in_type: Annotated[QueueInType,
-                                            Query()] = QueueInType.NEW,
-                   service: QueueInService = Depends(get_queue_in_service)):
+
+@router.websocket("/queue-in/ws")
+async def queue_in(
+    websocket: WebSocket,
+    prev_game_id: int | None = None,
+    queue_in_type: Annotated[QueueInType, Query()] = QueueInType.NEW,
+    service: QueueInService = Depends(get_queue_in_service),
+):
     """
     [Game mode: Multi]
     This endpoint is reponsible for sending lobby related events to users.
     """
     try:
-        await websocket.accept()
-        await service.queue_in(websocket=websocket,
-                               queue_in_type=queue_in_type,
-                               prev_game_id=prev_game_id)
+        await service.queue_in(
+            websocket=websocket, queue_in_type=queue_in_type, prev_game_id=prev_game_id
+        )
     except Exception as ex:
         logger.exception("something whent wrong")
         await websocket.close(reason=str(ex))
 
 
-@router.get("/players")
+@router.get(
+    "/players",
+    responses={200: {"model": LobbyPlayersResponse}, 404: {"model": ErrorResponse}},
+)
 @catch_error_async
 async def players(
     game_id: int,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
-    service: LobbyService = Depends(get_lobby_service)):
+    service: LobbyService = Depends(get_lobby_service),
+):
 
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
 
     assert current_user.payload
-    ret = await service.get_players(user_id=current_user.payload.sub,
-                                    game_id=game_id)
+    ret = await service.get_players(user_id=current_user.payload.sub, game_id=game_id)
 
     if not ret.ok:
         assert ret.error
@@ -81,17 +80,19 @@ async def players(
             raise ValueError(f"unknown error code: {ret.error.code}")
 
     assert ret.data
-    msg = jsonable_encoder(
-        LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
+    msg = jsonable_encoder(LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
     return JSONResponse(msg, status_code=200)
 
 
-@router.post("/leave")
+@router.post(
+    "/leave", responses={200: {"model": SuccessResponse}, 404: {"model": ErrorResponse}}
+)
 @catch_error_async
 async def leave(
     game_id: int,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
-    service: LobbyService = Depends(get_lobby_service)):
+    service: LobbyService = Depends(get_lobby_service),
+):
 
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
@@ -111,10 +112,14 @@ async def leave(
     return JSONResponse(msg, status_code=200)
 
 
-@router.get("/countdown")
+@router.get(
+    "/countdown",
+    responses={200: {"model": LobbyCountdownResponse}, 404: {"model": ErrorResponse}},
+)
 @catch_error_async
-async def get_countdown(game_id: int,
-                        service: LobbyService = Depends(get_lobby_service)):
+async def get_countdown(
+    game_id: int, service: LobbyService = Depends(get_lobby_service)
+):
     """
     lobby countdown in seconds
     """

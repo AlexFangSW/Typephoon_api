@@ -5,13 +5,14 @@ Revises: f569c92ad183
 Create Date: 2024-12-22 14:26:41.609729
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '51e14fba0e84'
-down_revision: Union[str, None] = 'f569c92ad183'
+revision: str = "51e14fba0e84"
+down_revision: Union[str, None] = "f569c92ad183"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

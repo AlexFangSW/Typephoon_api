@@ -52,8 +52,9 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def custom_compare_type(context, inspected_column, metadata_column,
-                        inspected_type, metadata_type):
+def custom_compare_type(
+    context, inspected_column, metadata_column, inspected_type, metadata_type
+):
     # For BigSerial
     if isinstance(inspected_type, BIGINT):
         return False
@@ -72,14 +73,15 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        url=getenv("DSN",
-                   "postgresql://typephoon:123@localhost:5432/typephoon"),
+        url=getenv("DSN", "postgresql://typephoon:123@localhost:5432/typephoon"),
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection,
-                          compare_type=custom_compare_type,
-                          target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            compare_type=custom_compare_type,
+            target_metadata=target_metadata,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

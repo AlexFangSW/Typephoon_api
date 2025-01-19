@@ -32,8 +32,7 @@ async def test_game_repo_create(sessionmaker: async_sessionmaker[AsyncSession]):
 
 
 @pytest.mark.asyncio
-async def test_game_repo_player_count(
-        sessionmaker: async_sessionmaker[AsyncSession]):
+async def test_game_repo_player_count(sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
         game = await repo.create(GameType.MULTI, GameStatus.LOBBY)
@@ -59,8 +58,7 @@ async def test_game_repo_player_count(
 
 
 @pytest.mark.asyncio
-async def test_game_repo_is_available(
-        sessionmaker: async_sessionmaker[AsyncSession]):
+async def test_game_repo_is_available(sessionmaker: async_sessionmaker[AsyncSession]):
 
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
@@ -85,7 +83,8 @@ async def test_game_repo_is_available(
 
 @pytest.mark.asyncio
 async def test_game_repo_get_one_available(
-        sessionmaker: async_sessionmaker[AsyncSession]):
+    sessionmaker: async_sessionmaker[AsyncSession],
+):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
 
@@ -108,8 +107,7 @@ async def test_game_repo_get_one_available(
 
 
 @pytest.mark.asyncio
-async def test_game_repo_start_game(
-        sessionmaker: async_sessionmaker[AsyncSession]):
+async def test_game_repo_start_game(sessionmaker: async_sessionmaker[AsyncSession]):
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
         game = await repo.create(GameType.MULTI, GameStatus.LOBBY)

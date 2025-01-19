@@ -23,8 +23,9 @@ async def test_token_validator(setting: Setting):
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
 
-    token = token_generator.gen_access_token(user_id=dummy_user_id,
-                                             username=dummy_username)
+    token = token_generator.gen_access_token(
+        user_id=dummy_user_id, username=dummy_username
+    )
 
     info = token_validator.validate(token)
     assert info.sub == dummy_user_id
@@ -37,7 +38,6 @@ async def test_token_validator(setting: Setting):
     assert nbf == NOW - timedelta(seconds=1)
 
     # expired
-    with time_machine.travel(NOW +
-                             timedelta(seconds=setting.token.access_duration)):
+    with time_machine.travel(NOW + timedelta(seconds=setting.token.access_duration)):
         with pytest.raises(ExpiredSignatureError):
             token_validator.validate(token)

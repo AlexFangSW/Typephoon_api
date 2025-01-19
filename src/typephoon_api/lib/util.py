@@ -29,12 +29,14 @@ def sanitized_dsn(dsn: str) -> Url:
     temp_url = Url(dsn)
     assert temp_url.host
     assert temp_url.path
-    url = Url.build(scheme=temp_url.scheme,
-                    username=temp_url.username,
-                    password="***",
-                    host=temp_url.host,
-                    port=temp_url.port,
-                    path=temp_url.path.lstrip("/"))
+    url = Url.build(
+        scheme=temp_url.scheme,
+        username=temp_url.username,
+        password="***",
+        host=temp_url.host,
+        port=temp_url.port,
+        path=temp_url.path.lstrip("/"),
+    )
     return url
 
 
@@ -88,8 +90,8 @@ def catch_error_async(func: Callable):
 
         except Exception as ex:
             logger.exception("something went wrong")
-            error = ErrorContext(message=str(ex))
-            msg = ErrorResponse(error=error).model_dump()
+            # error = ErrorContext(message=str(ex))
+            msg = ErrorResponse().model_dump()
             return JSONResponse(msg, status_code=500)
 
     return wrapped

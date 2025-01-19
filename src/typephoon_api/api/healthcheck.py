@@ -13,18 +13,11 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 router = APIRouter(tags=["Health Check"], prefix="/healthcheck")
 
 
-@router.get("/ready",
-            responses={
-                200: {
-                    "model": SuccessResponse
-                },
-                500: {
-                    "model": ErrorResponse
-                }
-            })
+@router.get(
+    "/ready", responses={200: {"model": SuccessResponse}, 500: {"model": ErrorResponse}}
+)
 @catch_error_async
-async def ready(
-        service: HealthCheckService = Depends(get_health_check_service)):
+async def ready(service: HealthCheckService = Depends(get_health_check_service)):
 
     result = await service.ready()
 
@@ -38,8 +31,7 @@ async def ready(
 
 @router.get("/alive", responses={200: {"model": SuccessResponse}})
 @catch_error_async
-async def alive(
-        service: HealthCheckService = Depends(get_health_check_service)):
+async def alive(service: HealthCheckService = Depends(get_health_check_service)):
 
     result = await service.alive()
 

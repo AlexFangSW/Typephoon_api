@@ -1,15 +1,13 @@
-from collections import defaultdict
 from logging import getLogger
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
-from ..lib.lobby.base import LobbyBGNotifyMsg
-
-from ..lib.lobby.lobby_manager import LobbyBackgroundManager
+from ..lib.background_tasks.base import BGManager
+from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyNotifyMsg, LobbyNotifyType
+from ..types.amqp import LobbyNotifyMsg
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -25,28 +23,25 @@ class LobbyNotifyConsumer(AbstractConsumer):
         self,
         setting: Setting,
         amqp_conn: AbstractRobustConnection,
-        background_bucket: defaultdict[str, LobbyBackgroundManager],
+        bg_manager: BGManager[LobbyBGMsg, LobbyBG],
     ) -> None:
         super().__init__(setting, amqp_conn)
-        self._background_bucket = background_bucket
+        self._bg_manager = bg_manager
 
-    def _load_message(self,
-                      amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
+    def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
-        game_id = str(msg.game_id)
+        bg_notify_msg = LobbyBGMsg(event=msg.notify_type, user_id=msg.user_id)
 
-        bg_notify_msg = LobbyBGNotifyMsg(notify_type=msg.notify_type,
-                                         user_id=msg.user_id)
-
-        if bg_notify_msg.notify_type == LobbyNotifyType.GAME_START:
-            logger.debug("game started, game_id: %s", game_id)
-            await self._background_bucket[game_id].stop(bg_notify_msg)
-            self._background_bucket.pop(game_id)
+        if bg_notify_msg.event == LobbyBGMsgEvent.GAME_START:
+            logger.debug("game started, game_id: %s", msg.game_id)
+            await self._bg_manager.remove(game_id=msg.game_id, final_msg=bg_notify_msg)
 
         else:
-            await self._background_bucket[game_id].broadcast(bg_notify_msg)
+            bg_group = await self._bg_manager.get(msg.game_id, auto_create=False)
+            if bg_group is not None:
+                await bg_group.broadcast(bg_notify_msg)
 
     async def _on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")
@@ -75,7 +70,8 @@ class LobbyNotifyConsumer(AbstractConsumer):
         logger.info("prepare")
         self._channel = await self._amqp_conn.channel()
         self._queue = await self._channel.get_queue(
-            self._setting.amqp.lobby_notify_queue)
+            self._setting.amqp.lobby_notify_queue
+        )
 
     async def start(self):
         logger.info("start")

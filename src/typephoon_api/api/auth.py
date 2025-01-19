@@ -9,22 +9,26 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 from ..types.enums import CookieNames, ErrorCode
 
-from ..lib.dependencies import get_auth_service, get_auth_service_with_provider, get_setting
+from ..lib.dependencies import (
+    get_auth_service,
+    get_auth_service_with_provider,
+    get_setting,
+)
 from ..services.auth import AuthService
 
 from ..lib.util import catch_error_async
 
-router = APIRouter(tags=["Auth"],
-                   prefix="/auth",
-                   responses={500: {
-                       "model": ErrorResponse
-                   }})
+router = APIRouter(
+    tags=["Auth"], prefix="/auth", responses={500: {"model": ErrorResponse}}
+)
 
 
 @router.get("/{provider}/login")
 @catch_error_async
-async def login(setting: Setting = Depends(get_setting),
-                service: AuthService = Depends(get_auth_service_with_provider)):
+async def login(
+    setting: Setting = Depends(get_setting),
+    service: AuthService = Depends(get_auth_service_with_provider),
+):
     """
     Set perams and redirect users to the login page
     """
@@ -43,7 +47,8 @@ async def login_redirect(
     state: str,
     code: str,
     setting: Setting = Depends(get_setting),
-    service: AuthService = Depends(get_auth_service_with_provider)):
+    service: AuthService = Depends(get_auth_service_with_provider),
+):
 
     ret = await service.login_redirect(state, code)
 
@@ -53,26 +58,32 @@ async def login_redirect(
     assert ret.data
 
     response = RedirectResponse(ret.data.url)
-    response.set_cookie(CookieNames.ACCESS_TOKEN,
-                        ret.data.access_token,
-                        path="/",
-                        max_age=setting.token.access_duration,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict")
-    response.set_cookie(CookieNames.REFRESH_TOKEN,
-                        ret.data.refresh_token,
-                        path=ret.data.refresh_endpoint,
-                        max_age=setting.token.refresh_duration,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict")
-    response.set_cookie(CookieNames.USERNAME,
-                        ret.data.username,
-                        max_age=setting.token.access_duration,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict")
+    response.set_cookie(
+        CookieNames.ACCESS_TOKEN,
+        ret.data.access_token,
+        path="/",
+        max_age=setting.token.access_duration,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+    response.set_cookie(
+        CookieNames.REFRESH_TOKEN,
+        ret.data.refresh_token,
+        path=ret.data.refresh_endpoint,
+        max_age=setting.token.refresh_duration,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+    response.set_cookie(
+        CookieNames.USERNAME,
+        ret.data.username,
+        max_age=setting.token.access_duration,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
 
     return response
 
@@ -80,8 +91,11 @@ async def login_redirect(
 @router.post("/logout", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def logout(
-    access_token: Annotated[str, Cookie(alias=CookieNames.ACCESS_TOKEN)],
-    service: AuthService = Depends(get_auth_service)):
+    access_token: Annotated[
+        str, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
+    ],
+    service: AuthService = Depends(get_auth_service),
+):
 
     ret = await service.logout(access_token=access_token)
 
@@ -96,28 +110,26 @@ async def logout(
     return response
 
 
-@router.post("/token-refresh",
-             responses={
-                 200: {
-                     "model": SuccessResponse
-                 },
-                 400: {
-                     "model": ErrorResponse
-                 }
-             })
+@router.post(
+    "/token-refresh",
+    responses={200: {"model": SuccessResponse}, 400: {"model": ErrorResponse}},
+)
 @catch_error_async
 async def token_refresh(
-    refresh_token: Annotated[str, Cookie(alias=CookieNames.REFRESH_TOKEN)],
+    refresh_token: Annotated[
+        str, Cookie(alias=CookieNames.REFRESH_TOKEN, description="refresh token")
+    ],
     setting: Setting = Depends(get_setting),
-    service: AuthService = Depends(get_auth_service)):
+    service: AuthService = Depends(get_auth_service),
+):
 
     ret = await service.token_refresh(refresh_token)
 
     if not ret.ok:
         assert ret.error
         if ret.error.code in {
-                ErrorCode.REFRESH_TOKEN_MISSMATCH,
-                ErrorCode.INVALID_TOKEN,
+            ErrorCode.REFRESH_TOKEN_MISSMATCH,
+            ErrorCode.INVALID_TOKEN,
         }:
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=400)
@@ -127,11 +139,13 @@ async def token_refresh(
     assert ret.data
     msg = jsonable_encoder(SuccessResponse())
     response = JSONResponse(msg, status_code=200)
-    response.set_cookie(CookieNames.ACCESS_TOKEN,
-                        ret.data,
-                        path="/",
-                        max_age=setting.token.access_duration,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict")
+    response.set_cookie(
+        CookieNames.ACCESS_TOKEN,
+        ret.data,
+        path="/",
+        max_age=setting.token.access_duration,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
     return response
