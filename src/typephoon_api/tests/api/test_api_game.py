@@ -23,10 +23,6 @@ from ..helper import *
 
 
 @pytest.mark.asyncio
-async def test_game_ws(client: AsyncClient): ...
-
-
-@pytest.mark.asyncio
 async def test_game_countdown(client: AsyncClient, redis_conn: Redis, setting: Setting):
     game_id = 123
 
