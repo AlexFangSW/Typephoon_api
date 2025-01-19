@@ -122,6 +122,15 @@ Features:
 
 - Profile
     - api 
+        - best, last 10, average (correct)
+        - graph
+            - last 10, 100, 500, 1000
+            - query
+                - last-n=xxx
+        - history
+            - limit 50
+            - query
+                - history-page=xxx
     - tests
 
 - RabbitMQ deadletter policy for lobby countdown
