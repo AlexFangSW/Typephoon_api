@@ -65,7 +65,7 @@ class GameEventService:
         user_id = current_user.sub
         if user_id not in players:
             logger.warning(
-                "user does not participate in this game, game_id: %s, user_id: %s, users in this game: %s",
+                "user does not participant in this game, game_id: %s, user_id: %s, users in this game: %s",
                 game_id,
                 user_id,
                 players.keys(),
