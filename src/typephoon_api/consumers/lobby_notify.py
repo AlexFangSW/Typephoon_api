@@ -40,7 +40,7 @@ class LobbyNotifyConsumer(AbstractConsumer):
 
         else:
             bg_group = await self._bg_manager.get(msg.game_id, auto_create=False)
-            if bg_group:
+            if bg_group is not None:
                 await bg_group.broadcast(bg_notify_msg)
 
     async def _on_message(self, amqp_msg: AbstractIncomingMessage):

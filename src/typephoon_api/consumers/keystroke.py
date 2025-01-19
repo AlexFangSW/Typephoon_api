@@ -46,8 +46,9 @@ class KeystrokeConsumer(AbstractConsumer):
             word_index=msg.word_index,
             char_index=msg.char_index,
         )
-        manager = await self._bg_manager.get(msg.game_id)
-        await manager.broadcast(bg_msg)
+        bg_group = await self._bg_manager.get(game_id=msg.game_id, auto_create=False)
+        if bg_group is not None:
+            await bg_group.broadcast(bg_msg)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on message")
