@@ -117,7 +117,7 @@ Features:
         - per server `game.event.<server-name>` queue 
     - tests for in game related stuff
         - [OK] api 
-        - ws
+        - [OK] ws
 
 
 - Profile
