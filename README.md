@@ -134,8 +134,11 @@ Features:
     - tests
 
 - RabbitMQ deadletter policy for lobby countdown
+    Set policy on queue creation, hash policy params and use it as part of
+    the queue name.
+
+    Lobbys:
     - random 
-    - team
 
 QOL:
 - request id
