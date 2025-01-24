@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from ..services.profile import ProfileService
+
 from ..types.responses.profile import (
     ProfileGraphResponse,
     ProfileHistoryItem,
@@ -46,7 +48,12 @@ router = APIRouter(
     responses={200: {"model": ProfileStatisticsResponse}},
 )
 @catch_error_async
-async def statistics(): ...
+async def statistics(
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: ProfileService = Depends(),
+):
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
 
 
 @router.get(
@@ -54,7 +61,12 @@ async def statistics(): ...
     responses={200: {"model": ProfileGraphResponse}},
 )
 @catch_error_async
-async def graph(): ...
+async def graph(
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: ProfileService = Depends(),
+):
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
 
 
 @router.get(
@@ -62,4 +74,9 @@ async def graph(): ...
     responses={200: {"model": ProfileHistoryResponse}},
 )
 @catch_error_async
-async def history(): ...
+async def history(
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: ProfileService = Depends(),
+):
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
