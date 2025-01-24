@@ -1,8 +1,7 @@
-from datetime import datetime
+from pydantic import Field
 
-from pydantic import BaseModel, Field
+from ...services.profile import GameResultItem
 
-from ..common import GameTypeStr
 from .base import SuccessResponse
 
 
@@ -19,26 +18,12 @@ class ProfileStatisticsResponse(SuccessResponse):
     average: float = 0
 
 
-class ProfileGameResult(BaseModel):
-    game_id: int
-    wpm: float
-    wpm_raw: float
-    accuracy: float
-    finished_at: datetime
-    rank: int
-
-
-class ProfileGraphItem(ProfileGameResult):
-    pass
-
-
 class ProfileGraphResponse(SuccessResponse):
-    data: list[ProfileGraphItem] = Field(default_factory=list)
-
-
-class ProfileHistoryItem(ProfileGameResult):
-    game_type: GameTypeStr
+    data: list[GameResultItem] = Field(default_factory=list)
 
 
 class ProfileHistoryResponse(SuccessResponse):
-    data: list[ProfileHistoryItem] = Field(default_factory=list)
+    total: int
+    has_prev_page: bool
+    has_next_page: bool
+    data: list[GameResultItem] = Field(default_factory=list)
