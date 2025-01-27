@@ -3,25 +3,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-
 from ..services.profile import ProfileService
-
 from ..types.responses.profile import (
     ProfileGraphResponse,
     ProfileHistoryResponse,
     ProfileStatisticsResponse,
 )
-
 from ..types.errors import InvalidCookieToken
-
 from ..types.responses.base import ErrorResponse
-
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
     get_access_token_info,
     get_profile_service,
 )
-
 from ..lib.util import catch_error_async
 
 logger = getLogger(__name__)
@@ -46,11 +40,9 @@ async def statistics(
         raise InvalidCookieToken(current_user.error)
 
     assert current_user.payload
-    ret = await service.statistics(user_id=current_user.payload.sub)
-
-    if not ret.ok:
-        # TODO: user not found xxx
-        ...
+    ret = await service.statistics(
+        user_id=current_user.payload.sub, user_type=current_user.payload.user_type
+    )
 
     assert ret.data
     msg = jsonable_encoder(
@@ -71,7 +63,7 @@ async def statistics(
 )
 @catch_error_async
 async def graph(
-    size: Annotated[int, Query(le=1000)] = 10,
+    size: Annotated[int, Query(ge=0, le=1000)] = 10,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
     service: ProfileService = Depends(get_profile_service),
 ):
@@ -79,11 +71,11 @@ async def graph(
         raise InvalidCookieToken(current_user.error)
 
     assert current_user.payload
-    ret = await service.graph(user_id=current_user.payload.sub, size=size)
-
-    if not ret.ok:
-        # TODO: user not found xxx
-        ...
+    ret = await service.graph(
+        user_id=current_user.payload.sub,
+        user_type=current_user.payload.user_type,
+        size=size,
+    )
 
     assert ret.data
     msg = jsonable_encoder(ProfileGraphResponse(data=ret.data))
@@ -100,8 +92,8 @@ async def graph(
 )
 @catch_error_async
 async def history(
-    page: int = 1,
-    size: Annotated[int, Query(le=200)] = 50,
+    page: Annotated[int, Query(gt=0)] = 1,
+    size: Annotated[int, Query(ge=0, le=200)] = 50,
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
     service: ProfileService = Depends(get_profile_service),
 ):
@@ -109,11 +101,12 @@ async def history(
         raise InvalidCookieToken(current_user.error)
 
     assert current_user.payload
-    ret = await service.history(user_id=current_user.payload.sub, size=size, page=page)
-
-    if not ret.ok:
-        # TODO: user not found xxx
-        ...
+    ret = await service.history(
+        user_id=current_user.payload.sub,
+        user_type=current_user.payload.user_type,
+        size=size,
+        page=page,
+    )
 
     assert ret.data
     msg = jsonable_encoder(
