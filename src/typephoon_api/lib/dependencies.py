@@ -152,8 +152,10 @@ async def get_game_service(request: Request) -> GameService:
     return service
 
 
-# TODO
-async def get_profile_service(request: Request) -> ProfileService: ...
+async def get_profile_service(request: Request) -> ProfileService:
+    app: TypephoonServer = request.app
+    service = ProfileService(sessionmaker=app.sessionmaker)
+    return service
 
 
 def get_setting(request: Request) -> Setting:

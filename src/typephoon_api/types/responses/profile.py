@@ -7,18 +7,16 @@ from .base import SuccessResponse
 
 
 class ProfileStatisticsResponse(SuccessResponse):
-    """
-    Attrubutes:
-    - Total Games
-    - Best WPM
-    - Average WPM of last 10 games
-    - Average WPM of all games
-    """
+    total_games: int
 
-    total_games: int = 0
-    best: float = 0
-    last_10: float = 0
-    average: float = 0
+    wpm_best: float
+    acc_best: float
+
+    wpm_avg_10: float
+    acc_avg_10: float
+
+    wpm_avg_all: float
+    acc_avg_all: float
 
 
 class ProfileGraphResponse(SuccessResponse):

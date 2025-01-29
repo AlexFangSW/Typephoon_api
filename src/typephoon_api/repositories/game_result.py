@@ -7,21 +7,6 @@ from ..orm.game import GameType
 from ..orm.game_result import GameResult
 
 
-class StatisticsRet(BaseModel):
-    """
-    Attrubutes:
-    - Total Games
-    - Best WPM
-    - Average WPM of last 10 games
-    - Average WPM of all games
-    """
-
-    total_games: int = 0
-    best: float = 0
-    last_10: float = 0
-    average: float = 0
-
-
 class GameResultWithGameType(BaseModel):
     game_type: GameType
     game_id: int
@@ -32,12 +17,18 @@ class GameResultWithGameType(BaseModel):
     rank: int
 
 
+class AvgLastNGamesRet(BaseModel):
+    wpm_raw: float
+    wpm: float
+    acc: float
+
+
 class GameResultRepo:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def total_games(self, user_id: str) -> int:
+    async def get_total_games(self, user_id: str) -> int:
         query = select(func.count(GameResult.game_id)).where(
             GameResult.user_id == user_id
         )
@@ -48,7 +39,7 @@ class GameResultRepo:
 
         return ret
 
-    async def last_n_games_with_game_type(
+    async def get_last_n_games_with_game_type(
         self,
         user_id: str,
         size: int = 50,
@@ -80,34 +71,46 @@ class GameResultRepo:
 
         return result
 
-    async def statistics(self, user_id: str) -> StatisticsRet:
-        total_cte = (
-            select(
-                func.count(GameResult.wpm_correct).label("total_games"),
-                func.avg(GameResult.wpm_correct).label("avg_wpm"),
-                func.max(GameResult.wpm_correct).label("best_wpm"),
+    async def get_best(self, user_id: str) -> GameResult | None:
+        query = (
+            select(GameResult)
+            .where(GameResult.user_id == user_id)
+            .order_by(GameResult.wpm_correct.desc())
+            .limit(1)
+        )
+        return await self._session.scalar(query)
+
+    async def get_avg_last_n_games(
+        self, user_id: str, last_n: int | None = None
+    ) -> AvgLastNGamesRet:
+        """
+        return the average statistics of last n games.
+        Arguments:
+            - user_id: user id
+            - last_n: last n games to select, None equals 'ALL'
+        """
+        last_n_cte = select(
+            GameResult.wpm_raw.label("wpm_raw"),
+            GameResult.wpm_correct.label("wpm_correct"),
+            GameResult.accuracy.label("accuracy"),
+        ).where(GameResult.user_id == user_id)
+
+        if last_n is not None:
+            last_n_cte = last_n_cte.limit(last_n).order_by(
+                GameResult.finished_at.desc()
             )
-            .where(GameResult.user_id == user_id)
-            .cte("total_cte")
-        )
-        last_10_cte = (
-            select(func.avg(GameResult.wpm_correct).label("avg_10"))
-            .where(GameResult.user_id == user_id)
-            .limit(10)
-            .cte("last_10_cte")
-        )
+
+        last_n_cte = last_n_cte.cte("last_n_cte")
+
         query = select(
-            func.coalesce(total_cte.c.total_games, 0),
-            func.coalesce(total_cte.c.best_wpm, 0),
-            func.coalesce(total_cte.c.avg_wpm, 0),
-            func.coalesce(last_10_cte.c.avg_10, 0),
-        )
+            func.coalesce(func.avg(last_n_cte.c.wpm_raw), 0),
+            func.coalesce(func.avg(last_n_cte.c.wpm_correct), 0),
+            func.coalesce(func.avg(last_n_cte.c.accuracy), 0),
+        ).select_from(last_n_cte)
 
         ret = await self._session.execute(query)
-        total_games, best_wpm, avg_wpm, avg_10 = ret.one()
-        return StatisticsRet(
-            total_games=total_games, best=best_wpm, last_10=avg_10, average=avg_wpm
-        )
+        wpm_raw, wpm, acc = ret.one()
+        return AvgLastNGamesRet(wpm_raw=wpm_raw, wpm=wpm, acc=acc)
 
     async def create(
         self,
@@ -115,7 +118,7 @@ class GameResultRepo:
         user_id: str,
         rank: int,
         wpm_raw: float,
-        wpm_currect: float,
+        wpm_correct: float,
         accuracy: float,
         finished_at: datetime,
     ) -> GameResult:
@@ -127,7 +130,7 @@ class GameResultRepo:
                     "user_id": user_id,
                     "rank": rank,
                     "wpm_raw": wpm_raw,
-                    "wpm_correct": wpm_currect,
+                    "wpm_correct": wpm_correct,
                     "accuracy": accuracy,
                     "finished_at": finished_at,
                 }

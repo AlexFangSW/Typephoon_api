@@ -39,15 +39,21 @@ async def statistics(
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
 
-    assert current_user.payload
+    assert current_user.payload is not None
     ret = await service.statistics(
         user_id=current_user.payload.sub, user_type=current_user.payload.user_type
     )
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(
         ProfileStatisticsResponse(
-            best=ret.data.best, last_10=ret.data.last_10, average=ret.data.average
+            total_games=ret.data.total,
+            wpm_best=ret.data.wpm_best,
+            wpm_avg_10=ret.data.wpm_avg_10,
+            wpm_avg_all=ret.data.wpm_avg_all,
+            acc_best=ret.data.acc_best,
+            acc_avg_10=ret.data.acc_avg_10,
+            acc_avg_all=ret.data.acc_avg_all,
         )
     )
     return JSONResponse(msg, status_code=200)
@@ -70,14 +76,14 @@ async def graph(
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
 
-    assert current_user.payload
+    assert current_user.payload is not None
     ret = await service.graph(
         user_id=current_user.payload.sub,
         user_type=current_user.payload.user_type,
         size=size,
     )
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(ProfileGraphResponse(data=ret.data))
     return JSONResponse(msg, status_code=200)
 
@@ -100,7 +106,7 @@ async def history(
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
 
-    assert current_user.payload
+    assert current_user.payload is not None
     ret = await service.history(
         user_id=current_user.payload.sub,
         user_type=current_user.payload.user_type,
@@ -108,7 +114,7 @@ async def history(
         page=page,
     )
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(
         ProfileHistoryResponse(
             total=ret.data.total,
