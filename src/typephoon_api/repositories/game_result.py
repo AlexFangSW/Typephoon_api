@@ -45,6 +45,10 @@ class GameResultRepo:
         size: int = 50,
         page: int = 1,
     ) -> list[GameResultWithGameType]:
+        """
+        Returns:
+            - A list of game result ordered in descent on 'finish_ts'
+        """
         query = (
             select(GameResult)
             .options(joinedload(GameResult.game))
