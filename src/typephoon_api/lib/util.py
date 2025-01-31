@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from functools import wraps
+from hashlib import md5
+import json
 from logging import getLogger
 from logging.config import dictConfig
 from typing import Callable
@@ -115,3 +117,10 @@ def gen_guest_user_info() -> LobbyUserInfo:
     id = uuid4().hex
     first_part = id.split("-")[0]
     return LobbyUserInfo(id=f"guest-{id}", name=f"guest-{first_part}")
+
+
+def get_dict_hash(inpt: dict) -> str:
+    """
+    This is only used to check if the content of the input is identical
+    """
+    return md5(json.dumps(inpt).encode()).hexdigest()[:8]

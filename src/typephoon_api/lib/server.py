@@ -14,7 +14,6 @@ from .background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
 
 from ..consumers.keystroke import KeystrokeConsumer
 
-
 from ..consumers.lobby_notify import LobbyNotifyConsumer
 
 from ..consumers.lobby_coundown import LobbyCountdownConsumer
@@ -81,12 +80,13 @@ class TypephoonServer(FastAPI):
         )
         await self._lobby_bg_manager.start()
 
-        # in game background tasks
+        # in game background tasks (key: game_id)
         self._game_bg_manager = BGManager[GameBGMsg, GameBG](
             msg_type=GameBGMsg, bg_type=GameBG, setting=self._setting
         )
         await self._game_bg_manager.start()
 
+        # consumers
         self._lobby_countdown_consumer = LobbyCountdownConsumer(
             setting=self._setting,
             amqp_conn=self._amqp_conn,

@@ -159,7 +159,7 @@ class SecretSetting(BaseModel):
 
 class GameSetting(BaseModel):
     start_countdown: int = 5
-    lobby_countdown: int = 30
+    lobby_countdown: int = 5
     player_limit: int = 5
 
 

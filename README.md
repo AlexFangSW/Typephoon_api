@@ -131,7 +131,7 @@ Features:
             - limit 50
             - query
                 - history-page=xxx
-    - tests
+    - [OK] tests
         - statistics
             - api
         - graph
@@ -142,9 +142,9 @@ Features:
 - RabbitMQ deadletter policy for lobby countdown
     Set policy on queue creation, hash policy params and use it as part of
     the queue name.
-
+ 
     Lobbys:
-    - random 
+    - [OK] random 
 
 QOL:
 - request id
