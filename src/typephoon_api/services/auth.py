@@ -179,6 +179,8 @@ class AuthService:
         return ServiceRet(ok=True, data=new_access_token)
 
     async def get_guest_token(self, key: str) -> ServiceRet[str]:
+        logger.debug("key: %s", key)
+
         token = await self._guest_token_repo.get(key)
         if token is None:
             logger.warning("guest token not found, key: %s", key)
