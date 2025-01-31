@@ -126,3 +126,13 @@ async def result(game_id: int, service: GameService = Depends(get_game_service))
     assert ret.data
     msg = jsonable_encoder(GameResultResponse(ranking=ret.data.ranking))
     return JSONResponse(msg, status_code=200)
+
+
+# TODO
+@router.get("/words", responses={200: {"model": GameResultResponse}})
+@catch_error_async
+async def words(game_id: int, service: GameService = Depends(get_game_service)):
+    """
+    Get words for this game
+    """
+    ...

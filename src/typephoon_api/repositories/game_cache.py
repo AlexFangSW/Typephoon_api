@@ -17,6 +17,7 @@ logger = getLogger(__name__)
 class GameCacheType(StrEnum):
     PLAYERS = "players"
     COUNTDOWN = "countdown"
+    WORDS = "words"
 
 
 class GameCacheRepo:
@@ -44,8 +45,9 @@ class GameCacheRepo:
         countdown_key = self._gen_cache_key(
             game_id=game_id, cache_type=GameCacheType.COUNTDOWN
         )
+        words_key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.WORDS)
 
-        await self._redis_conn.delete(player_key, countdown_key)
+        await self._redis_conn.delete(player_key, countdown_key, words_key)
 
     async def update_player_cache(self, data: GameUserInfo, game_id: int):
         """
@@ -76,6 +78,12 @@ class GameCacheRepo:
             result[user_id] = GameUserInfo.model_validate(user_info)
 
         return result
+
+    # TODO: get words for this game
+    async def get_words(self, game_id: int) -> str | None: ...
+
+    # TODO: set words for this game
+    async def set_words(self, game_id: int, words: str): ...
 
     async def get_start_time(self, game_id: int) -> datetime | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
