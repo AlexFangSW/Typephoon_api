@@ -5,7 +5,6 @@ from fastapi import WebSocket
 from jwt import PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.sql.base import event
 
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent

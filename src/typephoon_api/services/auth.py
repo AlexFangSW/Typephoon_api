@@ -4,6 +4,8 @@ from fastapi.datastructures import URL
 from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from ..repositories.guest_token import GuestTokenRepo
+
 from ..lib.oauth_providers.base import OAuthProvider
 
 from ..types.common import ErrorContext
@@ -49,6 +51,7 @@ class AuthService:
         sessionmaker: async_sessionmaker[AsyncSession],
         token_generator: TokenGenerator,
         token_validator: TokenValidator,
+        guest_token_repo: GuestTokenRepo,
         oauth_provider: OAuthProvider | None = None,
     ) -> None:
         self._setting = setting
@@ -56,6 +59,7 @@ class AuthService:
         self._token_generator = token_generator
         self._token_validator = token_validator
         self._oauth_provider = oauth_provider
+        self._guest_token_repo = guest_token_repo
 
     async def login(self) -> ServiceRet[URL]:
         logger.debug("login")
@@ -173,3 +177,12 @@ class AuthService:
         new_access_token = self._token_generator.gen_access_token(info.sub, info.name)
 
         return ServiceRet(ok=True, data=new_access_token)
+
+    async def get_guest_token(self, key: str) -> ServiceRet[str]:
+        token = await self._guest_token_repo.get(key)
+        if token is None:
+            logger.warning("guest token not found, key: %s", key)
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.KEY_NOT_FOUND)
+            )
+        return ServiceRet(ok=True, data=token)

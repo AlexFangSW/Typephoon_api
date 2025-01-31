@@ -56,6 +56,7 @@ async def get_auth_service_with_provider(
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)
     oauth_state_repo = OAuthStateRepo(setting=app.setting, redis_conn=app.redis_conn)
+    guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn, setting=app.setting)
 
     if provider == OAuthProviders.GOOGLE:
         oauth_provider = GoogleOAuthProvider(
@@ -70,6 +71,7 @@ async def get_auth_service_with_provider(
         oauth_provider=oauth_provider,
         token_validator=token_validator,
         token_generator=token_generator,
+        guest_token_repo=guest_token_repo,
     )
     return service
 
@@ -79,12 +81,14 @@ async def get_auth_service(request: Request) -> AuthService:
 
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)
+    guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn, setting=app.setting)
 
     service = AuthService(
         setting=app.setting,
         sessionmaker=app.sessionmaker,
         token_validator=token_validator,
         token_generator=token_generator,
+        guest_token_repo=guest_token_repo,
     )
     return service
 

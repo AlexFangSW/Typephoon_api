@@ -141,6 +141,38 @@ async def token_refresh(
         max_age=setting.token.access_duration,
         httponly=True,
         secure=True,
-        samesite="strict",
+    )
+    return response
+
+
+@router.get(
+    "/guest-token",
+    responses={200: {"model": SuccessResponse}, 400: {"model": ErrorResponse}},
+)
+@catch_error_async
+async def get_guest_token(
+    key: str,
+    setting: Setting = Depends(get_setting),
+    service: AuthService = Depends(get_auth_service),
+):
+    ret = await service.get_guest_token(key)
+    if not ret.ok:
+        assert ret.error is not None
+        if ret.error.code == ErrorCode.KEY_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=400)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data is not None
+    msg = jsonable_encoder(SuccessResponse())
+    response = JSONResponse(msg, status_code=200)
+    response.set_cookie(
+        CookieNames.ACCESS_TOKEN,
+        ret.data,
+        path="/",
+        max_age=setting.token.refresh_duration,
+        httponly=True,
+        secure=True,
     )
     return response
