@@ -115,7 +115,7 @@ class GameService:
                     user_id=user_id,
                     rank=rank,
                     wpm_raw=statistics.wpm_raw,
-                    wpm_currect=statistics.wpm,
+                    wpm_correct=statistics.wpm,
                     accuracy=statistics.acc,
                     finished_at=finished_at,
                 )

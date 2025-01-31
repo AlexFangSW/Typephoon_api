@@ -28,11 +28,7 @@ from ..types.responses.base import ErrorResponse, SuccessResponse
 
 logger = getLogger(__name__)
 
-router = APIRouter(
-    tags=["Game"],
-    prefix="/game",
-    responses={500: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
-)
+router = APIRouter(tags=["Game"], prefix="/game")
 
 
 @router.websocket("/ws")
@@ -72,7 +68,10 @@ async def countdown(game_id: int, service: GameService = Depends(get_game_servic
     return JSONResponse(msg, status_code=200)
 
 
-@router.post("/statistics", responses={200: {"model": SuccessResponse}})
+@router.post(
+    "/statistics",
+    responses={200: {"model": SuccessResponse}, 400: {"model": ErrorResponse}},
+)
 @catch_error_async
 async def write_statistics(
     statistics: GameStatistics,

@@ -33,8 +33,9 @@ async def test_api_lobby_players(
 
     # get player
     token_generator = TokenGenerator(setting)
-    access_token = token_generator.gen_access_token(user_id="player-1",
-                                                    username="player-name-1")
+    access_token = token_generator.gen_access_token(
+        user_id="player-1", username="player-name-1"
+    )
     ret = await client.get(
         f"{API_PREFIX}/lobby/players",
         params={"game_id": game_id},
@@ -42,8 +43,7 @@ async def test_api_lobby_players(
     )
     result = ret.json()
     assert result == {
-        "ok":
-            True,
+        "ok": True,
         "me": {
             "id": "player-1",
             "name": "player-name-1",
@@ -78,16 +78,13 @@ async def test_api_lobby_countdown(
     game_id = 123
 
     # set start time
-    start_time = datetime.now(UTC) + timedelta(
-        seconds=setting.game.lobby_countdown)
+    start_time = datetime.now(UTC) + timedelta(seconds=setting.game.lobby_countdown)
 
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
-    await lobby_cache_repo.set_start_time(game_id=game_id,
-                                          start_time=start_time)
+    await lobby_cache_repo.set_start_time(game_id=game_id, start_time=start_time)
 
     # call api
-    ret = await client.get(f"{API_PREFIX}/lobby/countdown",
-                           params={"game_id": game_id})
+    ret = await client.get(f"{API_PREFIX}/lobby/countdown", params={"game_id": game_id})
     result = LobbyCountdownResponse.model_validate(ret.json())
     assert result.ok
     assert result.seconds_left > 0

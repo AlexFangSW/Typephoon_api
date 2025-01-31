@@ -4,6 +4,8 @@ from typing import Annotated
 from fastapi import Cookie, Request
 from jwt.exceptions import PyJWTError
 
+from ..services.profile import ProfileService
+
 from ..services.game import GameService
 
 from ..services.game_event import GameEventService
@@ -147,6 +149,12 @@ async def get_game_service(request: Request) -> GameService:
     service = GameService(
         sessionmaker=app.sessionmaker, game_cache_repo=game_cache_repo
     )
+    return service
+
+
+async def get_profile_service(request: Request) -> ProfileService:
+    app: TypephoonServer = request.app
+    service = ProfileService(sessionmaker=app.sessionmaker)
     return service
 
 

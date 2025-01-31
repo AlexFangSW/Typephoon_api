@@ -27,11 +27,7 @@ from ..lib.util import catch_error_async
 
 logger = getLogger(__name__)
 
-router = APIRouter(
-    tags=["Lobby"],
-    prefix="/lobby",
-    responses={500: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
-)
+router = APIRouter(tags=["Lobby"], prefix="/lobby")
 
 
 @router.websocket("/queue-in/ws")
@@ -56,7 +52,11 @@ async def queue_in(
 
 @router.get(
     "/players",
-    responses={200: {"model": LobbyPlayersResponse}, 404: {"model": ErrorResponse}},
+    responses={
+        200: {"model": LobbyPlayersResponse},
+        404: {"model": ErrorResponse},
+        400: {"model": ErrorResponse},
+    },
 )
 @catch_error_async
 async def players(
@@ -85,7 +85,12 @@ async def players(
 
 
 @router.post(
-    "/leave", responses={200: {"model": SuccessResponse}, 404: {"model": ErrorResponse}}
+    "/leave",
+    responses={
+        200: {"model": SuccessResponse},
+        404: {"model": ErrorResponse},
+        400: {"model": ErrorResponse},
+    },
 )
 @catch_error_async
 async def leave(

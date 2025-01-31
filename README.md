@@ -122,11 +122,29 @@ Features:
 
 - Profile
     - api 
+        - [OK] best, last 10, average (correct)
+        - [OK] graph
+            - last 10, 100, 500, 1000
+            - query
+                - last-n=xxx
+        - [OK] history
+            - limit 50
+            - query
+                - history-page=xxx
     - tests
+        - statistics
+            - api
+        - graph
+            - api 
+        - history
+            - api
 
 - RabbitMQ deadletter policy for lobby countdown
+    Set policy on queue creation, hash policy params and use it as part of
+    the queue name.
+
+    Lobbys:
     - random 
-    - team
 
 QOL:
 - request id

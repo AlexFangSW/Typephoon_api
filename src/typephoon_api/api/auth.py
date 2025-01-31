@@ -18,9 +18,7 @@ from ..services.auth import AuthService
 
 from ..lib.util import catch_error_async
 
-router = APIRouter(
-    tags=["Auth"], prefix="/auth", responses={500: {"model": ErrorResponse}}
-)
+router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
 @router.get("/{provider}/login")
@@ -65,7 +63,6 @@ async def login_redirect(
         max_age=setting.token.access_duration,
         httponly=True,
         secure=True,
-        samesite="strict",
     )
     response.set_cookie(
         CookieNames.REFRESH_TOKEN,
@@ -74,7 +71,6 @@ async def login_redirect(
         max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
-        samesite="strict",
     )
     response.set_cookie(
         CookieNames.USERNAME,
@@ -82,7 +78,6 @@ async def login_redirect(
         max_age=setting.token.access_duration,
         httponly=True,
         secure=True,
-        samesite="strict",
     )
 
     return response
