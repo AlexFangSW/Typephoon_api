@@ -37,6 +37,16 @@ class GameCacheRepo:
         lock = self._redis_conn.lock(name=lock_key)
         yield lock
 
+    async def clear_cache(self, game_id: int):
+        player_key = self._gen_cache_key(
+            game_id=game_id, cache_type=GameCacheType.PLAYERS
+        )
+        countdown_key = self._gen_cache_key(
+            game_id=game_id, cache_type=GameCacheType.COUNTDOWN
+        )
+
+        await self._redis_conn.delete(player_key, countdown_key)
+
     async def update_player_cache(self, data: GameUserInfo, game_id: int):
         """
         update cache for a single player

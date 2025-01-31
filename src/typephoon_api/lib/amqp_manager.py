@@ -34,7 +34,23 @@ class AMQPManager:
             durable=True,
         )
 
+        game_cleanup_exchange = await channel.declare_exchange(
+            name=self._setting.amqp.game_cleanup_direct_exchange,
+            type=ExchangeType.DIRECT,
+            durable=True,
+        )
+
         # queues
+        game_cleanup_queue = await channel.declare_queue(
+            name=self._setting.amqp.game_cleanup_queue,
+            durable=True,
+            arguments={"x-queue-type": "quorum"},
+        )
+        await game_cleanup_queue.bind(
+            exchange=game_cleanup_exchange,
+            routing_key=self._setting.amqp.game_cleanup_queue_routing_key,
+        )
+
         game_keystroke_queue = await channel.declare_queue(
             name=self._setting.amqp.game_keystroke_queue,
             durable=True,
@@ -55,20 +71,33 @@ class AMQPManager:
             arguments={"x-queue-type": "quorum"},
         )
         await lobby_countdown_queue.bind(
-            exchange=lobby_countdown_exchange, routing_key="countdown"
+            exchange=lobby_countdown_exchange,
+            routing_key=self._setting.amqp.lobby_countdown_queue_routing_key,
         )
 
         # use default exchange to publish to this queue
-        lobby_multi_countdown_args = {
+        lobby_multi_countdown_wait_args = {
             "x-queue-type": "quorum",
             "x-message-ttl": self._setting.game.lobby_countdown * 1000,
             "x-dead-letter-exchange": lobby_countdown_exchange.name,
-            "x-dead-letter-routing-key": "countdown",
+            "x-dead-letter-routing-key": self._setting.amqp.lobby_countdown_queue_routing_key,
         }
         await channel.declare_queue(
-            name=f"{self._setting.amqp.lobby_multi_countdown_wait_queue}.{get_dict_hash(lobby_multi_countdown_args)}",
+            name=f"{self._setting.amqp.lobby_multi_countdown_wait_queue}.{get_dict_hash(lobby_multi_countdown_wait_args)}",
             durable=True,
-            arguments=lobby_multi_countdown_args,
+            arguments=lobby_multi_countdown_wait_args,
+        )
+
+        game_cleanup_wait_args = {
+            "x-queue-type": "quorum",
+            "x-message-ttl": self._setting.game.cleanup_countdown * 1000,
+            "x-dead-letter-exchange": game_cleanup_exchange.name,
+            "x-dead-letter-routing-key": self._setting.amqp.game_cleanup_queue_routing_key,
+        }
+        await channel.declare_queue(
+            name=f"{self._setting.amqp.game_cleanup_queue}.{get_dict_hash(game_cleanup_wait_args)}",
+            durable=True,
+            arguments=game_cleanup_wait_args,
         )
 
         # TODO: uncomment this when we add TEAM mode

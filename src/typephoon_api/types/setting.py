@@ -123,6 +123,7 @@ class AMQPSetting(AMQPCredentials):
     lobby_notify_fanout_exchange: str = "lobby.notify"
     lobby_countdown_direct_exchange: str = "lobby.countdown"
     game_keystroke_fanout_exchange: str = "game.keystroke"
+    game_cleanup_direct_exchange: str = "game.cleanup"
 
     # queues with consumers
     lobby_notify_queue: str = "lobby.notify"
@@ -133,10 +134,14 @@ class AMQPSetting(AMQPCredentials):
 
     game_keystroke_queue: str = "game.keystroke"
 
+    game_cleanup_queue: str = "game.cleanup"
+    game_cleanup_queue_routing_key: str = "game.cleanup"
+
     # "wait queues" use deadletter policies to connect with exchanges.
     # no consumers, publish only.
     lobby_multi_countdown_wait_queue: str = "lobby.multi.countdown.wait"
     lobby_team_countdown_wait_queue: str = "lobby.team.countdown.wait"
+    game_cleanup_wait_queue: str = "game.cleanup.wait"
 
     def merge(self, inpt: AMQPCredentials):
         self.user = inpt.user
@@ -158,9 +163,17 @@ class SecretSetting(BaseModel):
 
 
 class GameSetting(BaseModel):
+    """
+    Attributes:
+    - start_countdown: seconds
+    - lobby_countdown: seconds
+    - cleanup_countdown: seconds
+    """
+
     start_countdown: int = 5
     lobby_countdown: int = 5
     player_limit: int = 5
+    cleanup_countdown: int = 60 * 15
 
 
 class BGSetting(BaseModel):

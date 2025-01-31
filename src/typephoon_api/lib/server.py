@@ -7,6 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
+from ..consumers.game_cleaner import GameCleanerConsumer
+
 from .background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
 
 from .background_tasks.base import BGManager
@@ -112,10 +114,20 @@ class TypephoonServer(FastAPI):
         await self._keystroke_consumer.prepare()
         await self._keystroke_consumer.start()
 
+        self._game_cleaner_consumer = GameCleanerConsumer(
+            setting=self._setting,
+            amqp_conn=self._amqp_conn,
+            redis_conn=self._redis_conn,
+            sessionmaker=self._sessionmaker,
+        )
+        await self._game_cleaner_consumer.prepare()
+        await self._game_cleaner_consumer.start()
+
     async def cleanup(self):
         await self._lobby_notify_consumer.stop()
         await self._lobby_countdown_consumer.stop()
         await self._keystroke_consumer.stop()
+        await self._game_cleaner_consumer.stop()
 
         await self._lobby_bg_manager.stop(LobbyBGMsg(event=LobbyBGMsgEvent.RECONNECT))
         await self._game_bg_manager.stop(GameBGMsg(event=GameBGMsgEvent.RECONNECT))

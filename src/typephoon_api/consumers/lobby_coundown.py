@@ -18,7 +18,7 @@ from ..repositories.game import GameRepo
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyNotifyMsg
+from ..types.amqp import GameCleanupMsg, LobbyNotifyMsg
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -85,12 +85,25 @@ class LobbyCountdownConsumer(AbstractConsumer):
             game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True
         )
 
+    async def _start_cleaup_countdown(self, game_id: int):
+        """Sends clean up message to queue"""
+        msg = GameCleanupMsg(game_id=game_id)
+        amqp_msg = Message(
+            msg.model_dump_json().encode(), delivery_mode=DeliveryMode.PERSISTENT
+        )
+        confirm = await self._default_exchange.publish(
+            message=amqp_msg, routing_key=self._setting.amqp.game_cleanup_wait_queue
+        )
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("game cleanup message not acknowledged !!")
+
     async def _process(self, msg: LobbyNotifyMsg):
         ok = await self._set_game_status(msg.game_id)
         if not ok:
             return
         await self._populate_game_cache(msg.game_id)
         await self._notify_all_users(msg.game_id)
+        await self._start_cleaup_countdown(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")

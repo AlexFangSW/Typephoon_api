@@ -28,6 +28,15 @@ class GameRepo:
 
         await self._session.execute(query)
 
+    async def set_finish(self, id: int):
+        query = (
+            update(Game)
+            .values({"status": GameStatus.FINISHED, "end_at": datetime.now(UTC)})
+            .where(Game.id == id)
+        )
+
+        await self._session.execute(query)
+
     async def create(self, game_type: GameType, status: GameStatus) -> Game:
         query = (
             insert(Game)

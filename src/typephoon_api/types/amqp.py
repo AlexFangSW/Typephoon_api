@@ -40,3 +40,11 @@ class LobbyCountdownMsg(BaseModel):
     """
 
     game_id: int
+
+
+class GameCleanupMsg(BaseModel):
+    """
+    trigger server to cleanup the game
+    """
+
+    game_id: int
