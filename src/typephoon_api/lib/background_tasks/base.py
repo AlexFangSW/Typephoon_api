@@ -200,7 +200,6 @@ class BGGroup[MT: BGMsg, BT: BG]:
                 await bg.ping()
             except Exception as ex:
                 logger.debug("healthcheck failed, error: %s", str(ex))
-                bg.closed.set()
                 await self._queue.put(
                     _BGMsg(
                         game_id=self._game_id,
@@ -208,6 +207,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
                         event=_BGMsgEvent.HEALTHCHECK_FAIL,
                     )
                 )
+                await self.stop()
                 break
             await sleep(self._setting.bg.ping_interval)
 
@@ -326,6 +326,8 @@ class BG[T: BGMsg](ABC):
                 await self._ws.close()
         except Exception as ex:
             logger.warning("stop error: %s", str(ex))
+        finally:
+            self.closed.set()
 
     async def ping(self):
         logger.log(TRACE, "ping")
