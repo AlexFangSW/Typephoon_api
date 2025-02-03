@@ -23,6 +23,7 @@ pyyaml = "^6.0.2"
 cryptography = "^44.0.0"
 async-lru = "^2.0.4"
 aio-pika = "^9.5.4"
+websockets = "^14.2"
 
 
 [tool.poetry.group.test.dependencies]

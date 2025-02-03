@@ -42,9 +42,11 @@ async def queue_in(
     This endpoint is reponsible for sending lobby related events to users.
     """
     try:
-        await service.queue_in(
+        bg = await service.queue_in(
             websocket=websocket, queue_in_type=queue_in_type, prev_game_id=prev_game_id
         )
+        if bg is not None:
+            await bg.close_wait()
     except Exception as ex:
         logger.exception("something whent wrong")
         await websocket.close(reason=str(ex))

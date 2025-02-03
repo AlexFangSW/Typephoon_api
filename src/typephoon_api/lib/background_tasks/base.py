@@ -6,14 +6,17 @@ Automatically cleans up on websocket desconnect.
 from __future__ import annotations
 from enum import StrEnum
 from abc import ABC, abstractmethod
-from asyncio import Queue, Task, create_task, sleep
+from asyncio import CancelledError, Event, Queue, Task, create_task, sleep
 from dataclasses import dataclass
 from enum import IntEnum
 from logging import getLogger
 from typing import Type
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 from pydantic import BaseModel
+
+from ...types.log import TRACE
 
 from ...types.setting import Setting
 
@@ -90,7 +93,7 @@ class BGManager[MT: BGMsg, BT: BG]:
         logger.debug("_manage_loop started")
         while True:
             msg = await self._queue.get()
-            logger.debug("got msg: %s", msg)
+            logger.debug("manage event: %s", msg)
 
             if not (bucket_item := self._group_bucket.get(msg.game_id)):
                 logger.debug("game not found, game_id: %s", msg.game_id)
@@ -197,6 +200,7 @@ class BGGroup[MT: BGMsg, BT: BG]:
                 await bg.ping()
             except Exception as ex:
                 logger.debug("healthcheck failed, error: %s", str(ex))
+                bg.closed.set()
                 await self._queue.put(
                     _BGMsg(
                         game_id=self._game_id,
@@ -236,6 +240,10 @@ class BG[T: BGMsg](ABC):
         self._queue: Queue[T] = Queue()
         self._msg_type = msg_type
         self._user_id = user_id
+        self.closed = Event()
+
+    async def close_wait(self):
+        return await self.closed.wait()
 
     @property
     def user_id(self) -> str:
@@ -258,11 +266,14 @@ class BG[T: BGMsg](ABC):
             while True:
                 msg = await self._queue.get()
                 await self._send(msg)
+        except CancelledError:
+            logger.debug("%s, send loop closed user_id: %s", self._name, self._user_id)
         except:
             logger.exception(
                 "%s, send loop error, user_id: %s", self._name, self._user_id
             )
-            await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
+        finally:
+            await self.stop()
 
     @abstractmethod
     async def _recv(self, msg: T):
@@ -275,14 +286,17 @@ class BG[T: BGMsg](ABC):
         logger.debug("_recv_loop start")
         try:
             while True:
-                raw_msg = await self._ws.receive_bytes()
+                raw_msg = await self._ws.receive_text()
                 msg = self._msg_type.model_validate_json(raw_msg)
                 await self._recv(msg)
+        except WebSocketDisconnect:
+            logger.debug("%s, recv loop closed user_id: %s", self._name, self._user_id)
         except:
             logger.exception(
                 "%s, recv loop error, user_id: %s", self._name, self._user_id
             )
-            await self.stop(self._msg_type(event=BGMsgEvent.RECONNECT))
+        finally:
+            await self.stop()
 
     async def put_msg(self, msg: T):
         """
@@ -308,10 +322,11 @@ class BG[T: BGMsg](ABC):
         try:
             if final_msg:
                 await self._send(final_msg)
-            await self._ws.close()
+            if self._ws.client_state != WebSocketState.DISCONNECTED:
+                await self._ws.close()
         except Exception as ex:
             logger.warning("stop error: %s", str(ex))
 
     async def ping(self):
-        logger.debug("ping")
+        logger.log(TRACE, "ping")
         await self._send(self._msg_type(event=BGMsgEvent.PING))

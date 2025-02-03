@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from logging import getLogger
 from typing import Annotated
-from fastapi import Cookie, Request
+from fastapi import Cookie, Request, WebSocket
 from jwt.exceptions import PyJWTError
 
 from ..services.profile import ProfileService
@@ -105,8 +105,8 @@ async def get_lobby_service(request: Request) -> LobbyService:
     return service
 
 
-async def get_queue_in_service(request: Request) -> QueueInService:
-    app: TypephoonServer = request.app
+async def get_queue_in_service(ws: WebSocket) -> QueueInService:
+    app: TypephoonServer = ws.app
 
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)

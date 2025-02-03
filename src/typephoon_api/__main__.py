@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-
 import uvicorn
 
 from .types.cli import CLIArgs

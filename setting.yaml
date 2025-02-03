@@ -6,7 +6,9 @@ db:
 token:
   refresh_endpoint: "/api/v1/auth/token-refresh"
 google:
-  redirect_url: http://localhost:8080/api/v1/auth/google/login-redirect
+  redirect_url: http://localhost:9090/api/v1/auth/google/login-redirect
+front_end_endpoint: "http://localhost:9090"
+error_redirect: "http://localhost:9090/error"
 amqp:
   host: localhost 
   vhost: /
@@ -16,7 +18,7 @@ redis:
   db: 0
 cors:
   allow_origins:
-  - http://localhost:3000
+  - http://localhost:9090
 logger:
   disable_existing_loggers: false
   version: 1

@@ -194,7 +194,7 @@ class QueueInService:
         user_info: LobbyUserInfo,
         game_id: int,
         guest_token_key: str | None = None,
-    ):
+    ) -> LobbyBG:
         logger.debug(
             "user_info: %s, game_id: %s, guest_token_key: %s",
             user_info,
@@ -223,6 +223,8 @@ class QueueInService:
                     event=LobbyBGMsgEvent.GET_TOKEN, guest_token_key=guest_token_key
                 )
             )
+
+        return bg
 
     async def _notify_user_join(self, game_id: int):
         logger.debug("game_id: %s", game_id)
@@ -259,7 +261,7 @@ class QueueInService:
         websocket: WebSocket,
         queue_in_type: QueueInType,
         prev_game_id: int | None = None,
-    ):
+    ) -> LobbyBG | None:
         logger.debug("queue_in_type: %s, prev_game_id: %s", queue_in_type, prev_game_id)
 
         try:
@@ -302,7 +304,7 @@ class QueueInService:
 
             await session.commit()
 
-        await self._add_bg_event_loop(
+        bg = await self._add_bg_event_loop(
             websocket=websocket,
             user_info=process_token_ret.user_info,
             game_id=game_id,
@@ -330,3 +332,5 @@ class QueueInService:
             )
 
             await self._send_start_msg(game_id)
+
+        return bg

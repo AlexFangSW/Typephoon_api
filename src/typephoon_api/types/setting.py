@@ -177,7 +177,7 @@ class GameSetting(BaseModel):
 
 
 class BGSetting(BaseModel):
-    ping_interval: float = 30
+    ping_interval: float = 1
 
 
 class Setting(BaseModel):

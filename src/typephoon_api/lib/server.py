@@ -129,8 +129,8 @@ class TypephoonServer(FastAPI):
         await self._keystroke_consumer.stop()
         await self._game_cleaner_consumer.stop()
 
-        await self._lobby_bg_manager.stop(LobbyBGMsg(event=LobbyBGMsgEvent.RECONNECT))
-        await self._game_bg_manager.stop(GameBGMsg(event=GameBGMsgEvent.RECONNECT))
+        await self._lobby_bg_manager.stop()
+        await self._game_bg_manager.stop()
 
         await self._engine.dispose()
         await self._redis_conn.aclose()

@@ -3,6 +3,8 @@ from enum import StrEnum
 from logging import getLogger
 from typing import Type
 from fastapi import WebSocket
+
+from ...types.log import TRACE
 from .base import BG, BGMsg
 
 logger = getLogger(__name__)
@@ -36,15 +38,16 @@ class LobbyBG(BG[LobbyBGMsg]):
         super().__init__(ws, msg_type, user_id)
 
     async def _recv(self, msg: LobbyBGMsg):
-        pass
+        logger.log(TRACE, "recv msg: %s", msg)
 
     async def _send(self, msg: LobbyBGMsg):
         """
         send lobby events to user
         """
-        logger.debug("got msg: %s", msg)
+        logger.log(TRACE, "send msg: %s", msg)
         if msg.event == LobbyBGMsgEvent.USER_LEFT and msg.user_id == self._user_id:
             logger.debug("stop bg, user_id: %s", self._user_id)
             await self.stop()
+            return
 
-        await self._ws.send_bytes(msg.slim_dump_json().encode())
+        await self._ws.send_text(msg.slim_dump_json())
