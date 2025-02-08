@@ -50,7 +50,7 @@ class LobbyService:
         self,
         game_id: int,
     ) -> ServiceRet[float]:
-        logger.debug("game_id: %s, game_type: %s", game_id)
+        logger.debug("game_id: %s", game_id)
 
         start_time = await self._lobby_cache_repo.get_start_time(game_id)
         if not start_time:
