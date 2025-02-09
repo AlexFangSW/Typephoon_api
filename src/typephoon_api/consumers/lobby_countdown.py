@@ -3,8 +3,11 @@ from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection, Deli
 from pamqp.commands import Basic
 from pydantic import ValidationError
 from redis.asyncio import Redis
+import json
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from aio_pika import Message
+
+from ..types.log import TRACE
 
 from ..lib.background_tasks.lobby import LobbyBGMsgEvent
 
@@ -18,7 +21,7 @@ from ..repositories.game import GameRepo
 
 from ..types.setting import Setting
 
-from ..types.amqp import GameCleanupMsg, LobbyNotifyMsg
+from ..types.amqp import GameCleanupMsg, LobbyCountdownMsg, LobbyNotifyMsg
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -37,8 +40,8 @@ class LobbyCountdownConsumer(AbstractConsumer):
         self._sessionmaker = sessionmaker
         self._redis_conn = redis_conn
 
-    def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LobbyNotifyMsg:
-        return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
+    def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LobbyCountdownMsg:
+        return LobbyCountdownMsg.model_validate_json(amqp_msg.body)
 
     async def _notify_all_users(self, game_id: int):
         notify_body = (
@@ -97,7 +100,7 @@ class LobbyCountdownConsumer(AbstractConsumer):
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("game cleanup message not acknowledged !!")
 
-    async def _process(self, msg: LobbyNotifyMsg):
+    async def _process(self, msg: LobbyCountdownMsg):
         ok = await self._set_game_status(msg.game_id)
         if not ok:
             return

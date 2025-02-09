@@ -18,7 +18,7 @@ from ..consumers.keystroke import KeystrokeConsumer
 
 from ..consumers.lobby_notify import LobbyNotifyConsumer
 
-from ..consumers.lobby_coundown import LobbyCountdownConsumer
+from ..consumers.lobby_countdown import LobbyCountdownConsumer
 
 from .amqp_manager import AMQPManager
 
