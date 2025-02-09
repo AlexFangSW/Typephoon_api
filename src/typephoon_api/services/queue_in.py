@@ -11,7 +11,7 @@ from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
 
 from ..repositories.game_cache import GameCacheRepo
 
-from ..types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
+from ..types.amqp import GameCleanupMsg, LobbyCountdownMsg, LobbyNotifyMsg
 
 from ..orm.game import Game, GameStatus, GameType
 
@@ -151,6 +151,20 @@ class QueueInService:
 
         return False
 
+    async def _send_cleanup_signal(self, game_id: int):
+        logger.debug("game_id: %s", game_id)
+
+        msg = GameCleanupMsg(game_id=game_id).model_dump_json().encode()
+        amqp_msg = Message(msg)
+
+        confirm = await self._amqp_default_exchange.publish(
+            message=amqp_msg,
+            routing_key=self._setting.amqp.game_cleanup_wait_queue,
+        )
+
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish cleanup message failed")
+
     async def _send_countdown_signal(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
@@ -180,8 +194,9 @@ class QueueInService:
 
         logger.debug("id: %s", game.id)
 
-        # send countdown signal
+        # send signals
         await self._send_countdown_signal(game.id)
+        await self._send_cleanup_signal(game.id)
 
         # set start time in redis for user countdown pooling
         await self._set_start_ts_cache(game.id)
