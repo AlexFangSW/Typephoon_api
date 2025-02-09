@@ -69,19 +69,24 @@ class LobbyService:
     ) -> ServiceRet:
         logger.debug("game_id: %s, user_id: %s", game_id, user_id)
 
-        async with self._sessionmaker() as session:
-            repo = GameRepo(session)
-            game = await repo.decrease_player_count(game_id)
+        async with self._lobby_cache_repo.lock(game_id):
+            did_delete = await self._lobby_cache_repo.remove_player(
+                game_id=game_id, user_id=user_id
+            )
 
-            if not game:
-                logger.warning("game not found, game_id: %s", game_id)
-                return ServiceRet(
-                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
-                )
+            if did_delete:
+                async with self._sessionmaker() as session:
+                    logger.debug("deleted player from cache, decrease player count")
+                    repo = GameRepo(session)
+                    game = await repo.decrease_player_count(game_id)
 
-            await session.commit()
+                    if not game:
+                        logger.warning("game not found, game_id: %s", game_id)
+                        return ServiceRet(
+                            ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+                        )
 
-        await self._lobby_cache_repo.remove_player(game_id=game_id, user_id=user_id)
+                    await session.commit()
 
         # notify all servers
         msg = (
@@ -96,7 +101,7 @@ class LobbyService:
             message=amqp_msg, routing_key=""
         )
         if not isinstance(confirm, Basic.Ack):
-            raise PublishNotAcknowledged("publish user join message failed")
+            raise PublishNotAcknowledged("publish user left message failed")
 
         return ServiceRet(ok=True)
 

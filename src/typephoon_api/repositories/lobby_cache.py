@@ -134,18 +134,19 @@ class LobbyCacheRepo:
 
         await self._redis_conn.delete(player_cache_key, countdown_cache_key)
 
-    async def remove_player(self, game_id: int, user_id: str):
+    async def remove_player(self, game_id: int, user_id: str) -> bool:
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
         ret: bytes | None = await self._redis_conn.get(name=key)
         if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
-            return
+            return False
 
         data: dict = json.loads(ret)
-        data.pop(user_id)
+        exist = data.pop(user_id)
         await self._redis_conn.set(
             name=key, value=json.dumps(data), ex=self._setting.redis.expire_time
         )
+        return True if exist is not None else False
 
     async def get_players(self, game_id: int) -> dict[str, LobbyUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)

@@ -32,6 +32,7 @@ class LobbyNotifyConsumer(AbstractConsumer):
         return LobbyNotifyMsg.model_validate_json(amqp_msg.body)
 
     async def _process(self, msg: LobbyNotifyMsg):
+        # TODO: adapt new bg manager
         bg_notify_msg = LobbyBGMsg(event=msg.notify_type, user_id=msg.user_id)
 
         if bg_notify_msg.event == LobbyBGMsgEvent.GAME_START:

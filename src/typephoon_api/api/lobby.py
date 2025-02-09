@@ -45,6 +45,8 @@ async def queue_in(
         bg = await service.queue_in(
             websocket=websocket, queue_in_type=queue_in_type, prev_game_id=prev_game_id
         )
+        # TODO: Remove this, this sould be inside of 'queue_in' method.
+        #       Adapt the new background manager
         if bg is not None:
             await bg.close_wait()
     except Exception as ex:

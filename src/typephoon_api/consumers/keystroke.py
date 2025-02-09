@@ -40,6 +40,8 @@ class KeystrokeConsumer(AbstractConsumer):
         return result
 
     async def _process(self, msg: KeystrokeMsg):
+        # TODO: adapt new bg manager
+
         bg_msg = GameBGMsg(
             event=GameBGMsgEvent.KEY_STOKE,
             user_id=msg.user_id,

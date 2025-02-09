@@ -6,22 +6,14 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
-
 from ..consumers.game_cleaner import GameCleanerConsumer
-
-from .background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
-
+from .background_tasks.lobby import LobbyBG, LobbyBGMsg
 from .background_tasks.base import BGManager
-from .background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
-
+from .background_tasks.game import GameBG, GameBGMsg
 from ..consumers.keystroke import KeystrokeConsumer
-
 from ..consumers.lobby_notify import LobbyNotifyConsumer
-
 from ..consumers.lobby_countdown import LobbyCountdownConsumer
-
 from .amqp_manager import AMQPManager
-
 from ..types.errors import AMQPNotReady
 from ..types.setting import Setting
 
@@ -85,6 +77,9 @@ class TypephoonServer(FastAPI):
         self._keystroke_exchange = await self._keystroke_channel.get_exchange(
             self._setting.amqp.game_keystroke_fanout_exchange
         )
+
+        # TODO: Addapt new background manager
+        #       This should effect quite alot of stuff o.0
 
         # lobby background tasks (key: game_id)
         self._lobby_bg_manager = BGManager[LobbyBGMsg, LobbyBG](
