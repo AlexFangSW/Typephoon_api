@@ -62,7 +62,17 @@ class TypephoonServer(FastAPI):
             client_properties={"connection_name": "typephoon"},
         )
 
-        await AMQPManager(setting=self._setting, amqp_conn=self._amqp_conn).setup()
+        updated_queue_names = await AMQPManager(
+            setting=self._setting, amqp_conn=self._amqp_conn
+        ).setup()
+
+        # update queue names
+        self._setting.amqp.lobby_multi_countdown_wait_queue = (
+            updated_queue_names.lobby_multi_wait
+        )
+        self._setting.amqp.game_cleanup_wait_queue = (
+            updated_queue_names.game_cleanup_wait
+        )
 
         self._default_channel = await self._amqp_conn.channel()
         self._notify_channel = await self._amqp_conn.channel()

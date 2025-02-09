@@ -1,9 +1,16 @@
+from dataclasses import dataclass
 from aio_pika import ExchangeType
 from aio_pika.abc import AbstractRobustConnection
 
 from .util import get_dict_hash
 
 from ..types.setting import Setting
+
+
+@dataclass(slots=True)
+class UpdatedQueueNames:
+    lobby_multi_wait: str
+    game_cleanup_wait: str
 
 
 class AMQPManager:
@@ -82,8 +89,9 @@ class AMQPManager:
             "x-dead-letter-exchange": lobby_countdown_exchange.name,
             "x-dead-letter-routing-key": self._setting.amqp.lobby_countdown_queue_routing_key,
         }
+        lobby_multi_countdown_wait_name = f"{self._setting.amqp.lobby_multi_countdown_wait_queue}.{get_dict_hash(lobby_multi_countdown_wait_args)}"
         await channel.declare_queue(
-            name=f"{self._setting.amqp.lobby_multi_countdown_wait_queue}.{get_dict_hash(lobby_multi_countdown_wait_args)}",
+            name=lobby_multi_countdown_wait_name,
             durable=True,
             arguments=lobby_multi_countdown_wait_args,
         )
@@ -94,8 +102,9 @@ class AMQPManager:
             "x-dead-letter-exchange": game_cleanup_exchange.name,
             "x-dead-letter-routing-key": self._setting.amqp.game_cleanup_queue_routing_key,
         }
+        game_cleanup_wait_name = f"{self._setting.amqp.game_cleanup_wait_queue}.{get_dict_hash(game_cleanup_wait_args)}"
         await channel.declare_queue(
-            name=f"{self._setting.amqp.game_cleanup_queue}.{get_dict_hash(game_cleanup_wait_args)}",
+            name=game_cleanup_wait_name,
             durable=True,
             arguments=game_cleanup_wait_args,
         )
@@ -112,3 +121,8 @@ class AMQPManager:
         # )
 
         await channel.close()
+
+        return UpdatedQueueNames(
+            lobby_multi_wait=lobby_multi_countdown_wait_name,
+            game_cleanup_wait=game_cleanup_wait_name,
+        )
