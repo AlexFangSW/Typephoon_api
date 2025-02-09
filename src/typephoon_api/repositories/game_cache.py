@@ -55,8 +55,12 @@ class GameCacheRepo:
         """
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.PLAYERS)
 
-        raw_data: bytes = await self._redis_conn.get(key)
-        current_data: dict[str, dict] = json.loads(raw_data)
+        raw_data: bytes | None = await self._redis_conn.get(key)
+        if raw_data is not None:
+            current_data: dict[str, dict] = json.loads(raw_data)
+        else:
+            current_data: dict[str, dict] = {}
+
         current_data[data.id] = data.model_dump()
 
         await self._redis_conn.set(
@@ -67,8 +71,8 @@ class GameCacheRepo:
 
     async def get_players(self, game_id: int) -> dict[str, GameUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.PLAYERS)
-        ret = await self._redis_conn.get(key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(key)
+        if ret is None:
             logger.warning("cache not found, game_id: %s", game_id)
             return
 
@@ -87,8 +91,8 @@ class GameCacheRepo:
 
     async def get_start_time(self, game_id: int) -> datetime | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.COUNTDOWN)
-        ret: bytes = await self._redis_conn.get(key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(key)
+        if ret is None:
             logger.warning("cache not found, game_id: %s", game_id)
             return
 
@@ -103,7 +107,7 @@ class GameCacheRepo:
         """
         # player cache
         lobby_players = await lobby_cache_repo.get_players(game_id)
-        if lobby_players:
+        if lobby_players is not None:
             game_players: dict[str, dict] = {}
 
             for user_id, user_info in lobby_players.items():
@@ -125,7 +129,7 @@ class GameCacheRepo:
 
         # countdown cache
         lobby_start_time = await lobby_cache_repo.get_start_time(game_id)
-        if lobby_start_time:
+        if lobby_start_time is not None:
             game_start_time = lobby_start_time + timedelta(
                 seconds=self._setting.game.start_countdown
             )

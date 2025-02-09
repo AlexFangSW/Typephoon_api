@@ -50,8 +50,8 @@ class LobbyCacheRepo:
         new_player = False
 
         # get current status
-        ret = await self._redis_conn.get(name=key)
-        if ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is not None:
             current_status = json.loads(ret)
         else:
             current_status = {}
@@ -114,8 +114,8 @@ class LobbyCacheRepo:
         """
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
 
-        ret: bytes = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
             return
 
@@ -136,8 +136,8 @@ class LobbyCacheRepo:
 
     async def remove_player(self, game_id: int, user_id: str):
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
-        ret = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
             return
 
@@ -149,8 +149,8 @@ class LobbyCacheRepo:
 
     async def get_players(self, game_id: int) -> dict[str, LobbyUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
-        ret = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
             return
 

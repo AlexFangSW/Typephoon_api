@@ -28,9 +28,9 @@ class OAuthStateRepo:
 
     async def state_exist(self, state: str) -> bool:
         key = get_state_key(state)
-        exist = await self._redis_conn.getdel(key)
+        exist: bytes | None = await self._redis_conn.getdel(key)
 
-        if not exist:
+        if exist is None:
             logger.warning("key not found, key: %s", key)
             return False
 
