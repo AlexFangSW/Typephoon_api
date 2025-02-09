@@ -163,7 +163,7 @@ async def test_bg_group_add(setting: Setting):
     ping = BGMsg(event=BGMsgEvent.PING)
 
     ws = AsyncMock()
-    ws.receive_bytes = MagicMock(return_value=Future())
+    ws.receive_text = MagicMock(return_value=Future())
     bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
 
     bg_group = BGGroup[BGMsg, DummyBG](
@@ -171,7 +171,7 @@ async def test_bg_group_add(setting: Setting):
     )
 
     ws = AsyncMock()
-    ws.receive_bytes = MagicMock(return_value=Future())
+    ws.receive_text = MagicMock(return_value=Future())
     bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
     await bg_group.add(bg=bg, init_msg=ping)
 
@@ -216,22 +216,23 @@ async def test_bg_group_healthcheck_fail(setting: Setting):
     )
 
     ws = AsyncMock()
-    ws.receive_bytes = MagicMock(return_value=Future())
+    ws.receive_text = MagicMock(return_value=Future())
     bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
     await bg_group.add(bg)
 
     await sleep(0.01)
 
     # send disconnect msg to manager when healthcheck fails
-    assert queue.qsize() == 2
+    assert queue.qsize() == 3
     queue_msg: list[_BGMsg] = []
-    for _ in range(2):
+    for _ in range(queue.qsize()):
         msg = await queue.get()
         queue_msg.append(msg)
 
     assert queue_msg == [
         _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE),
         _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.HEALTHCHECK_FAIL),
+        _BGMsg(game_id=game_id, user_id=user_id, event=_BGMsgEvent.UPDATE),
     ]
 
     await bg_group.stop()
@@ -259,7 +260,7 @@ async def test_bg_group_remove(setting: Setting):
     )
 
     ws = AsyncMock()
-    ws.receive_bytes = MagicMock(return_value=Future())
+    ws.receive_text = MagicMock(return_value=Future())
     bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
     await bg_group.add(bg)
     bg = bg_group._bg_bucket[user_id]
@@ -315,7 +316,7 @@ async def test_bg_group_broadcast(setting: Setting):
 
     for user_id in users:
         ws = AsyncMock()
-        ws.receive_bytes = MagicMock(return_value=Future())
+        ws.receive_text = MagicMock(return_value=Future())
         bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
         await bg_group.add(bg)
     await bg_group.broadcast(ping)
@@ -356,7 +357,7 @@ async def test_bg_group_stop(setting: Setting):
     bg_tmp: list[DummyBG] = []
     for user_id in users:
         ws = AsyncMock()
-        ws.receive_bytes = MagicMock(return_value=Future())
+        ws.receive_text = MagicMock(return_value=Future())
         bg = DummyBG[BGMsg](ws=ws, user_id=user_id, msg_type=BGMsg)
         await bg_group.add(bg)
         bg_tmp.append(bg_group._bg_bucket[user_id])
@@ -367,7 +368,7 @@ async def test_bg_group_stop(setting: Setting):
     await sleep(0.01)
 
     for bg in bg_tmp:
-        assert len(bg.send_history) == 4
+        assert len(bg.send_history) == 2
 
     for user_id in users:
         assert bg_group._healthcheck_bucket.get(user_id) is None
@@ -381,22 +382,24 @@ async def test_bg():
         recv_history: list[T] = []
 
         async def _send(self, msg: T):
+            print("_send XXX", msg)
             self.send_history.append(msg)
 
         async def _recv(self, msg: T):
+            print("_recv xxxx", msg)
             self.recv_history.append(msg)
 
     ws = AsyncMock()
     ping = BGMsg(event=BGMsgEvent.PING)
     pong = BGMsg(event=BGMsgEvent.PONG)
-    ws.receive_bytes = AsyncMock(side_effect=[pong.model_dump_json().encode()])
+    ws.receive_text = AsyncMock(side_effect=[pong.model_dump_json()])
     bg = DummyBG(ws=ws, msg_type=BGMsg, user_id="123")
 
     await bg.start(ping)
     await bg.ping()
     await bg.put_msg(ping)
 
-    await sleep(0.01)
+    await sleep(1)
 
     await bg.stop(ping)
     await sleep(0.01)

@@ -258,7 +258,7 @@ class BG[T: BGMsg](ABC):
         """
         send logic
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def _send_loop(self):
         logger.debug("_send_loop start")
@@ -280,14 +280,14 @@ class BG[T: BGMsg](ABC):
         """
         receive logic
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def _recv_loop(self):
         logger.debug("_recv_loop start")
         try:
             while True:
-                raw_msg = await self._ws.receive_text()
-                msg = self._msg_type.model_validate_json(raw_msg)
+                msg = await self._ws.receive_text()
+                msg = self._msg_type.model_validate_json(msg)
                 await self._recv(msg)
         except WebSocketDisconnect:
             logger.debug("%s, recv loop closed user_id: %s", self._name, self._user_id)
@@ -308,11 +308,11 @@ class BG[T: BGMsg](ABC):
         logger.debug("start")
         if init_msg:
             await self._send(init_msg)
-        self._recv_task = create_task(
-            self._recv_loop(), name=f"{self._name}-recv-loop-{self._user_id}"
-        )
         self._send_task = create_task(
             self._send_loop(), name=f"{self._name}-send-loop-{self._user_id}"
+        )
+        self._recv_task = create_task(
+            self._recv_loop(), name=f"{self._name}-recv-loop-{self._user_id}"
         )
 
     async def stop(self, final_msg: T | None = None):

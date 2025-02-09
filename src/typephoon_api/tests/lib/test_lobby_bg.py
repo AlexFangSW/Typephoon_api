@@ -8,7 +8,7 @@ from asyncio import sleep
 @pytest.mark.asyncio
 async def test_lobby_background():
     ws = AsyncMock()
-    ws.send_bytes = AsyncMock()
+    ws.send_text = AsyncMock()
     ws.close = AsyncMock()
 
     user_id = "123"
@@ -18,8 +18,8 @@ async def test_lobby_background():
     msg = LobbyBGMsg(event=LobbyBGMsgEvent.USER_JOINED)
     await bg._send(msg)
 
-    assert ws.send_bytes.called
-    assert ws.send_bytes.call_args.args[0] == msg.slim_dump_json().encode()
+    assert ws.send_text.called
+    assert ws.send_text.call_args.args[0] == msg.slim_dump_json()
 
     msg = LobbyBGMsg(event=LobbyBGMsgEvent.USER_LEFT, user_id=user_id)
     await bg._send(msg)
