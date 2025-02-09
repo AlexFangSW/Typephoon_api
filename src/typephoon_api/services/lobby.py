@@ -60,7 +60,7 @@ class LobbyService:
             )
 
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
-        return ServiceRet(ok=True, data=seconds_left)
+        return ServiceRet(ok=True, data=seconds_left if seconds_left >= 0 else 0)
 
     async def leave(
         self,
