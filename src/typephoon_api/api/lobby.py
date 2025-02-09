@@ -81,7 +81,7 @@ async def players(
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
     return JSONResponse(msg, status_code=200)
 
@@ -141,6 +141,6 @@ async def get_countdown(
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(LobbyCountdownResponse(seconds_left=ret.data))
     return JSONResponse(msg, status_code=200)

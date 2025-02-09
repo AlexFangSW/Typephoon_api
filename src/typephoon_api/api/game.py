@@ -123,7 +123,7 @@ async def result(game_id: int, service: GameService = Depends(get_game_service))
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(GameResultResponse(ranking=ret.data.ranking))
     return JSONResponse(msg, status_code=200)
 

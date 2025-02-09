@@ -35,7 +35,7 @@ async def login(
     if not ret.ok:
         return RedirectResponse(setting.error_redirect)
 
-    assert ret.data
+    assert ret.data is not None
     return RedirectResponse(ret.data)
 
 
@@ -53,7 +53,7 @@ async def login_redirect(
     if not ret.ok:
         return RedirectResponse(setting.error_redirect)
 
-    assert ret.data
+    assert ret.data is not None
 
     response = RedirectResponse(ret.data.url)
     response.set_cookie(
@@ -131,7 +131,7 @@ async def token_refresh(
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(SuccessResponse())
     response = JSONResponse(msg, status_code=200)
     response.set_cookie(
