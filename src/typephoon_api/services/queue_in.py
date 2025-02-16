@@ -325,6 +325,8 @@ class QueueInService:
             return
 
         # match making, find or create game
+        # TODO: Things might break during match making... FIX IT
+        # - BUG: ws closed, player still in cache...
         async with self._sessionmaker() as session:
             game_repo = GameRepo(
                 session=session, player_limit=self._setting.game.player_limit
