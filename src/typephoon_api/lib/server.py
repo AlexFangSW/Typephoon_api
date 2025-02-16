@@ -78,20 +78,8 @@ class TypephoonServer(FastAPI):
             self._setting.amqp.game_keystroke_fanout_exchange
         )
 
-        # TODO: Addapt new background manager
-        #       This should effect quite alot of stuff o.0
-
-        # lobby background tasks (key: game_id)
-        self._lobby_bg_manager = BGManager[LobbyBGMsg, LobbyBG](
-            msg_type=LobbyBGMsg, bg_type=LobbyBG, setting=self._setting
-        )
-        await self._lobby_bg_manager.start()
-
-        # in game background tasks (key: game_id)
-        self._game_bg_manager = BGManager[GameBGMsg, GameBG](
-            msg_type=GameBGMsg, bg_type=GameBG, setting=self._setting
-        )
-        await self._game_bg_manager.start()
+        self._lobby_bg_manager = BGManager[LobbyBGMsg, LobbyBG]()
+        self._game_bg_manager = BGManager[GameBGMsg, GameBG]()
 
         # consumers
         self._lobby_countdown_consumer = LobbyCountdownConsumer(
@@ -133,9 +121,6 @@ class TypephoonServer(FastAPI):
         await self._lobby_countdown_consumer.stop()
         await self._keystroke_consumer.stop()
         await self._game_cleaner_consumer.stop()
-
-        await self._lobby_bg_manager.stop()
-        await self._game_bg_manager.stop()
 
         await self._engine.dispose()
         await self._redis_conn.aclose()

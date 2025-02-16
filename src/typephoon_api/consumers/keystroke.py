@@ -40,17 +40,14 @@ class KeystrokeConsumer(AbstractConsumer):
         return result
 
     async def _process(self, msg: KeystrokeMsg):
-        # TODO: adapt new bg manager
-
         bg_msg = GameBGMsg(
+            game_id=msg.game_id,
             event=GameBGMsgEvent.KEY_STOKE,
             user_id=msg.user_id,
             word_index=msg.word_index,
             char_index=msg.char_index,
         )
-        bg_group = await self._bg_manager.get(game_id=msg.game_id, auto_create=False)
-        if bg_group is not None:
-            await bg_group.broadcast(bg_msg)
+        await self._bg_manager.broadcast(game_id=msg.game_id, msg=bg_msg)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on message")

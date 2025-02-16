@@ -32,11 +32,11 @@ class GameEventService:
         self._keystroke_exchange = keystroke_exchange
         self._setting = setting
 
-    async def process(
+    async def subscribe(
         self,
         websocket: WebSocket,
         game_id: int,
-    ):
+    ) -> GameBG | None:
         logger.debug("in game ws connection, game_id: %s", game_id)
 
         # check token (must have token)
@@ -74,7 +74,6 @@ class GameEventService:
             return
 
         # add to background task
-        bg_group = await self._bg_manager.get(game_id)
         bg = GameBG(
             ws=websocket,
             user_id=user_id,
@@ -83,5 +82,9 @@ class GameEventService:
             game_id=game_id,
             server_name=self._setting.server_name,
         )
-        assert bg_group
-        await bg_group.add(bg)
+        await self._bg_manager.add(game_id=game_id, bg=bg)
+        return bg
+
+    async def close_wait(self, bg: GameBG):
+        await bg.close_wait()
+        await self._bg_manager.remove_user(game_id=bg.game_id, user_id=bg.user_id)

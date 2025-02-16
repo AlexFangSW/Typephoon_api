@@ -21,7 +21,11 @@ async def test_game_bg_send(setting: Setting):
     await bg.start()
 
     msg = GameBGMsg(
-        event=GameBGMsgEvent.KEY_STOKE, user_id="222", word_index=20, char_index=4
+        event=GameBGMsgEvent.KEY_STOKE,
+        user_id="222",
+        word_index=20,
+        char_index=4,
+        game_id=game_id,
     )
     await bg._send(msg)
 
@@ -56,6 +60,7 @@ async def test_game_bg_recv(setting: Setting):
         user_id=user_id,
         word_index=word_index,
         char_index=char_index,
+        game_id=game_id,
     )
     answer = KeystrokeMsg(
         game_id=game_id, user_id=user_id, word_index=word_index, char_index=char_index

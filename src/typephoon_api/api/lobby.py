@@ -12,7 +12,7 @@ from ..services.lobby import LobbyService
 
 from ..services.queue_in import QueueInService
 
-from ..types.responses.base import ErrorResponse, SuccessResponse
+from ..types.responses.base import ErrorResponse
 
 from ..types.enums import ErrorCode, QueueInType
 
@@ -45,10 +45,8 @@ async def queue_in(
         bg = await service.queue_in(
             websocket=websocket, queue_in_type=queue_in_type, prev_game_id=prev_game_id
         )
-        # TODO: Remove this, this sould be inside of 'queue_in' method.
-        #       Adapt the new background manager
         if bg is not None:
-            await bg.close_wait()
+            await service.close_wait(bg)
     except Exception as ex:
         logger.exception("something whent wrong")
         await websocket.close(reason=str(ex))
@@ -85,39 +83,6 @@ async def players(
 
     assert ret.data is not None
     msg = jsonable_encoder(LobbyPlayersResponse(me=ret.data.me, others=ret.data.others))
-    return JSONResponse(msg, status_code=200)
-
-
-@router.post(
-    "/leave",
-    responses={
-        200: {"model": SuccessResponse},
-        404: {"model": ErrorResponse},
-        400: {"model": ErrorResponse},
-    },
-)
-@catch_error_async
-async def leave(
-    game_id: int,
-    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
-    service: LobbyService = Depends(get_lobby_service),
-):
-
-    if current_user.error:
-        raise InvalidCookieToken(current_user.error)
-
-    assert current_user.payload
-    ret = await service.leave(user_id=current_user.payload.sub, game_id=game_id)
-
-    if not ret.ok:
-        assert ret.error
-        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
-            msg = jsonable_encoder(ErrorResponse(error=ret.error))
-            return JSONResponse(msg, status_code=404)
-        else:
-            raise ValueError(f"unknown error code: {ret.error.code}")
-
-    msg = jsonable_encoder(SuccessResponse())
     return JSONResponse(msg, status_code=200)
 
 

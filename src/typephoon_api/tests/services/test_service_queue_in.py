@@ -44,10 +44,7 @@ async def test_service_queue_in(
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
 
-    bg_manager = BGManager[LobbyBGMsg, LobbyBG](
-        msg_type=LobbyBGMsg, bg_type=LobbyBG, setting=setting
-    )
-    await bg_manager.start()
+    bg_manager = BGManager[LobbyBGMsg, LobbyBG]()
 
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -144,10 +141,10 @@ async def test_service_queue_in(
         seconds=setting.game.lobby_countdown
     )
 
-    # check background bucket
-    bucket_item = bg_manager._group_bucket.get(game_id)
-    assert bucket_item
-    assert bucket_item.connections == 1
+    # check background pool
+    game_connections = bg_manager._pool.get(game_id)
+    assert game_connections
+    assert len(game_connections) == 1
 
     # ---------------------
     # find game (found)
@@ -174,10 +171,10 @@ async def test_service_queue_in(
     assert player_1 == ret[player_1.id]
     assert player_2 == ret[player_2.id]
 
-    # check background bucket
-    bucket_item = bg_manager._group_bucket.get(game_id)
-    assert bucket_item
-    assert bucket_item.connections == 2
+    # check background pool
+    game_connections = bg_manager._pool.get(game_id)
+    assert game_connections
+    assert len(game_connections) == 2
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -209,10 +206,10 @@ async def test_service_queue_in(
     assert player_1 == ret[player_1.id]
     assert player_2 == ret[player_2.id]
 
-    # check background bucket
-    bucket_item = bg_manager._group_bucket.get(game_id)
-    assert bucket_item
-    assert bucket_item.connections == 2
+    # check background pool
+    game_connections = bg_manager._pool.get(game_id)
+    assert game_connections
+    assert len(game_connections) == 2
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -240,10 +237,10 @@ async def test_service_queue_in(
     assert ret
     assert len(ret.keys()) == 3
 
-    # check background bucket
-    bucket_item = bg_manager._group_bucket.get(game_id)
-    assert bucket_item
-    assert bucket_item.connections == 3
+    # check background pool
+    game_connections = bg_manager._pool.get(game_id)
+    assert game_connections
+    assert len(game_connections) == 3
 
     # check _amqp_notify_exchange
     assert amqp_notify_exchange.publish.called
@@ -252,7 +249,7 @@ async def test_service_queue_in(
     ) == LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.USER_JOINED, game_id=game_id)
 
     # clean up
-    await bg_manager.stop()
+    await bg_manager.cleanup()
 
 
 @pytest.mark.asyncio
@@ -264,10 +261,7 @@ async def test_service_queue_in_game_full(
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
 
-    bg_manager = BGManager[LobbyBGMsg, LobbyBG](
-        msg_type=LobbyBGMsg, bg_type=LobbyBG, setting=setting
-    )
-    await bg_manager.start()
+    bg_manager = BGManager[LobbyBGMsg, LobbyBG]()
 
     guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
     lobby_cache_repo = LobbyCacheRepo(redis_conn=redis_conn, setting=setting)
@@ -309,9 +303,9 @@ async def test_service_queue_in_game_full(
 
     game_id = notify_msg.game_id
 
-    bucket_item = bg_manager._group_bucket.get(game_id)
-    assert bucket_item
-    assert bucket_item.connections == setting.game.player_limit
+    game_connections = bg_manager._pool.get(game_id)
+    assert game_connections
+    assert len(game_connections) == setting.game.player_limit
 
     async with sessionmaker() as session:
         repo = GameRepo(session)
@@ -328,4 +322,4 @@ async def test_service_queue_in_game_full(
     assert game_start_time
 
     # clean up
-    await bg_manager.stop()
+    await bg_manager.cleanup()

@@ -43,10 +43,9 @@ class GameBG(BG[GameBGMsg]):
         server_name: str | None = None,
         msg_type: Type[GameBGMsg] = GameBGMsg,
     ) -> None:
-        super().__init__(ws, msg_type, user_id)
+        super().__init__(ws, msg_type, user_id, game_id)
         self._exchange = exchange
         self._setting = setting
-        self._game_id = game_id
         self._server_name = server_name
 
     async def _recv(self, msg: GameBGMsg):

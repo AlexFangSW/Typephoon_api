@@ -1,5 +1,5 @@
+from asyncio import Future
 from ...types.common import LobbyUserInfo
-
 from ...repositories.lobby_cache import LobbyCacheRepo
 from ...types.enums import CookieNames, UserType, WSCloseReason
 from ...lib.background_tasks.base import BGManager
@@ -8,7 +8,7 @@ from ...lib.token_generator import TokenGenerator
 from ...lib.token_validator import TokenValidator
 from ...repositories.game_cache import GameCacheRepo
 from ...services.game_event import GameEventService
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from ..helper import *
 
 
@@ -17,9 +17,7 @@ async def test_service_game_event_no_access_token(setting: Setting, redis_conn: 
     game_id = 123
     token_validator = TokenValidator(setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    bg_manager = BGManager[GameBGMsg, GameBG](
-        msg_type=GameBGMsg, bg_type=GameBG, setting=setting
-    )
+    bg_manager = BGManager[GameBGMsg, GameBG]()
     keystroke_exchange = AsyncMock()
     websocket = AsyncMock()
     websocket.cookies = {}
@@ -33,7 +31,8 @@ async def test_service_game_event_no_access_token(setting: Setting, redis_conn: 
         setting=setting,
     )
 
-    await service.process(websocket=websocket, game_id=game_id)
+    bg = await service.subscribe(websocket=websocket, game_id=game_id)
+    assert bg is None
 
     assert websocket.close.called
     assert (
@@ -49,9 +48,7 @@ async def test_service_game_event_invalid_access_token(
     game_id = 123
     token_validator = TokenValidator(setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    bg_manager = BGManager[GameBGMsg, GameBG](
-        msg_type=GameBGMsg, bg_type=GameBG, setting=setting
-    )
+    bg_manager = BGManager[GameBGMsg, GameBG]()
     keystroke_exchange = AsyncMock()
     websocket = AsyncMock()
     websocket.cookies = {CookieNames.ACCESS_TOKEN: "www.ccc.aaa"}
@@ -65,7 +62,8 @@ async def test_service_game_event_invalid_access_token(
         setting=setting,
     )
 
-    await service.process(websocket=websocket, game_id=game_id)
+    bg = await service.subscribe(websocket=websocket, game_id=game_id)
+    assert bg is None
 
     assert websocket.close.called
     assert websocket.close.call_args.kwargs["reason"] == WSCloseReason.INVALID_TOKEN
@@ -79,9 +77,7 @@ async def test_service_game_event_game_not_found(setting: Setting, redis_conn: R
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    bg_manager = BGManager[GameBGMsg, GameBG](
-        msg_type=GameBGMsg, bg_type=GameBG, setting=setting
-    )
+    bg_manager = BGManager[GameBGMsg, GameBG]()
     keystroke_exchange = AsyncMock()
 
     access_token = token_generator.gen_access_token(
@@ -100,7 +96,8 @@ async def test_service_game_event_game_not_found(setting: Setting, redis_conn: R
         setting=setting,
     )
 
-    await service.process(websocket=websocket, game_id=game_id)
+    bg = await service.subscribe(websocket=websocket, game_id=game_id)
+    assert bg is None
 
     assert websocket.close.called
     assert websocket.close.call_args.kwargs["reason"] == WSCloseReason.GAME_NOT_FOUND
@@ -116,9 +113,7 @@ async def test_service_game_event_not_a_participant(
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    bg_manager = BGManager[GameBGMsg, GameBG](
-        msg_type=GameBGMsg, bg_type=GameBG, setting=setting
-    )
+    bg_manager = BGManager[GameBGMsg, GameBG]()
     keystroke_exchange = AsyncMock()
 
     access_token = token_generator.gen_access_token(
@@ -148,7 +143,8 @@ async def test_service_game_event_not_a_participant(
         game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True
     )
 
-    await service.process(websocket=websocket, game_id=game_id)
+    bg = await service.subscribe(websocket=websocket, game_id=game_id)
+    assert bg is None
 
     assert websocket.close.called
     assert websocket.close.call_args.kwargs["reason"] == WSCloseReason.NOT_A_PARTICIPANT
@@ -162,9 +158,7 @@ async def test_service_game_event_success(setting: Setting, redis_conn: Redis):
     token_generator = TokenGenerator(setting)
     token_validator = TokenValidator(setting)
     game_cache_repo = GameCacheRepo(redis_conn=redis_conn, setting=setting)
-    bg_manager = BGManager[GameBGMsg, GameBG](
-        msg_type=GameBGMsg, bg_type=GameBG, setting=setting
-    )
+    bg_manager = BGManager[GameBGMsg, GameBG]()
     keystroke_exchange = AsyncMock()
 
     access_token = token_generator.gen_access_token(
@@ -174,6 +168,7 @@ async def test_service_game_event_success(setting: Setting, redis_conn: Redis):
     websocket = AsyncMock()
     websocket.cookies = {CookieNames.ACCESS_TOKEN: access_token}
     websocket.close = AsyncMock()
+    websocket.receive_text = MagicMock(return_value=Future())
 
     service = GameEventService(
         token_validator=token_validator,
@@ -194,11 +189,13 @@ async def test_service_game_event_success(setting: Setting, redis_conn: Redis):
         game_id=game_id, lobby_cache_repo=lobby_cache_repo, auto_clean=True
     )
 
-    await service.process(websocket=websocket, game_id=game_id)
+    bg = await service.subscribe(websocket=websocket, game_id=game_id)
+    assert bg is not None
 
     assert websocket.accept.called
     assert websocket.close.called is False
-    bg_group = await bg_manager.get(game_id, auto_create=False)
-    assert bg_group
-    assert user_id in bg_group._healthcheck_bucket
-    assert user_id in bg_group._bg_bucket
+    game_connections = bg_manager._pool.get(game_id, None)
+    assert game_connections
+    assert game_connections.get(user_id, None)
+
+    await bg.stop()

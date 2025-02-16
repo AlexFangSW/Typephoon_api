@@ -41,7 +41,9 @@ async def ws(
     - send and recive each key stroke
     """
     try:
-        await service.process(websocket=websocket, game_id=game_id)
+        bg = await service.subscribe(websocket=websocket, game_id=game_id)
+        if bg is not None:
+            await service.close_wait(bg)
     except Exception as ex:
         logger.exception("something went wrong")
         await websocket.close(reason=str(ex))

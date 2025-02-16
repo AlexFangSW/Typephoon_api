@@ -30,7 +30,7 @@ from ..lib.util import gen_guest_user_info
 from ..types.enums import CookieNames, QueueInType, WSCloseReason
 
 
-from aio_pika.abc import AbstractExchange
+from aio_pika.abc import AbstractExchange, DeliveryMode
 from aio_pika import Message
 
 from ..lib.token_generator import TokenGenerator, UserType
@@ -218,11 +218,11 @@ class QueueInService:
         )
 
         # notify user their game id
-        bg = LobbyBG(ws=websocket, user_id=user_info.id)
-        bg_group = await self._bg_manager.get(game_id)
-        assert bg_group
-        await bg_group.add(
-            bg=bg, init_msg=LobbyBGMsg(event=LobbyBGMsgEvent.INIT, game_id=game_id)
+        bg = LobbyBG(ws=websocket, user_id=user_info.id, game_id=game_id)
+        await self._bg_manager.add(
+            game_id=game_id,
+            bg=bg,
+            init_msg=LobbyBGMsg(event=LobbyBGMsgEvent.INIT, game_id=game_id),
         )
 
         # notify guest user to get their token
@@ -235,7 +235,9 @@ class QueueInService:
             )
             await bg.put_msg(
                 LobbyBGMsg(
-                    event=LobbyBGMsgEvent.GET_TOKEN, guest_token_key=guest_token_key
+                    event=LobbyBGMsgEvent.GET_TOKEN,
+                    guest_token_key=guest_token_key,
+                    game_id=game_id,
                 )
             )
 
@@ -270,6 +272,40 @@ class QueueInService:
         )
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish start msg failed")
+
+    async def _leave(
+        self,
+        user_id: str,
+        game_id: int,
+    ):
+        logger.debug("game_id: %s, user_id: %s", game_id, user_id)
+
+        async with self._lobby_cache_repo.lock(game_id):
+            did_delete = await self._lobby_cache_repo.remove_player(
+                game_id=game_id, user_id=user_id
+            )
+
+            if did_delete:
+                async with self._sessionmaker() as session:
+                    logger.debug("deleted player from cache, decrease player count")
+                    repo = GameRepo(session)
+                    await repo.decrease_player_count(game_id)
+                    await session.commit()
+
+        # notify all servers
+        msg = (
+            LobbyNotifyMsg(
+                notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
+            )
+            .model_dump_json()
+            .encode()
+        )
+        amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
+        confirm = await self._amqp_notify_exchange.publish(
+            message=amqp_msg, routing_key=""
+        )
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish user left message failed")
 
     async def queue_in(
         self,
@@ -349,3 +385,9 @@ class QueueInService:
             await self._send_start_msg(game_id)
 
         return bg
+
+    async def close_wait(self, bg: LobbyBG):
+        # wait for disconnection
+        await bg.close_wait()
+        await self._bg_manager.remove_user(game_id=bg.game_id, user_id=bg.user_id)
+        await self._leave(user_id=bg.user_id, game_id=bg.game_id)

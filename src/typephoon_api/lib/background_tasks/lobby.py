@@ -25,7 +25,6 @@ class LobbyBGMsgEvent(StrEnum):
 class LobbyBGMsg(BGMsg[LobbyBGMsgEvent]):
     guest_token_key: str | None = None
     user_id: str | None = None
-    game_id: int | None = None
 
 
 class LobbyBG(BG[LobbyBGMsg]):
@@ -33,9 +32,10 @@ class LobbyBG(BG[LobbyBGMsg]):
         self,
         ws: WebSocket,
         user_id: str,
+        game_id: int,
         msg_type: Type[LobbyBGMsg] = LobbyBGMsg,
     ) -> None:
-        super().__init__(ws, msg_type, user_id)
+        super().__init__(ws, msg_type, user_id, game_id)
 
     async def _recv(self, msg: LobbyBGMsg):
         logger.log(TRACE, "recv msg: %s", msg)
