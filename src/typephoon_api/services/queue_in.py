@@ -29,7 +29,6 @@ from ..lib.util import gen_guest_user_info
 
 from ..types.enums import CookieNames, QueueInType, WSCloseReason
 
-
 from aio_pika.abc import AbstractExchange, DeliveryMode
 from aio_pika import Message
 
@@ -325,8 +324,6 @@ class QueueInService:
             return
 
         # match making, find or create game
-        # TODO: Things might break during match making... FIX IT
-        # - BUG: ws closed, player still in cache...
         async with self._sessionmaker() as session:
             game_repo = GameRepo(
                 session=session, player_limit=self._setting.game.player_limit
@@ -357,12 +354,17 @@ class QueueInService:
 
             await session.commit()
 
-        bg = await self._add_bg_event_loop(
-            websocket=websocket,
-            user_info=process_token_ret.user_info,
-            game_id=game_id,
-            guest_token_key=process_token_ret.guest_token_key,
-        )
+        try:
+            bg = await self._add_bg_event_loop(
+                websocket=websocket,
+                user_info=process_token_ret.user_info,
+                game_id=game_id,
+                guest_token_key=process_token_ret.guest_token_key,
+            )
+        except Exception as ex:
+            logger.error("add event loop failed. error: %s", str(ex))
+            await self._leave(user_id=process_token_ret.user_info.id, game_id=game_id)
+            return
 
         await self._notify_user_join(game_id)
 

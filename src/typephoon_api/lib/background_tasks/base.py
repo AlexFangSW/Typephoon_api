@@ -73,7 +73,7 @@ class BGManager[MT: BGMsg, BT: BG]:
             )
 
         await asyncio.gather(*stop_tasks)
-        self._pool.pop(game_id)
+        self._pool.pop(game_id, None)
 
     async def cleanup(self, final_msg: MT | None = None):
         logger.debug("cleanup, %s games", len(self._pool.keys()))
