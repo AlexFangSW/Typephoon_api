@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
+
+from .word_generator import WordGenerator
 from ..consumers.game_cleaner import GameCleanerConsumer
 from .background_tasks.lobby import LobbyBG, LobbyBGMsg
 from .background_tasks.base import BGManager
@@ -27,6 +29,10 @@ class TypephoonServer(FastAPI):
         self._setting = setting
 
     async def prepare(self):
+        # Word Generator
+        self._word_generator = WordGenerator(self._setting)
+        self._word_generator.load_words()
+
         # database
         self._engine = create_async_engine(
             url=self._setting.db.async_dsn,
@@ -87,6 +93,7 @@ class TypephoonServer(FastAPI):
             amqp_conn=self._amqp_conn,
             sessionmaker=self._sessionmaker,
             redis_conn=self._redis_conn,
+            word_generator=self._word_generator,
         )
         await self._lobby_countdown_consumer.prepare()
         await self._lobby_countdown_consumer.start()
@@ -151,6 +158,10 @@ class TypephoonServer(FastAPI):
 
         else:
             return True
+
+    @property
+    def word_generator(self) -> WordGenerator:
+        return self._word_generator
 
     @property
     def sessionmaker(self) -> async_sessionmaker[AsyncSession]:

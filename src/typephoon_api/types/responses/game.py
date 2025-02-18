@@ -14,3 +14,7 @@ class GameResultResponse(SuccessResponse):
     """
 
     ranking: list[GetResultRetItem] = Field(default_factory=list)
+
+
+class GameWordsResponse(SuccessResponse):
+    words: list[str] = Field(default_factory=list)

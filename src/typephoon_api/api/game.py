@@ -1,5 +1,6 @@
 from logging import getLogger
-from fastapi import APIRouter, Depends, WebSocket
+from typing import Annotated
+from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -20,7 +21,11 @@ from ..services.game_event import GameEventService
 
 from ..types.requests.game import GameStatistics
 
-from ..types.responses.game import GameCountdownResponse, GameResultResponse
+from ..types.responses.game import (
+    GameCountdownResponse,
+    GameResultResponse,
+    GameWordsResponse,
+)
 
 from ..types.enums import ErrorCode
 
@@ -130,11 +135,28 @@ async def result(game_id: int, service: GameService = Depends(get_game_service))
     return JSONResponse(msg, status_code=200)
 
 
-# TODO
-@router.get("/words", responses={200: {"model": GameResultResponse}})
+@router.get(
+    "/words",
+    responses={200: {"model": GameWordsResponse}, 404: {"model": ErrorResponse}},
+)
 @catch_error_async
-async def words(game_id: int, service: GameService = Depends(get_game_service)):
+async def words(
+    game_id: int,
+    word_count: Annotated[int, Query(ge=1, le=100)] = 25,
+    service: GameService = Depends(get_game_service),
+):
     """
     Get words for this game
     """
-    ...
+    ret = await service.get_words(game_id=game_id, word_count=word_count)
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code in {ErrorCode.GAME_NOT_FOUND, ErrorCode.WORDS_NOT_FOUND}:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data is not None
+    msg = jsonable_encoder(GameWordsResponse(words=ret.data))
+    return JSONResponse(msg, status_code=200)

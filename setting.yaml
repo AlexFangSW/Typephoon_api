@@ -11,6 +11,7 @@ front_end_endpoint: "http://localhost:9090"
 error_redirect: "http://localhost:9090/error"
 game: 
   lobby_countdown: 600
+  word_file: ./data/words.txt
 amqp:
   host: localhost 
   vhost: /

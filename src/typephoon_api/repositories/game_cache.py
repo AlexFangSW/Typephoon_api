@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from logging import getLogger
+from pydantic import Field, RootModel
 from redis.asyncio import Redis
 from enum import StrEnum
 import json
@@ -18,6 +19,10 @@ class GameCacheType(StrEnum):
     PLAYERS = "players"
     COUNTDOWN = "countdown"
     WORDS = "words"
+
+
+class _GameWords(RootModel):
+    root: list[str] = Field(default_factory=list)
 
 
 class GameCacheRepo:
@@ -83,11 +88,23 @@ class GameCacheRepo:
 
         return result
 
-    # TODO: get words for this game
-    async def get_words(self, game_id: int) -> str | None: ...
+    async def get_words(self, game_id: int) -> list[str] | None:
+        key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.WORDS)
+        ret: bytes | None = await self._redis_conn.get(key)
+        if ret is None:
+            logger.warning("words not found, game_id: %s", game_id)
+            return
 
-    # TODO: set words for this game
-    async def set_words(self, game_id: int, words: str): ...
+        data = ret.decode()
+        return _GameWords.model_validate_json(data).model_dump()
+
+    async def set_words(self, game_id: int, words: list[str]):
+        key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.WORDS)
+        await self._redis_conn.set(
+            name=key,
+            value=json.dumps(words),
+            ex=self._setting.redis.in_game_cache_expire_time,
+        )
 
     async def get_start_time(self, game_id: int) -> datetime | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.COUNTDOWN)

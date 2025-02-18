@@ -155,11 +155,11 @@ class GameService:
 
         return ServiceRet(ok=True, data=GetResultRet(ranking=temp_list))
 
-    async def get_words(self, game_id: int) -> ServiceRet[str]:
+    async def get_words(self, game_id: int, word_count: int) -> ServiceRet[list[str]]:
         """
         Generate or get words from cache
         """
-        logger.debug("game_id: %s", game_id)
+        logger.debug("game_id: %s, word_count: %s", game_id, word_count)
 
         # check if this game exists, we don't realy need to check the database,
         # just check if the cache has expired, users shouldn't need to
@@ -171,11 +171,12 @@ class GameService:
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
 
-        # TODO: generate words
+        # retrive words, words should be already generated at lobby stage
         words = await self._game_cache_repo.get_words(game_id)
         if words is None:
-            logger.warning("word not found, game_id: %s, generating words", game_id)
-            async with self._game_cache_repo.lock(game_id):
-                ...
+            logger.warning("word not found, game_id: %s", game_id)
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.WORDS_NOT_FOUND)
+            )
 
         return ServiceRet(ok=True, data=words)

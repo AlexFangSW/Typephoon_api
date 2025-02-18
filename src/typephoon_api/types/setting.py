@@ -174,6 +174,7 @@ class GameSetting(BaseModel):
     lobby_countdown: int = 5
     player_limit: int = 5
     cleanup_countdown: int = 60 * 15
+    word_file: str = "./data/words.txt"
 
 
 class BGSetting(BaseModel):

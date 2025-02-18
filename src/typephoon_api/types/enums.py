@@ -8,6 +8,7 @@ class ErrorCode(StrEnum):
     INVALID_TOKEN = "INVALID_TOKEN"
     GAME_NOT_FOUND = "GAME_NOT_FOUND"
     USER_NOT_FOUND = "USER_NOT_FOUND"
+    WORDS_NOT_FOUND = "WORDS_NOT_FOUND"
 
 
 class CookieNames(StrEnum):
