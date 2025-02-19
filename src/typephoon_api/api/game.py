@@ -148,13 +148,12 @@ async def result(game_id: int, service: GameService = Depends(get_game_service))
 @catch_error_async
 async def words(
     game_id: int,
-    word_count: Annotated[int, Query(ge=1, le=100)] = 25,
     service: GameService = Depends(get_game_service),
 ):
     """
     Get words for this game
     """
-    ret = await service.get_words(game_id=game_id, word_count=word_count)
+    ret = await service.get_words(game_id=game_id)
     if not ret.ok:
         assert ret.error
         if ret.error.code in {ErrorCode.GAME_NOT_FOUND, ErrorCode.WORDS_NOT_FOUND}:

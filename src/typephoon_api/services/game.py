@@ -155,11 +155,11 @@ class GameService:
 
         return ServiceRet(ok=True, data=GetResultRet(ranking=temp_list))
 
-    async def get_words(self, game_id: int, word_count: int) -> ServiceRet[list[str]]:
+    async def get_words(self, game_id: int) -> ServiceRet[list[str]]:
         """
         Generate or get words from cache
         """
-        logger.debug("game_id: %s, word_count: %s", game_id, word_count)
+        logger.debug("game_id: %s", game_id)
 
         # check if this game exists, we don't realy need to check the database,
         # just check if the cache has expired, users shouldn't need to
