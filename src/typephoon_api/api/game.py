@@ -21,6 +21,7 @@ from ..types.requests.game import GameStatistics
 
 from ..types.responses.game import (
     GameCountdownResponse,
+    GamePlayersResponse,
     GameResultResponse,
     GameWordsResponse,
 )
@@ -111,6 +112,42 @@ async def write_statistics(
             raise ValueError(f"unknown error code: {ret.error.code}")
 
     msg = jsonable_encoder(SuccessResponse())
+    return JSONResponse(msg, status_code=200)
+
+
+@router.get(
+    "/players",
+    responses={
+        200: {"model": GamePlayersResponse},
+        404: {"model": ErrorResponse},
+        400: {"model": ErrorResponse},
+    },
+)
+@catch_error_async
+async def players(
+    game_id: int,
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: GameService = Depends(get_game_service),
+):
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
+
+    assert current_user.payload is not None
+    ret = await service.get_players(game_id=game_id, user_id=current_user.payload.sub)
+
+    if not ret.ok:
+        assert ret.error
+        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=404)
+        elif ret.error.code == ErrorCode.NOT_A_PARTICIPANT:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=400)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data is not None
+    msg = jsonable_encoder(GamePlayersResponse(me=ret.data.me, others=ret.data.others))
     return JSONResponse(msg, status_code=200)
 
 

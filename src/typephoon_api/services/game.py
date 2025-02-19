@@ -1,17 +1,11 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
-from typing import Self
-
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
 from ..repositories.game import GameRepo
-
 from ..repositories.game_result import GameResultRepo
-
 from ..types.common import ErrorContext, GameUserInfo
 from ..types.enums import ErrorCode, UserType
-
 from ..repositories.game_cache import GameCacheRepo
 from ..types.requests.game import GameStatistics
 from .base import ServiceRet
@@ -20,39 +14,21 @@ logger = getLogger(__name__)
 
 
 @dataclass(slots=True)
-class GetResultRetItem:
-    id: str
-    name: str
-
-    finished: str | None = None
-    rank: int = -1
-    wpm: float | None = None
-    wpm_raw: float | None = None
-    acc: float | None = None
-
-    @classmethod
-    def from_game_cache(cls, inpt: GameUserInfo) -> Self:
-        return cls(
-            id=inpt.id,
-            name=inpt.name,
-            finished=inpt.finished,
-            rank=inpt.rank,
-            wpm=inpt.wpm,
-            wpm_raw=inpt.wpm_raw,
-            acc=inpt.acc,
-        )
-
-
-@dataclass(slots=True)
 class GetResultRet:
     """
     players are sorted by their ranking
     """
 
-    ranking: list[GetResultRetItem] = field(default_factory=list)
+    ranking: list[GameUserInfo] = field(default_factory=list)
 
     def __post_init__(self):
         self.ranking = sorted(self.ranking, key=lambda x: x.rank)
+
+
+@dataclass(slots=True)
+class GetPlayersRet:
+    me: GameUserInfo
+    others: dict[str, GameUserInfo] = field(default_factory=dict)
 
 
 class GameService:
@@ -139,6 +115,31 @@ class GameService:
 
         return ServiceRet(ok=True)
 
+    async def get_players(
+        self, game_id: int, user_id: str
+    ) -> ServiceRet[GetPlayersRet]:
+        logger.debug("game_id: %s, user_id: %s", game_id, user_id)
+
+        players = await self._game_cache_repo.get_players(game_id)
+        if not players:
+            logger.warning("start time not found, game_id: %s", game_id)
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
+
+        me = players.pop(user_id, None)
+        if not me:
+            logger.warning(
+                "user doesn't belong in this game: game_id: %s, user_id: %s",
+                game_id,
+                user_id,
+            )
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.NOT_A_PARTICIPANT)
+            )
+
+        return ServiceRet(ok=True, data=GetPlayersRet(me=me, others=players))
+
     async def get_result(self, game_id: int) -> ServiceRet[GetResultRet]:
         logger.debug("game_id: %s", game_id)
 
@@ -149,9 +150,9 @@ class GameService:
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
 
-        temp_list: list[GetResultRetItem] = []
+        temp_list: list[GameUserInfo] = []
         for _, player_info in players.items():
-            temp_list.append(GetResultRetItem.from_game_cache(player_info))
+            temp_list.append(player_info)
 
         return ServiceRet(ok=True, data=GetResultRet(ranking=temp_list))
 
