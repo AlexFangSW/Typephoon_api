@@ -33,9 +33,9 @@ class KeystrokeConsumer(AbstractConsumer):
     def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LoadMsgRet:
         result = LoadMsgRet(body=KeystrokeMsg.model_validate_json(amqp_msg.body))
 
-        headers = KeystrokeHeader.model_validate(amqp_msg.headers)
-        if headers.source == self._setting.server_name:
-            result.skip = True
+        # headers = KeystrokeHeader.model_validate(amqp_msg.headers)
+        # if headers.source == self._setting.server_name:
+        #     result.skip = True
 
         return result
 

@@ -85,4 +85,6 @@ class GameBG(BG[GameBGMsg]):
         send key stroks from other player to user
         """
         logger.debug("got msg: %s", msg)
+        if msg.user_id == self._user_id:
+            return
         await self._ws.send_bytes(msg.slim_dump_json().encode())
