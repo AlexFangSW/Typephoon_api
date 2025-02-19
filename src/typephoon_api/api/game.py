@@ -54,7 +54,10 @@ async def ws(
         await websocket.close(reason=str(ex))
 
 
-@router.get("/countdown", responses={200: {"model": GameCountdownResponse}})
+@router.get(
+    "/countdown",
+    responses={200: {"model": GameCountdownResponse}, 400: {"model": ErrorResponse}},
+)
 @catch_error_async
 async def countdown(game_id: int, service: GameService = Depends(get_game_service)):
     """
@@ -113,7 +116,10 @@ async def write_statistics(
     return JSONResponse(msg, status_code=200)
 
 
-@router.get("/statistics", responses={200: {"model": GameResultResponse}})
+@router.get(
+    "/statistics",
+    responses={200: {"model": GameResultResponse}, 404: {"model": ErrorResponse}},
+)
 @catch_error_async
 async def result(game_id: int, service: GameService = Depends(get_game_service)):
     """
