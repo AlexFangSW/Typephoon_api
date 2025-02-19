@@ -6,7 +6,6 @@ from fastapi.responses import JSONResponse
 from ..types.errors import InvalidCookieToken
 
 from ..lib.util import catch_error_async
-
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
     get_access_token_info,
@@ -116,7 +115,7 @@ async def write_statistics(
 
 
 @router.get(
-    "/statistics",
+    "/result",
     responses={200: {"model": GameResultResponse}, 404: {"model": ErrorResponse}},
 )
 @catch_error_async
