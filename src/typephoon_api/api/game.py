@@ -113,7 +113,7 @@ async def write_statistics(
     return JSONResponse(msg, status_code=200)
 
 
-@router.get("/result", responses={200: {"model": GameResultResponse}})
+@router.get("/statistics", responses={200: {"model": GameResultResponse}})
 @catch_error_async
 async def result(game_id: int, service: GameService = Depends(get_game_service)):
     """

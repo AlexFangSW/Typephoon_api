@@ -267,8 +267,8 @@ async def test_game_result(
         )
         assert ret.status_code == 200
 
-    # get result
-    ret = await client.get(f"{API_PREFIX}/game/result", params={"game_id": game_id})
+    # get statistics
+    ret = await client.get(f"{API_PREFIX}/game/statistics", params={"game_id": game_id})
     assert ret.status_code == 200
     data = GameResultResponse.model_validate(ret.json())
     assert data.ok == True
