@@ -11,6 +11,7 @@ from ..types.setting import Setting
 class UpdatedQueueNames:
     lobby_multi_wait: str
     game_cleanup_wait: str
+    game_start_wait: str
 
 
 class AMQPManager:
@@ -31,6 +32,12 @@ class AMQPManager:
 
         lobby_notify_exchange = await channel.declare_exchange(
             name=self._setting.amqp.lobby_notify_fanout_exchange,
+            type=ExchangeType.FANOUT,
+            durable=True,
+        )
+
+        game_start_exchange = await channel.declare_exchange(
+            name=self._setting.amqp.game_start_fanout_exchange,
             type=ExchangeType.FANOUT,
             durable=True,
         )
@@ -72,6 +79,13 @@ class AMQPManager:
         )
         await lobby_notify_queue.bind(exchange=lobby_notify_exchange)
 
+        game_start_queue = await channel.declare_queue(
+            name=self._setting.amqp.game_start_queue,
+            durable=True,
+            arguments={"x-queue-type": "quorum"},
+        )
+        await game_start_queue.bind(exchange=game_start_exchange)
+
         lobby_countdown_queue = await channel.declare_queue(
             name=self._setting.amqp.lobby_countdown_queue,
             durable=True,
@@ -109,20 +123,23 @@ class AMQPManager:
             arguments=game_cleanup_wait_args,
         )
 
-        # TODO: uncomment this when we add TEAM mode
-        # use default exchange to publish to this queue
-        # NEED dead letter policy
-        # - dead letter exchange: <countdown exchange name>
-        # - dead leter routing key: 'countdown'
-        # await channel.declare_queue(
-        #     name=self._setting.amqp.lobby_team_countdown_wait_queue,
-        #     durable=True,
-        #     arguments={"x-queue-type": "quorum"},
-        # )
+        game_start_wait_args = {
+            "x-queue-type": "quorum",
+            "x-message-ttl": self._setting.game.start_countdown * 1000,
+            "x-dead-letter-exchange": game_start_exchange.name,
+            "x-dead-letter-routing-key": self._setting.amqp.game_start_queue_routing_key,
+        }
+        game_start_wait_name = f"{self._setting.amqp.game_start_wait_queue}.{get_dict_hash(game_start_wait_args)}"
+        await channel.declare_queue(
+            name=game_start_wait_name,
+            durable=True,
+            arguments=game_start_wait_args,
+        )
 
         await channel.close()
 
         return UpdatedQueueNames(
             lobby_multi_wait=lobby_multi_countdown_wait_name,
             game_cleanup_wait=game_cleanup_wait_name,
+            game_start_wait=game_start_wait_name,
         )

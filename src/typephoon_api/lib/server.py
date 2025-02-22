@@ -7,6 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 
+from ..consumers.game_start import GameStartConsumer
+
 from .word_generator import WordGenerator
 from ..consumers.game_cleaner import GameCleanerConsumer
 from .background_tasks.lobby import LobbyBG, LobbyBGMsg
@@ -71,6 +73,7 @@ class TypephoonServer(FastAPI):
         self._setting.amqp.game_cleanup_wait_queue = (
             updated_queue_names.game_cleanup_wait
         )
+        self._setting.amqp.game_start_wait_queue = updated_queue_names.game_start_wait
 
         self._default_channel = await self._amqp_conn.channel()
         self._notify_channel = await self._amqp_conn.channel()
@@ -123,11 +126,20 @@ class TypephoonServer(FastAPI):
         await self._game_cleaner_consumer.prepare()
         await self._game_cleaner_consumer.start()
 
+        self._game_start_consumer = GameStartConsumer(
+            setting=self._setting,
+            amqp_conn=self._amqp_conn,
+            bg_manager=self._game_bg_manager,
+        )
+        await self._game_start_consumer.prepare()
+        await self._game_start_consumer.start()
+
     async def cleanup(self):
         await self._lobby_notify_consumer.stop()
         await self._lobby_countdown_consumer.stop()
         await self._keystroke_consumer.stop()
         await self._game_cleaner_consumer.stop()
+        await self._game_start_consumer.stop()
 
         await self._engine.dispose()
         await self._redis_conn.aclose()

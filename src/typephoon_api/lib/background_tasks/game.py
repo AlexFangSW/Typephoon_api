@@ -23,6 +23,7 @@ class GameBGMsgEvent(StrEnum):
     RECONNECT = "RECONNECT"
 
     KEY_STOKE = "KEY_STOKE"
+    START = "START"
 
 
 class GameBGMsg(BGMsg[GameBGMsgEvent]):
@@ -82,9 +83,12 @@ class GameBG(BG[GameBGMsg]):
 
     async def _send(self, msg: GameBGMsg):
         """
-        send key stroks from other player to user
+        send message to user
         """
         logger.debug("got msg: %s", msg)
+
+        # ignore messages from same user
         if msg.user_id == self._user_id:
             return
+
         await self._ws.send_bytes(msg.slim_dump_json().encode())

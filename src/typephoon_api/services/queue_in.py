@@ -11,7 +11,12 @@ from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
 
 from ..repositories.game_cache import GameCacheRepo
 
-from ..types.amqp import GameCleanupMsg, LobbyCountdownMsg, LobbyNotifyMsg
+from ..types.amqp import (
+    GameCleanupMsg,
+    GameStartMsg,
+    LobbyCountdownMsg,
+    LobbyNotifyMsg,
+)
 
 from ..orm.game import Game, GameStatus, GameType
 
@@ -178,6 +183,20 @@ class QueueInService:
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish countdown message failed")
 
+    async def _send_game_start_signal(self, game_id: int):
+        logger.debug("game_id: %s", game_id)
+
+        msg = GameStartMsg(game_id=game_id).model_dump_json().encode()
+        amqp_msg = Message(msg)
+
+        confirm = await self._amqp_default_exchange.publish(
+            message=amqp_msg,
+            routing_key=self._setting.amqp.game_start_wait_queue,
+        )
+
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish countdown message failed")
+
     async def _set_start_ts_cache(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
@@ -196,6 +215,7 @@ class QueueInService:
         # send signals
         await self._send_countdown_signal(game.id)
         await self._send_cleanup_signal(game.id)
+        await self._send_game_start_signal(game.id)
 
         # set start time in redis for user countdown pooling
         await self._set_start_ts_cache(game.id)

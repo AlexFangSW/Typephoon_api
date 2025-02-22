@@ -1,24 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
-
-from aio_pika import DeliveryMode, Message
 from aio_pika.abc import AbstractExchange
-from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
-from ..lib.background_tasks.lobby import LobbyBGMsgEvent
-
-from ..types.errors import PublishNotAcknowledged
-
-from ..types.amqp import LobbyNotifyMsg
-
 from ..types.enums import ErrorCode
-
-from ..repositories.game import GameRepo
-
 from ..types.common import ErrorContext, LobbyUserInfo
-
 from .base import ServiceRet
 from ..repositories.lobby_cache import LobbyCacheRepo
 from ..types.setting import Setting
