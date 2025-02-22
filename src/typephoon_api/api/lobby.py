@@ -78,6 +78,9 @@ async def players(
         if ret.error.code == ErrorCode.GAME_NOT_FOUND:
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=404)
+        elif ret.error.code == ErrorCode.NOT_A_PARTICIPANT:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=400)
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 

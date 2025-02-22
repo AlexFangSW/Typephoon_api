@@ -21,10 +21,6 @@ class GameCacheType(StrEnum):
     WORDS = "words"
 
 
-class _GameWords(RootModel):
-    root: list[str] = Field(default_factory=list)
-
-
 class GameCacheRepo:
 
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
@@ -88,21 +84,20 @@ class GameCacheRepo:
 
         return result
 
-    async def get_words(self, game_id: int) -> list[str] | None:
+    async def get_words(self, game_id: int) -> str | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.WORDS)
         ret: bytes | None = await self._redis_conn.get(key)
         if ret is None:
             logger.warning("words not found, game_id: %s", game_id)
             return
+        words = ret.decode()
+        return words
 
-        data = ret.decode()
-        return _GameWords.model_validate_json(data).model_dump()
-
-    async def set_words(self, game_id: int, words: list[str]):
+    async def set_words(self, game_id: int, words: str):
         key = self._gen_cache_key(game_id=game_id, cache_type=GameCacheType.WORDS)
         await self._redis_conn.set(
             name=key,
-            value=json.dumps(words),
+            value=words,
             ex=self._setting.redis.in_game_cache_expire_time,
         )
 

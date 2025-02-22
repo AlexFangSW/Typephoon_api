@@ -69,6 +69,23 @@ class GameService:
             str(user_type),
         )
 
+        players = await self._game_cache_repo.get_players(statistics.game_id)
+        if players is None:
+            logger.warning("game not found, game_id: %s", statistics.game_id)
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
+            )
+
+        if user_id not in players:
+            logger.warning(
+                "not a participant, game_id: %s, user_id: %s",
+                statistics.game_id,
+                user_id,
+            )
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.NOT_A_PARTICIPANT)
+            )
+
         # write to database
         async with self._sessionmaker() as session:
             # get ranking
@@ -122,17 +139,15 @@ class GameService:
 
         players = await self._game_cache_repo.get_players(game_id)
         if not players:
-            logger.warning("start time not found, game_id: %s", game_id)
+            logger.warning("players not found, game_id: %s", game_id)
             return ServiceRet(
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
 
         me = players.pop(user_id, None)
-        if not me:
+        if me is None:
             logger.warning(
-                "user doesn't belong in this game: game_id: %s, user_id: %s",
-                game_id,
-                user_id,
+                "not a participant, game_id: %s, user_id: %s", game_id, user_id
             )
             return ServiceRet(
                 ok=False, error=ErrorContext(code=ErrorCode.NOT_A_PARTICIPANT)
@@ -145,7 +160,7 @@ class GameService:
 
         players = await self._game_cache_repo.get_players(game_id)
         if not players:
-            logger.warning("start time not found, game_id: %s", game_id)
+            logger.warning("players not found, game_id: %s", game_id)
             return ServiceRet(
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
@@ -156,21 +171,11 @@ class GameService:
 
         return ServiceRet(ok=True, data=GetResultRet(ranking=temp_list))
 
-    async def get_words(self, game_id: int) -> ServiceRet[list[str]]:
+    async def get_words(self, game_id: int) -> ServiceRet[str]:
         """
-        Generate or get words from cache
+        Get words from cache
         """
         logger.debug("game_id: %s", game_id)
-
-        # check if this game exists, we don't realy need to check the database,
-        # just check if the cache has expired, users shouldn't need to
-        # retrive the words at this point.
-        start_time = await self._game_cache_repo.get_start_time(game_id)
-        if start_time is None:
-            logger.warning("start time not found, game_id: %s", game_id)
-            return ServiceRet(
-                ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
-            )
 
         # retrive words, words should be already generated at lobby stage
         words = await self._game_cache_repo.get_words(game_id)

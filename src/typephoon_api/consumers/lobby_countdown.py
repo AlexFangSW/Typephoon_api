@@ -77,7 +77,7 @@ class LobbyCountdownConsumer(AbstractConsumer):
 
         return True
 
-    async def _populate_game_cache(self, game_id: int, words: list[str]):
+    async def _populate_game_cache(self, game_id: int, words: str):
         game_cache_repo = GameCacheRepo(
             redis_conn=self._redis_conn, setting=self._setting
         )

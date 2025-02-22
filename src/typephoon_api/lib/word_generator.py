@@ -24,6 +24,6 @@ class WordGenerator:
             len(self._words),
         )
 
-    def generate(self, word_count: int = 25) -> list[str]:
+    def generate(self, word_count: int = 25) -> str:
         shuffle(self._words)
-        return self._words[:word_count]
+        return " ".join(self._words[:word_count])

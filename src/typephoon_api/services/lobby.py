@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 
 @dataclass(slots=True)
 class GetPlayersRet:
-    me: LobbyUserInfo | None = None
+    me: LobbyUserInfo
     others: list[LobbyUserInfo] = field(default_factory=list)
 
 
@@ -55,7 +55,6 @@ class LobbyService:
     ) -> ServiceRet[GetPlayersRet]:
         logger.debug("game_id: %s, user_id: %s", game_id, user_id)
 
-        result = GetPlayersRet()
         players = await self._lobby_cache_repo.get_players(game_id)
 
         if not players:
@@ -64,10 +63,15 @@ class LobbyService:
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
 
-        for id, info in players.items():
-            if id == user_id:
-                result.me = info
-            else:
-                result.others.append(info)
+        me = players.pop(user_id, None)
+        if me is None:
+            logger.warning(
+                "not a participant, game_id: %s, user_id: %s", game_id, user_id
+            )
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.NOT_A_PARTICIPANT)
+            )
 
-        return ServiceRet(ok=True, data=result)
+        others = [info for _, info in players.items()]
+
+        return ServiceRet(ok=True, data=GetPlayersRet(me=me, others=others))

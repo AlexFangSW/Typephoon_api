@@ -23,4 +23,4 @@ class GamePlayersResponse(SuccessResponse):
 
 
 class GameWordsResponse(SuccessResponse):
-    words: list[str] = Field(default_factory=list)
+    words: str

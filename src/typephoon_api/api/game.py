@@ -105,7 +105,7 @@ async def write_statistics(
 
     if not ret.ok:
         assert ret.error
-        if ret.error.code == ErrorCode.GAME_NOT_FOUND:
+        if ret.error.code in {ErrorCode.GAME_NOT_FOUND, ErrorCode.NOT_A_PARTICIPANT}:
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=400)
         else:
@@ -191,7 +191,7 @@ async def words(
     ret = await service.get_words(game_id=game_id)
     if not ret.ok:
         assert ret.error
-        if ret.error.code in {ErrorCode.GAME_NOT_FOUND, ErrorCode.WORDS_NOT_FOUND}:
+        if ret.error.code == ErrorCode.WORDS_NOT_FOUND:
             msg = jsonable_encoder(ErrorResponse(error=ret.error))
             return JSONResponse(msg, status_code=404)
         else:
