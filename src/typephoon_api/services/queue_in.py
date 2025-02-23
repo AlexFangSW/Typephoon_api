@@ -88,10 +88,12 @@ class QueueInService:
         if access_token is None:
             user_info = gen_guest_user_info()
             token = self._token_generator.gen_access_token(
-                user_id=user_info.id, username=user_info.name, user_type=UserType.GUEST
-            )
+                user_id=user_info.id,
+                username=user_info.name,
+                user_type=UserType.GUEST)
             guest_token_key = await self._guest_token_repo.store(token)
-            return ProcessTokenRet(user_info=user_info, guest_token_key=guest_token_key)
+            return ProcessTokenRet(user_info=user_info,
+                                   guest_token_key=guest_token_key)
 
         else:
             assert access_token
@@ -117,12 +119,11 @@ class QueueInService:
             logger.debug("try reconnect, prev_game_id: %s", prev_game_id)
             prev_game_id = int(prev_game_id)
             new_player = await self._lobby_cache_repo.is_new_player(
-                game_id=prev_game_id, user_id=user_info.id
-            )
+                game_id=prev_game_id, user_id=user_info.id)
 
-            game = await game_repo.is_available(
-                id=prev_game_id, lock=True, new_player=new_player
-            )
+            game = await game_repo.is_available(id=prev_game_id,
+                                                lock=True,
+                                                new_player=new_player)
             return game
 
         else:
@@ -130,25 +131,23 @@ class QueueInService:
             game = await game_repo.get_one_available(lock=True)
             return game
 
-    async def _join_game(
-        self, game_repo: GameRepo, game_id: int, user_info: LobbyUserInfo
-    ) -> bool:
+    async def _join_game(self, game_repo: GameRepo, game_id: int,
+                         user_info: LobbyUserInfo) -> bool:
         logger.debug("game_id: %s, user_info: %s", game_id, user_info)
 
         async with self._lobby_cache_repo.lock(game_id):
             new_player = await self._lobby_cache_repo.add_player(
-                game_id=game_id, user_info=user_info
-            )
+                game_id=game_id, user_info=user_info)
 
         if new_player:
-            logger.debug("new player, game_id: %s, user_info: %s", game_id, user_info)
+            logger.debug("new player, game_id: %s, user_info: %s", game_id,
+                         user_info)
 
             game = await game_repo.increase_player_count(game_id)
             assert game
 
-            logger.debug(
-                "current player count: %s, game_id: %s", game.player_count, game_id
-            )
+            logger.debug("current player count: %s, game_id: %s",
+                         game.player_count, game_id)
 
             if game.player_count >= self._setting.game.player_limit:
                 return True
@@ -183,6 +182,7 @@ class QueueInService:
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish countdown message failed")
 
+    # TODO: this should be moved to 'lobby countdown consumer'
     async def _send_game_start_signal(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
@@ -201,14 +201,13 @@ class QueueInService:
         logger.debug("game_id: %s", game_id)
 
         start_time = datetime.now(UTC) + timedelta(
-            seconds=self._setting.game.lobby_countdown
-        )
-        await self._lobby_cache_repo.set_start_time(
-            game_id=game_id, start_time=start_time
-        )
+            seconds=self._setting.game.lobby_countdown)
+        await self._lobby_cache_repo.set_start_time(game_id=game_id,
+                                                    start_time=start_time)
 
     async def _create_game(self, game_repo: GameRepo) -> int:
-        game = await game_repo.create(game_type=GameType.MULTI, status=GameStatus.LOBBY)
+        game = await game_repo.create(game_type=GameType.MULTI,
+                                      status=GameStatus.LOBBY)
 
         logger.debug("id: %s", game.id)
 
@@ -257,38 +256,29 @@ class QueueInService:
                     event=LobbyBGMsgEvent.GET_TOKEN,
                     guest_token_key=guest_token_key,
                     game_id=game_id,
-                )
-            )
+                ))
 
         return bg
 
     async def _notify_user_join(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
-        msg = (
-            LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.USER_JOINED, game_id=game_id)
-            .slim_dump_json()
-            .encode()
-        )
+        msg = (LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.USER_JOINED,
+                              game_id=game_id).slim_dump_json().encode())
         amqp_msg = Message(msg)
-        confirm = await self._amqp_notify_exchange.publish(
-            message=amqp_msg, routing_key=""
-        )
+        confirm = await self._amqp_notify_exchange.publish(message=amqp_msg,
+                                                           routing_key="")
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish user join message failed")
 
     async def _send_start_msg(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
-        msg = (
-            LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.GAME_START, game_id=game_id)
-            .slim_dump_json()
-            .encode()
-        )
+        msg = (LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.GAME_START,
+                              game_id=game_id).slim_dump_json().encode())
         amqp_msg = Message(msg)
         confirm = await self._amqp_notify_exchange.publish(
-            message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue
-        )
+            message=amqp_msg, routing_key=self._setting.amqp.lobby_notify_queue)
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish start msg failed")
 
@@ -301,28 +291,23 @@ class QueueInService:
 
         async with self._lobby_cache_repo.lock(game_id):
             did_delete = await self._lobby_cache_repo.remove_player(
-                game_id=game_id, user_id=user_id
-            )
+                game_id=game_id, user_id=user_id)
 
             if did_delete:
                 async with self._sessionmaker() as session:
-                    logger.debug("deleted player from cache, decrease player count")
+                    logger.debug(
+                        "deleted player from cache, decrease player count")
                     repo = GameRepo(session)
                     await repo.decrease_player_count(game_id)
                     await session.commit()
 
         # notify all servers
-        msg = (
-            LobbyNotifyMsg(
-                notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
-            )
-            .model_dump_json()
-            .encode()
-        )
+        msg = (LobbyNotifyMsg(notify_type=LobbyBGMsgEvent.USER_LEFT,
+                              game_id=game_id,
+                              user_id=user_id).model_dump_json().encode())
         amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
-        confirm = await self._amqp_notify_exchange.publish(
-            message=amqp_msg, routing_key=""
-        )
+        confirm = await self._amqp_notify_exchange.publish(message=amqp_msg,
+                                                           routing_key="")
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish user left message failed")
 
@@ -332,7 +317,8 @@ class QueueInService:
         queue_in_type: QueueInType,
         prev_game_id: int | None = None,
     ) -> LobbyBG | None:
-        logger.debug("queue_in_type: %s, prev_game_id: %s", queue_in_type, prev_game_id)
+        logger.debug("queue_in_type: %s, prev_game_id: %s", queue_in_type,
+                     prev_game_id)
 
         try:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
@@ -345,9 +331,8 @@ class QueueInService:
 
         # match making, find or create game
         async with self._sessionmaker() as session:
-            game_repo = GameRepo(
-                session=session, player_limit=self._setting.game.player_limit
-            )
+            game_repo = GameRepo(session=session,
+                                 player_limit=self._setting.game.player_limit)
             game_id: int | None = None
 
             game = await self._find_game(
@@ -383,7 +368,8 @@ class QueueInService:
             )
         except Exception as ex:
             logger.error("add event loop failed. error: %s", str(ex))
-            await self._leave(user_id=process_token_ret.user_info.id, game_id=game_id)
+            await self._leave(user_id=process_token_ret.user_info.id,
+                              game_id=game_id)
             return
 
         await self._notify_user_join(game_id)
@@ -394,8 +380,8 @@ class QueueInService:
             # set game status
             async with self._sessionmaker() as session:
                 game_repo = GameRepo(
-                    session=session, player_limit=self._setting.game.player_limit
-                )
+                    session=session,
+                    player_limit=self._setting.game.player_limit)
                 await game_repo.start_game(game_id)
                 await session.commit()
 
@@ -413,5 +399,6 @@ class QueueInService:
     async def close_wait(self, bg: LobbyBG):
         # wait for disconnection
         await bg.close_wait()
-        await self._bg_manager.remove_user(game_id=bg.game_id, user_id=bg.user_id)
+        await self._bg_manager.remove_user(game_id=bg.game_id,
+                                           user_id=bg.user_id)
         await self._leave(user_id=bg.user_id, game_id=bg.game_id)
