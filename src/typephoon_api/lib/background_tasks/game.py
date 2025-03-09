@@ -91,4 +91,4 @@ class GameBG(BG[GameBGMsg]):
         if msg.user_id == self._user_id:
             return
 
-        await self._ws.send_bytes(msg.slim_dump_json().encode())
+        await self._ws.send_text(msg.slim_dump_json())
