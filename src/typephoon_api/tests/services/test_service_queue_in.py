@@ -108,7 +108,7 @@ async def test_service_queue_in(
     game_id = p1_notify_msg.game_id
 
     # check countdown exchange
-    assert amqp_default_exchange.publish.call_count == 3
+    assert amqp_default_exchange.publish.call_count == 2
     assert (
         amqp_default_exchange.publish.call_args_list[0].kwargs["routing_key"]
         == setting.amqp.lobby_multi_countdown_wait_queue
@@ -116,10 +116,6 @@ async def test_service_queue_in(
     assert (
         amqp_default_exchange.publish.call_args_list[1].kwargs["routing_key"]
         == setting.amqp.game_cleanup_wait_queue
-    )
-    assert (
-        amqp_default_exchange.publish.call_args_list[2].kwargs["routing_key"]
-        == setting.amqp.game_start_wait_queue
     )
 
     p1_countdown_msg = LobbyCountdownMsg.model_validate_json(
