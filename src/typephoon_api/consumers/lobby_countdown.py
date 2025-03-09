@@ -1,5 +1,10 @@
 from logging import getLogger
-from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection, DeliveryMode
+from aio_pika.abc import (
+    AbstractExchange,
+    AbstractIncomingMessage,
+    AbstractRobustConnection,
+    DeliveryMode,
+)
 from pamqp.commands import Basic
 from pydantic import ValidationError
 from redis.asyncio import Redis
@@ -20,7 +25,7 @@ from ..repositories.game import GameRepo
 
 from ..types.setting import Setting
 
-from ..types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
+from ..types.amqp import GameStartMsg, LobbyCountdownMsg, LobbyNotifyMsg
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
@@ -90,6 +95,20 @@ class LobbyCountdownConsumer(AbstractConsumer):
         )
         await game_cache_repo.set_words(game_id=game_id, words=words)
 
+    async def _send_game_start_signal(self, game_id: int):
+        logger.debug("game_id: %s", game_id)
+
+        msg = GameStartMsg(game_id=game_id).model_dump_json().encode()
+        amqp_msg = Message(msg)
+
+        confirm = await self._default_exchange.publish(
+            message=amqp_msg,
+            routing_key=self._setting.amqp.game_start_wait_queue,
+        )
+
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish game start message failed")
+
     async def _process(self, msg: LobbyCountdownMsg):
         # NOTE: word count sould be customizable
         words = self._word_generator.generate(25)
@@ -98,6 +117,7 @@ class LobbyCountdownConsumer(AbstractConsumer):
             return
         await self._populate_game_cache(game_id=msg.game_id, words=words)
         await self._notify_all_users(msg.game_id)
+        await self._send_game_start_signal(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")
