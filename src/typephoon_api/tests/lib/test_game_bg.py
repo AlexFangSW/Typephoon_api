@@ -29,8 +29,8 @@ async def test_game_bg_send(setting: Setting):
     )
     await bg._send(msg)
 
-    assert ws.send_bytes.called
-    assert ws.send_bytes.call_args.args == (msg.model_dump_json().encode(),)
+    assert ws.send_text.called
+    assert ws.send_text.call_args.args == (msg.model_dump_json(),)
 
     await bg.stop()
 
