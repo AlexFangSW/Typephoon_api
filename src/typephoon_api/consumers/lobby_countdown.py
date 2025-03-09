@@ -1,6 +1,5 @@
 from logging import getLogger
 from aio_pika.abc import (
-    AbstractExchange,
     AbstractIncomingMessage,
     AbstractRobustConnection,
     DeliveryMode,
@@ -116,8 +115,8 @@ class LobbyCountdownConsumer(AbstractConsumer):
         if not ok:
             return
         await self._populate_game_cache(game_id=msg.game_id, words=words)
-        await self._notify_all_users(msg.game_id)
         await self._send_game_start_signal(msg.game_id)
+        await self._notify_all_users(msg.game_id)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on_message")

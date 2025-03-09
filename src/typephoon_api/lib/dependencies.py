@@ -129,8 +129,8 @@ async def get_queue_in_service(ws: WebSocket) -> QueueInService:
     return service
 
 
-async def get_game_event_service(request: Request) -> GameEventService:
-    app: TypephoonServer = request.app
+async def get_game_event_service(ws: WebSocket) -> GameEventService:
+    app: TypephoonServer = ws.app
 
     token_validator = TokenValidator(app.setting)
     game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn, setting=app.setting)
