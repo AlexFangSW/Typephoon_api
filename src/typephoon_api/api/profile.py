@@ -1,22 +1,24 @@
 from logging import getLogger
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from ..services.profile import ProfileService
-from ..types.responses.profile import (
-    ProfileGraphResponse,
-    ProfileHistoryResponse,
-    ProfileStatisticsResponse,
-)
-from ..types.errors import InvalidCookieToken
-from ..types.responses.base import ErrorResponse
+
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
     get_access_token_info,
     get_profile_service,
 )
 from ..lib.util import catch_error_async
+from ..services.profile import ProfileService
+from ..types.errors import InvalidCookieToken
+from ..types.responses.base import ErrorResponse
+from ..types.responses.profile import (
+    ProfileGraphResponse,
+    ProfileHistoryResponse,
+    ProfileStatisticsResponse,
+)
 
 logger = getLogger(__name__)
 

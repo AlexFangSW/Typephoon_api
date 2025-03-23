@@ -19,7 +19,6 @@ class GetPlayersRet:
 
 
 class LobbyService:
-
     def __init__(
         self,
         setting: Setting,

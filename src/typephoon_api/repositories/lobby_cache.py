@@ -17,7 +17,6 @@ class LobbyCacheType(StrEnum):
 
 
 class LobbyCacheRepo:
-
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
         self._redis_conn = redis_conn
         self._setting = setting

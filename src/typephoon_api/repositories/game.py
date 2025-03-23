@@ -8,7 +8,6 @@ from ..orm.game import Game, GameStatus, GameType
 
 
 class GameRepo:
-
     def __init__(self, session: AsyncSession, player_limit: int = 5) -> None:
         self._session = session
         self._player_limit = player_limit

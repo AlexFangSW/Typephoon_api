@@ -31,7 +31,6 @@ logger = getLogger(__name__)
 
 
 class LobbyCountdownConsumer(AbstractConsumer):
-
     def __init__(
         self,
         setting: Setting,

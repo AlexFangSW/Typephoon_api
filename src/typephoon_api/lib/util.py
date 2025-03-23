@@ -63,7 +63,6 @@ def load_setting(base: str, secret: str) -> Setting:
 
 
 def catch_error_sync(func: Callable):
-
     @wraps(func)
     def wrapped(*args, **kwargs):
         try:
@@ -78,7 +77,6 @@ def catch_error_sync(func: Callable):
 
 
 def catch_error_async(func: Callable):
-
     @wraps(func)
     async def wrapped(*args, **kwargs):
         try:

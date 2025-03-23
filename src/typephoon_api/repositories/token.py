@@ -5,7 +5,6 @@ from ..orm.user import User
 
 
 class TokenRepo:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

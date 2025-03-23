@@ -213,7 +213,6 @@ class Setting(BaseModel):
     def from_file(
         cls, base: str = "setting.yaml", secret: str = "setting.secret.yaml"
     ) -> Self:
-
         with open(base, "r") as f:
             loaded = yaml.safe_load(f)
             base_setting = cls.model_validate(loaded)

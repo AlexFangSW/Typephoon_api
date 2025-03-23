@@ -11,7 +11,6 @@ logger = getLogger(__name__)
 
 
 class GameStartConsumer(AbstractConsumer):
-
     def __init__(
         self,
         setting: Setting,

@@ -6,7 +6,6 @@ from uuid import uuid4
 
 
 class GuestTokenRepo:
-
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
         self._redis_conn = redis_conn
         self._setting = setting

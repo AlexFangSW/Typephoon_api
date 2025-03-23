@@ -15,7 +15,6 @@ class UpdatedQueueNames:
 
 
 class AMQPManager:
-
     def __init__(self, setting: Setting, amqp_conn: AbstractRobustConnection) -> None:
         self._setting = setting
         self._amqp_conn = amqp_conn

@@ -17,7 +17,6 @@ logger = getLogger(__name__)
 
 
 class GameCleanerConsumer(AbstractConsumer):
-
     def __init__(
         self,
         setting: Setting,

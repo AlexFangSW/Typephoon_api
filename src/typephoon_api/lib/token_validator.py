@@ -4,7 +4,6 @@ import jwt
 
 
 class TokenValidator:
-
     def __init__(self, setting: Setting) -> None:
         self._setting = setting
 

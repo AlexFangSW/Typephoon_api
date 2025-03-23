@@ -17,7 +17,6 @@ logger = getLogger(__name__)
 
 
 class GameEventService:
-
     def __init__(
         self,
         token_validator: TokenValidator,

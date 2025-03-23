@@ -3,7 +3,6 @@ from typing import Any
 
 
 class AsyncDefaultdict[K, V]:
-
     def __init__(
         self,
         init_callback: Callable[[], Coroutine[Any, Any, V]],

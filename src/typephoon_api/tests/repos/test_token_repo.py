@@ -8,7 +8,6 @@ from ..helper import *
 
 @pytest.mark.asyncio
 async def test_token_repo(sessionmaker: async_sessionmaker[AsyncSession]):
-
     dummy_token = "token"
     dummy_user_id = "user_id"
     dummy_username = "username"

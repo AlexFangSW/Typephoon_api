@@ -34,7 +34,6 @@ class StatisticsRet:
 
 
 class ProfileService:
-
     def __init__(self, sessionmaker: async_sessionmaker[AsyncSession]) -> None:
         self._sessionmaker = sessionmaker
         pass

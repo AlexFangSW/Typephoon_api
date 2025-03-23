@@ -66,7 +66,6 @@ async def players(
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
     service: LobbyService = Depends(get_lobby_service),
 ):
-
     if current_user.error:
         raise InvalidCookieToken(current_user.error)
 

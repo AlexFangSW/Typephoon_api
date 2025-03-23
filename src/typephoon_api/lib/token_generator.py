@@ -14,7 +14,6 @@ class GenTokenPairRet:
 
 
 class TokenGenerator:
-
     def __init__(self, setting: Setting) -> None:
         self._setting = setting
 

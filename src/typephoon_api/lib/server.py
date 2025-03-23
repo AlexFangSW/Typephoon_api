@@ -25,7 +25,6 @@ logger = getLogger(__name__)
 
 
 class TypephoonServer(FastAPI):
-
     def __init__(self, setting: Setting, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._setting = setting

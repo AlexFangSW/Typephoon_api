@@ -10,7 +10,6 @@ logger = getLogger(__name__)
 
 
 class OAuthStateRepo:
-
     def __init__(self, setting: Setting, redis_conn: Redis) -> None:
         self._setting = setting
         self._redis_conn = redis_conn

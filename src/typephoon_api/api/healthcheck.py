@@ -18,7 +18,6 @@ router = APIRouter(tags=["Health Check"], prefix="/healthcheck")
 )
 @catch_error_async
 async def ready(service: HealthCheckService = Depends(get_health_check_service)):
-
     result = await service.ready()
 
     if result.ok:
@@ -32,7 +31,6 @@ async def ready(service: HealthCheckService = Depends(get_health_check_service))
 @router.get("/alive", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def alive(service: HealthCheckService = Depends(get_health_check_service)):
-
     result = await service.alive()
 
     if result.ok:

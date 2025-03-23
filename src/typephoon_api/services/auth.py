@@ -44,7 +44,6 @@ class LoginRedirectRet:
 
 
 class AuthService:
-
     def __init__(
         self,
         setting: Setting,

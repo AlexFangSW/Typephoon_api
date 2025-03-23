@@ -33,7 +33,6 @@ class GameBGMsg(BGMsg[GameBGMsgEvent]):
 
 
 class GameBG(BG[GameBGMsg]):
-
     def __init__(
         self,
         ws: WebSocket,

@@ -47,7 +47,6 @@ async def login_redirect(
     setting: Setting = Depends(get_setting),
     service: AuthService = Depends(get_auth_service_with_provider),
 ):
-
     ret = await service.login_redirect(state, code)
 
     if not ret.ok:
@@ -91,7 +90,6 @@ async def logout(
     ],
     service: AuthService = Depends(get_auth_service),
 ):
-
     ret = await service.logout(access_token=access_token)
 
     assert ret.ok
@@ -117,7 +115,6 @@ async def token_refresh(
     setting: Setting = Depends(get_setting),
     service: AuthService = Depends(get_auth_service),
 ):
-
     ret = await service.token_refresh(refresh_token)
 
     if not ret.ok:

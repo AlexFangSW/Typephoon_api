@@ -33,7 +33,6 @@ from ..helper import *
 async def test_auth_service_login_redirect(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
@@ -94,7 +93,6 @@ async def test_auth_service_login_redirect(
 async def test_auth_service_logout(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
@@ -140,7 +138,6 @@ async def test_auth_service_logout(
 async def test_auth_service_token_refresh(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"

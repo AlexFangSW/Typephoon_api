@@ -3,7 +3,6 @@ from ..lib.server import TypephoonServer
 
 
 class HealthCheckService:
-
     def __init__(self, app: TypephoonServer) -> None:
         self._app = app
 

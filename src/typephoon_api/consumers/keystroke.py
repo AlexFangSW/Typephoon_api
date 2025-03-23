@@ -20,7 +20,6 @@ class LoadMsgRet:
 
 
 class KeystrokeConsumer(AbstractConsumer):
-
     def __init__(
         self,
         setting: Setting,

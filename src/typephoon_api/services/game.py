@@ -32,7 +32,6 @@ class GetPlayersRet:
 
 
 class GameService:
-
     def __init__(
         self,
         game_cache_repo: GameCacheRepo,

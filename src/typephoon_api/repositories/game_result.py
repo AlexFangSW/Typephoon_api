@@ -24,7 +24,6 @@ class AvgLastNGamesRet(BaseModel):
 
 
 class GameResultRepo:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
