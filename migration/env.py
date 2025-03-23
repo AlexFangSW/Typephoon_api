@@ -1,10 +1,8 @@
 from logging.config import fileConfig
 from os import getenv
 
-from sqlalchemy import BIGINT, MetaData, engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import BIGINT, MetaData, engine_from_config, pool
 
 from typephoon_api.orm import Base
 
