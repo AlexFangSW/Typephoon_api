@@ -1,8 +1,8 @@
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ...repositories.user import UserRepo
 from ...repositories.token import TokenRepo
-import pytest
+from ...repositories.user import UserRepo
 from ..helper import *
 
 

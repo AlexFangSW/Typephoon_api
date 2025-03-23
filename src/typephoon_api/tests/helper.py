@@ -1,12 +1,13 @@
 from datetime import UTC, datetime
-from alembic import command
-from alembic.config import Config
-from pydantic_core import Url
+from os import getenv
+
 import pytest
 import pytest_asyncio
-from os import getenv
-from httpx import ASGITransport, AsyncClient
+from alembic import command
+from alembic.config import Config
 from asgi_lifespan import LifespanManager
+from httpx import ASGITransport, AsyncClient
+from pydantic_core import Url
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 

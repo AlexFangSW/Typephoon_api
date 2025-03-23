@@ -1,10 +1,10 @@
 from dataclasses import dataclass
+
 from aio_pika import ExchangeType
 from aio_pika.abc import AbstractRobustConnection
 
-from .util import get_dict_hash
-
 from ..types.setting import Setting
+from .util import get_dict_hash
 
 
 @dataclass(slots=True)

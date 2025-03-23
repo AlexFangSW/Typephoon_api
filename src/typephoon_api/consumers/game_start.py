@@ -1,10 +1,12 @@
 from logging import getLogger
+
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
-from ..lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
+
 from ..lib.background_tasks.base import BGManager
-from ..types.setting import Setting
+from ..lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
 from ..types.amqp import GameStartMsg
+from ..types.setting import Setting
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)

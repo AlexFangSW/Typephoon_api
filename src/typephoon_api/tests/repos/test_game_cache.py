@@ -1,13 +1,11 @@
 from datetime import timedelta
+
 import pytest
 from redis.asyncio import Redis
 
 from ...repositories.game_cache import GameCacheRepo
-
-from ...types.common import GameUserInfo, LobbyUserInfo
-
 from ...repositories.lobby_cache import LobbyCacheRepo
-
+from ...types.common import GameUserInfo, LobbyUserInfo
 from ..helper import *
 
 

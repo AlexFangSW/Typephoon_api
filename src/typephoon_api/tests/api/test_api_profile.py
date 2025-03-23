@@ -1,26 +1,21 @@
 from datetime import timedelta
-from httpx import AsyncClient
-import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 from statistics import mean
 
+import pytest
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ...lib.token_generator import TokenGenerator
 from ...orm.game import GameStatus, GameType
 from ...repositories.game import GameRepo
-
 from ...repositories.game_result import GameResultRepo, GameResultWithGameType
-
 from ...repositories.user import UserRepo
-
+from ...types.enums import CookieNames, UserType
 from ...types.responses.profile import (
     ProfileGraphResponse,
     ProfileHistoryResponse,
     ProfileStatisticsResponse,
 )
-
-from ...types.enums import CookieNames, UserType
-
-from ...lib.token_generator import TokenGenerator
-
 from ..helper import *
 
 

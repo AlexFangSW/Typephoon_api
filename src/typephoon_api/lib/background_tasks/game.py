@@ -1,16 +1,16 @@
 from __future__ import annotations
+
 from enum import StrEnum
 from logging import getLogger
 from typing import Type
+
 from aio_pika import DeliveryMode, Message
 from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from pamqp.commands import Basic
 
-from ...types.errors import PublishNotAcknowledged
-
 from ...types.amqp import KeystrokeHeader, KeystrokeMsg
-
+from ...types.errors import PublishNotAcknowledged
 from ...types.setting import Setting
 from .base import BG, BGMsg
 

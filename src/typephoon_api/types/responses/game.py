@@ -1,7 +1,6 @@
 from pydantic import Field
 
 from ..common import GameUserInfo
-
 from .base import SuccessResponse
 
 

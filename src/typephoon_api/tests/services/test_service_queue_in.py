@@ -1,37 +1,28 @@
+from asyncio import Future
 from datetime import timedelta
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+import time_machine
 from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from pamqp.commands import Basic
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from asyncio import Future
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...lib.background_tasks.base import BGManager
 from ...lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
-
-from ...repositories.game_cache import GameCacheRepo
-
-from ...orm.game import GameStatus
-
-from ...types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
-
-from ...types.common import LobbyUserInfo
-
-from ...repositories.game import GameRepo
-
-from ...repositories.lobby_cache import LobbyCacheRepo
-
-from ...repositories.guest_token import GuestTokenRepo
-
-from ...lib.token_validator import TokenValidator
-
 from ...lib.token_generator import TokenGenerator
+from ...lib.token_validator import TokenValidator
+from ...orm.game import GameStatus
+from ...repositories.game import GameRepo
+from ...repositories.game_cache import GameCacheRepo
+from ...repositories.guest_token import GuestTokenRepo
+from ...repositories.lobby_cache import LobbyCacheRepo
 from ...services.queue_in import QueueInService
+from ...types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
+from ...types.common import LobbyUserInfo
 from ...types.enums import CookieNames, QueueInType, UserType, WSCloseReason
 from ..helper import *
-import time_machine
 
 
 @pytest.mark.asyncio

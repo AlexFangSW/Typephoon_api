@@ -1,4 +1,5 @@
 from enum import StrEnum
+
 from pydantic import BaseModel
 
 from ..lib.background_tasks.lobby import LobbyBGMsgEvent

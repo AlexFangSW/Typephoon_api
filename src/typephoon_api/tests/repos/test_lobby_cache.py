@@ -1,11 +1,10 @@
 import json
+
 import pytest
 from redis.asyncio import Redis
 
-from ...types.common import LobbyUserInfo
-
 from ...repositories.lobby_cache import LobbyCacheRepo, LobbyCacheType
-
+from ...types.common import LobbyUserInfo
 from ..helper import *
 
 

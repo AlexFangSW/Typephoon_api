@@ -1,8 +1,6 @@
 from pydantic import Field
 
 from ...repositories.game_result import GameResultWithGameType
-
-
 from .base import SuccessResponse
 
 

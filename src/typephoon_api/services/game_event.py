@@ -1,17 +1,15 @@
 from logging import getLogger
+
 from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from jwt.exceptions import PyJWTError
 
-from ..types.setting import Setting
-
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.game import GameBG, GameBGMsg
-
-from ..repositories.game_cache import GameCacheRepo
-
-from ..types.enums import CookieNames, WSCloseReason
 from ..lib.token_validator import TokenValidator
+from ..repositories.game_cache import GameCacheRepo
+from ..types.enums import CookieNames, WSCloseReason
+from ..types.setting import Setting
 
 logger = getLogger(__name__)
 

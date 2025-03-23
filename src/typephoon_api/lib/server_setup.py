@@ -1,19 +1,17 @@
+from contextlib import asynccontextmanager
 from logging import Filter, LogRecord, getLogger
 
-from ..types.responses.base import ErrorResponse
-
-from ..types.setting import Setting
-
-from .server import TypephoonServer
-from contextlib import asynccontextmanager
 from fastapi import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from ..api.healthcheck import router as healthcheck_router
-from ..api.auth import router as auth_router
-from ..api.lobby import router as lobby_router
-from ..api.game import router as game_router
-from ..api.profile import router as profile_router
 
+from ..api.auth import router as auth_router
+from ..api.game import router as game_router
+from ..api.healthcheck import router as healthcheck_router
+from ..api.lobby import router as lobby_router
+from ..api.profile import router as profile_router
+from ..types.responses.base import ErrorResponse
+from ..types.setting import Setting
+from .server import TypephoonServer
 
 logger = getLogger(__name__)
 

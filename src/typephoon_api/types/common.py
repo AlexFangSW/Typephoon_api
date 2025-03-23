@@ -1,9 +1,9 @@
 from enum import StrEnum
 from typing import Self
+
 from pydantic import BaseModel
 
 from ..orm.game import GameType
-
 from .enums import ErrorCode
 
 

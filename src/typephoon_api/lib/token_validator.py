@@ -1,6 +1,7 @@
+import jwt
+
 from ..types.jwt import JWTPayload
 from ..types.setting import Setting
-import jwt
 
 
 class TokenValidator:

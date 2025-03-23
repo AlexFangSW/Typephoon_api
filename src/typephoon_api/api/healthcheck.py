@@ -2,12 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from ..lib.util import catch_error_async
-
 from ..lib.dependencies import get_health_check_service
-
+from ..lib.util import catch_error_async
 from ..services.health_check import HealthCheckService
-
 from ..types.responses.base import ErrorResponse, SuccessResponse
 
 router = APIRouter(tags=["Health Check"], prefix="/healthcheck")

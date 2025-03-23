@@ -1,25 +1,25 @@
 from asyncio import timeout
 from logging import getLogger
+
 from aio_pika import connect_robust
 from aio_pika.abc import AbstractExchange
 from fastapi import FastAPI
+from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from redis.asyncio import Redis
 
-from ..consumers.game_start import GameStartConsumer
-
-from .word_generator import WordGenerator
 from ..consumers.game_cleaner import GameCleanerConsumer
-from .background_tasks.lobby import LobbyBG, LobbyBGMsg
-from .background_tasks.base import BGManager
-from .background_tasks.game import GameBG, GameBGMsg
+from ..consumers.game_start import GameStartConsumer
 from ..consumers.keystroke import KeystrokeConsumer
-from ..consumers.lobby_notify import LobbyNotifyConsumer
 from ..consumers.lobby_countdown import LobbyCountdownConsumer
-from .amqp_manager import AMQPManager
+from ..consumers.lobby_notify import LobbyNotifyConsumer
 from ..types.errors import AMQPNotReady
 from ..types.setting import Setting
+from .amqp_manager import AMQPManager
+from .background_tasks.base import BGManager
+from .background_tasks.game import GameBG, GameBGMsg
+from .background_tasks.lobby import LobbyBG, LobbyBGMsg
+from .word_generator import WordGenerator
 
 logger = getLogger(__name__)
 

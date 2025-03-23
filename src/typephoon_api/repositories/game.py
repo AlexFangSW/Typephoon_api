@@ -1,7 +1,8 @@
 from datetime import UTC, datetime
+
 from sqlalchemy import and_, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
 from ..orm.game import Game, GameStatus, GameType

@@ -1,8 +1,9 @@
-from redis.asyncio import Redis
 from time import time
+from uuid import uuid4
+
+from redis.asyncio import Redis
 
 from ..types.setting import Setting
-from uuid import uuid4
 
 
 class GuestTokenRepo:

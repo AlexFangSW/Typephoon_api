@@ -1,6 +1,7 @@
 from logging import getLogger
-from ..types.setting import Setting
 from random import shuffle
+
+from ..types.setting import Setting
 
 logger = getLogger(__name__)
 

@@ -1,20 +1,9 @@
 from logging import getLogger
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-
-from ..types.errors import InvalidCookieToken
-
-from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
-
-from ..services.lobby import LobbyService
-
-from ..services.queue_in import QueueInService
-
-from ..types.responses.base import ErrorResponse
-
-from ..types.enums import ErrorCode, QueueInType
 
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
@@ -22,8 +11,13 @@ from ..lib.dependencies import (
     get_lobby_service,
     get_queue_in_service,
 )
-
 from ..lib.util import catch_error_async
+from ..services.lobby import LobbyService
+from ..services.queue_in import QueueInService
+from ..types.enums import ErrorCode, QueueInType
+from ..types.errors import InvalidCookieToken
+from ..types.responses.base import ErrorResponse
+from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
 
 logger = getLogger(__name__)
 

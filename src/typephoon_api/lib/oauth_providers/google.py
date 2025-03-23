@@ -1,18 +1,16 @@
 from logging import getLogger
+
+import jwt
+from aiohttp import ClientSession
+from async_lru import alru_cache
 from fastapi.datastructures import URL
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from .base import OAuthProviders, VerifyTokenRet
-
 from ...lib.util import gen_user_id
-
 from ...repositories.oauth_state import OAuthStateRepo
-
 from ...types.setting import Setting
-import jwt
-from async_lru import alru_cache
-from aiohttp import ClientSession
+from .base import OAuthProviders, VerifyTokenRet
 
 logger = getLogger(__name__)
 

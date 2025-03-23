@@ -1,8 +1,10 @@
 from datetime import datetime
+
 from pydantic import BaseModel
 from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+
 from ..orm.game import GameType
 from ..orm.game_result import GameResult
 

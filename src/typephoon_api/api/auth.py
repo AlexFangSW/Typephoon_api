@@ -1,22 +1,19 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Cookie, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
-
-from ..types.setting import Setting
-
-from ..types.responses.base import ErrorResponse, SuccessResponse
-
-from ..types.enums import CookieNames, ErrorCode
 
 from ..lib.dependencies import (
     get_auth_service,
     get_auth_service_with_provider,
     get_setting,
 )
-from ..services.auth import AuthService
-
 from ..lib.util import catch_error_async
+from ..services.auth import AuthService
+from ..types.enums import CookieNames, ErrorCode
+from ..types.responses.base import ErrorResponse, SuccessResponse
+from ..types.setting import Setting
 
 router = APIRouter(tags=["Auth"], prefix="/auth")
 

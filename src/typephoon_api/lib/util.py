@@ -1,28 +1,24 @@
+import json
 from dataclasses import dataclass
 from functools import wraps
 from hashlib import md5
-import json
 from logging import getLogger
 from logging.config import dictConfig
 from typing import Callable
+from uuid import uuid4
+
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
 from pydantic_core import Url
-from uuid import uuid4
-
-from ..types.errors import InvalidCookieToken
-
-from ..types.enums import ErrorCode
-
-from .oauth_providers.base import OAuthProviders
 
 from ..types.common import LobbyUserInfo
-
+from ..types.enums import ErrorCode
+from ..types.errors import InvalidCookieToken
 from ..types.log import TRACE
-from ..types.setting import Setting
-
 from ..types.responses.base import ErrorContext, ErrorResponse
+from ..types.setting import Setting
+from .oauth_providers.base import OAuthProviders
 
 logger = getLogger(__name__)
 

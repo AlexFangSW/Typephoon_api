@@ -1,6 +1,6 @@
+from ...lib.token_generator import TokenGenerator
 from ...lib.token_validator import TokenValidator
 from ...repositories.guest_token import GuestTokenRepo
-from ...lib.token_generator import TokenGenerator
 from ...types.enums import CookieNames, UserType
 from ..helper import *
 

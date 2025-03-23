@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from logging import getLogger
+
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
-
 from ..types.amqp import KeystrokeHeader, KeystrokeMsg
 from ..types.setting import Setting
 from .base import AbstractConsumer

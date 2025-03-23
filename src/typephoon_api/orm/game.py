@@ -1,10 +1,11 @@
 from datetime import datetime
+from enum import IntEnum
+
 from sqlalchemy import DateTime, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .custom import BigSerial
 from .base import Base
-from enum import IntEnum
+from .custom import BigSerial
 
 
 class GameType(IntEnum):

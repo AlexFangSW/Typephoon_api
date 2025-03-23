@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from ..repositories.game import GameRepo
+from ..repositories.game_cache import GameCacheRepo
 from ..repositories.game_result import GameResultRepo
 from ..types.common import ErrorContext, GameUserInfo
 from ..types.enums import ErrorCode, UserType
-from ..repositories.game_cache import GameCacheRepo
 from ..types.requests.game import GameStatistics
 from .base import ServiceRet
 

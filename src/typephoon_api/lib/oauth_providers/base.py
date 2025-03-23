@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Protocol
 from enum import StrEnum
+from typing import Protocol
+
 from fastapi.datastructures import URL
 
 

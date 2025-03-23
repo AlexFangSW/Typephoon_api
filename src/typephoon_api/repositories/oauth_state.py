@@ -1,6 +1,7 @@
 from hashlib import sha256
 from logging import getLogger
 from os import urandom
+
 from redis.asyncio import Redis
 
 from ..lib.util import get_state_key

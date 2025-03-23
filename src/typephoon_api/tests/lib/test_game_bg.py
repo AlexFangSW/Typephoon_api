@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock
 from aio_pika import Message
 from pamqp.commands import Basic
 
-from ...types.amqp import KeystrokeHeader, KeystrokeMsg
 from ...lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
+from ...types.amqp import KeystrokeHeader, KeystrokeMsg
 from ..helper import *
 
 

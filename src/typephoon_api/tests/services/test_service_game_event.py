@@ -1,14 +1,15 @@
 from asyncio import Future
-from ...types.common import LobbyUserInfo
-from ...repositories.lobby_cache import LobbyCacheRepo
-from ...types.enums import CookieNames, UserType, WSCloseReason
+from unittest.mock import AsyncMock, MagicMock
+
 from ...lib.background_tasks.base import BGManager
 from ...lib.background_tasks.game import GameBG, GameBGMsg
 from ...lib.token_generator import TokenGenerator
 from ...lib.token_validator import TokenValidator
 from ...repositories.game_cache import GameCacheRepo
+from ...repositories.lobby_cache import LobbyCacheRepo
 from ...services.game_event import GameEventService
-from unittest.mock import AsyncMock, MagicMock
+from ...types.common import LobbyUserInfo
+from ...types.enums import CookieNames, UserType, WSCloseReason
 from ..helper import *
 
 

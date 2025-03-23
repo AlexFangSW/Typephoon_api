@@ -1,34 +1,28 @@
 from logging import getLogger
+
 from fastapi import APIRouter, Depends, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from ..types.errors import InvalidCookieToken
-
-from ..lib.util import catch_error_async
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
     get_access_token_info,
     get_game_event_service,
     get_game_service,
 )
-
+from ..lib.util import catch_error_async
 from ..services.game import GameService
-
 from ..services.game_event import GameEventService
-
+from ..types.enums import ErrorCode
+from ..types.errors import InvalidCookieToken
 from ..types.requests.game import GameStatistics
-
+from ..types.responses.base import ErrorResponse, SuccessResponse
 from ..types.responses.game import (
     GameCountdownResponse,
     GamePlayersResponse,
     GameResultResponse,
     GameWordsResponse,
 )
-
-from ..types.enums import ErrorCode
-
-from ..types.responses.base import ErrorResponse, SuccessResponse
 
 logger = getLogger(__name__)
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from enum import StrEnum
 from logging import getLogger
 from typing import Type
+
 from fastapi import WebSocket
 
 from ...types.log import TRACE

@@ -1,10 +1,8 @@
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ...orm.user import User
-
 from ...repositories.user import UserRepo
-
-import pytest
 from ..helper import *
 
 

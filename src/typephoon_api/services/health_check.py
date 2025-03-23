@@ -1,5 +1,5 @@
-from .base import ServiceRet
 from ..lib.server import TypephoonServer
+from .base import ServiceRet
 
 
 class HealthCheckService:

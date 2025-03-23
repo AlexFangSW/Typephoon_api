@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from logging import getLogger
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ..types.enums import UserType
 from ..repositories.game_result import (
     GameResultRepo,
     GameResultWithGameType,
 )
+from ..types.enums import UserType
 from .base import ServiceRet
 
 logger = getLogger(__name__)

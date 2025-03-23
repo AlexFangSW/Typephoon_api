@@ -3,9 +3,8 @@ Background tasks for websockets.
 """
 
 from __future__ import annotations
+
 import asyncio
-from collections import defaultdict
-from enum import StrEnum
 from abc import ABC, abstractmethod
 from asyncio import (
     CancelledError,
@@ -14,13 +13,14 @@ from asyncio import (
     Task,
     create_task,
 )
+from collections import defaultdict
+from enum import StrEnum
 from logging import getLogger
 from typing import Type
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 from pydantic import BaseModel
-
 
 logger = getLogger(__name__)
 

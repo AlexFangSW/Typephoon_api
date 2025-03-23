@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...orm.game import Game, GameStatus, GameType
-
 from ...repositories.game import GameRepo
 from ..helper import *
 

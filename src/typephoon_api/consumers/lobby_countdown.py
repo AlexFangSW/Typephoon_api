@@ -1,4 +1,6 @@
 from logging import getLogger
+
+from aio_pika import Message
 from aio_pika.abc import (
     AbstractIncomingMessage,
     AbstractRobustConnection,
@@ -8,23 +10,15 @@ from pamqp.commands import Basic
 from pydantic import ValidationError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from aio_pika import Message
-
-from ..lib.word_generator import WordGenerator
 
 from ..lib.background_tasks.lobby import LobbyBGMsgEvent
-
-from ..repositories.game_cache import GameCacheRepo
-
-from ..types.errors import PublishNotAcknowledged
-
-from ..repositories.lobby_cache import LobbyCacheRepo
-
+from ..lib.word_generator import WordGenerator
 from ..repositories.game import GameRepo
-
-from ..types.setting import Setting
-
+from ..repositories.game_cache import GameCacheRepo
+from ..repositories.lobby_cache import LobbyCacheRepo
 from ..types.amqp import GameStartMsg, LobbyCountdownMsg, LobbyNotifyMsg
+from ..types.errors import PublishNotAcknowledged
+from ..types.setting import Setting
 from .base import AbstractConsumer
 
 logger = getLogger(__name__)
