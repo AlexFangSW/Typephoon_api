@@ -94,6 +94,8 @@ pytest -v
 
 ## TODO
 Others:
+- DB: alambic migration dsn
+- Unite API response (Overwrite FastAPI validation error)
 
 Features:
 - General:
