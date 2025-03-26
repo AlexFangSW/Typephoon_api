@@ -95,6 +95,14 @@ pytest -v
 ## TODO
 Others:
 - DB: alambic migration dsn
+```py
+DATABASE_URL = (
+    config.get_main_option("sqlalchemy.url")
+    if config.get_main_option("sqlalchemy.url")
+    else "sqlite:///dummy.db"
+)
+```
+
 - Unite API response (Overwrite FastAPI validation error)
 
 Features:
