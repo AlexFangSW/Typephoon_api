@@ -1,5 +1,4 @@
 from logging.config import fileConfig
-from os import getenv
 
 from alembic import context
 from sqlalchemy import BIGINT, MetaData, engine_from_config, pool
@@ -25,6 +24,11 @@ target_metadata: MetaData = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+DSN = config.get_main_option(
+    "sqlalchemy.url",
+    "postgresql://typephoon:123@localhost:5432/typephoon",
+)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -38,9 +42,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = getenv("DSN", "postgresql://typephoon:123@localhost:5432/typephoon")
     context.configure(
-        url=url,
+        url=DSN,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -71,7 +74,7 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        url=getenv("DSN", "postgresql://typephoon:123@localhost:5432/typephoon"),
+        url=DSN,
     )
 
     with connectable.connect() as connection:

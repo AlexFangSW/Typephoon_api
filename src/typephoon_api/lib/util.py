@@ -84,7 +84,7 @@ def catch_error_async(func: Callable):
             msg = ErrorResponse(error=error).model_dump()
             return JSONResponse(msg, status_code=400)
 
-        except Exception as ex:
+        except Exception:
             logger.exception("something went wrong")
             # error = ErrorContext(message=str(ex))
             msg = ErrorResponse().model_dump()
