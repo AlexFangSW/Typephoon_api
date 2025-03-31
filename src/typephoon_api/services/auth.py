@@ -153,8 +153,8 @@ class AuthService:
 
         # check if refresh token is the same in DB
         async with self._sessionmaker() as session:
-            repo = TokenRepo(session)
-            token_in_db = await repo.get_refresh_token(info.sub)
+            token_in_db = await TokenRepo(session).get_refresh_token(info.sub)
+            user_info = await UserRepo(session).get(info.sub)
 
         if token_in_db != refresh_token:
             logger.warning(
@@ -165,8 +165,15 @@ class AuthService:
             error = ErrorContext(code=ErrorCode.REFRESH_TOKEN_MISSMATCH)
             return ServiceRet(ok=False, error=error)
 
+        if user_info is None:
+            logger.warning("user not found, id: %s", info.sub)
+            error = ErrorContext(code=ErrorCode.USER_NOT_FOUND)
+            return ServiceRet(ok=False, error=error)
+
         # generate access token
-        new_access_token = self._token_generator.gen_access_token(info.sub, info.name)
+        new_access_token = self._token_generator.gen_access_token(
+            info.sub, user_info.name
+        )
 
         return ServiceRet(ok=True, data=new_access_token)
 

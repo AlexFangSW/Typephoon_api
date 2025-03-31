@@ -27,12 +27,3 @@ python3 -m typephoon_api --help
 ```
 pytest -v
 ```
-
-## TODO
-Others:
-- Unite API response (Overwrite FastAPI validation error)
-
-QOL:
-- request id
-    - use or generate request id for each request and use it in our logger
-    - https://github.com/snok/asgi-correlation-id

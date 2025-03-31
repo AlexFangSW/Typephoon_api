@@ -18,6 +18,7 @@ from ..types.responses.profile import (
     ProfileGraphResponse,
     ProfileHistoryResponse,
     ProfileStatisticsResponse,
+    ProfileUserInfoResponse,
 )
 
 logger = getLogger(__name__)
@@ -123,6 +124,29 @@ async def history(
             has_prev_page=ret.data.has_prev_page,
             has_next_page=ret.data.has_next_page,
             data=ret.data.data,
+        )
+    )
+    return JSONResponse(msg, status_code=200)
+
+
+@router.get(
+    "/user-info",
+    responses={
+        200: {"model": ProfileUserInfoResponse},
+        400: {"model": ErrorResponse},
+    },
+)
+@catch_error_async
+async def user_info(
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: ProfileService = Depends(get_profile_service),
+):
+    if current_user.error:
+        raise InvalidCookieToken(current_user.error)
+
+    msg = jsonable_encoder(
+        ProfileUserInfoResponse(
+            id=current_user.payload.sub, name=current_user.payload.name
         )
     )
     return JSONResponse(msg, status_code=200)

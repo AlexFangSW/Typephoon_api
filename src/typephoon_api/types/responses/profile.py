@@ -26,3 +26,8 @@ class ProfileHistoryResponse(SuccessResponse):
     has_prev_page: bool
     has_next_page: bool
     data: list[GameResultWithGameType] = Field(default_factory=list)
+
+
+class ProfileUserInfoResponse(SuccessResponse):
+    id: str
+    name: str
