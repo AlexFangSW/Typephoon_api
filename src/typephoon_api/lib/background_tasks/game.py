@@ -56,8 +56,8 @@ class GameBG(BG[GameBGMsg]):
         if msg.event == GameBGMsgEvent.KEY_STOKE:
             logger.debug("broadcast keystroke, %s", msg)
 
-            assert msg.word_index
-            assert msg.char_index
+            assert msg.word_index is not None
+            assert msg.char_index is not None
 
             keystroke_msg = KeystrokeMsg(
                 game_id=self._game_id,
