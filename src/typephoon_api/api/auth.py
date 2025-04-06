@@ -136,7 +136,7 @@ async def token_refresh(
         CookieNames.ACCESS_TOKEN,
         ret.data,
         path="/",
-        max_age=setting.token.access_duration,
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
     )
