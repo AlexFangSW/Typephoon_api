@@ -5,7 +5,7 @@ from logging import getLogger
 from aio_pika import Message
 from aio_pika.abc import AbstractExchange, DeliveryMode
 from fastapi import WebSocket
-from jwt import PyJWTError
+from jwt import ExpiredSignatureError, PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -311,9 +311,13 @@ class QueueInService:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
             process_token_ret = await self._process_token(access_token)
             await websocket.accept()
+        except ExpiredSignatureError as ex:
+            logger.warning("expired token: %s", str(ex))
+            await websocket.close(code=4001, reason=WSCloseReason.TOKEN_EXPIRED)
+            return
         except PyJWTError as ex:
             logger.warning("invalid token, error: %s", str(ex))
-            await websocket.close(reason=WSCloseReason.INVALID_TOKEN)
+            await websocket.close(code=4002, reason=WSCloseReason.INVALID_TOKEN)
             return
 
         # match making, find or create game

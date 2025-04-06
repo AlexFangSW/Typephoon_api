@@ -86,7 +86,7 @@ class TokenSetting(TokenPK):
     """
 
     refresh_endpoint: str = "/api/v1/auth/token-refresh"
-    access_duration: int = int(timedelta(minutes=5).total_seconds())
+    access_duration: int = int(timedelta(minutes=15).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
 
     def merge(self, inpt: TokenPK):

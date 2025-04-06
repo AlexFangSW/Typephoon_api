@@ -2,7 +2,7 @@ from logging import getLogger
 
 from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
-from jwt.exceptions import PyJWTError
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
 
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.game import GameBG, GameBGMsg
@@ -47,6 +47,10 @@ class GameEventService:
             current_user = self._token_validator.validate(access_token)
 
             await websocket.accept()
+        except ExpiredSignatureError as ex:
+            logger.warning("expired token: %s", str(ex))
+            await websocket.close(reason=WSCloseReason.TOKEN_EXPIRED)
+            return
         except PyJWTError as ex:
             logger.warning("invalid token, error: %s", str(ex))
             await websocket.close(reason=WSCloseReason.INVALID_TOKEN)

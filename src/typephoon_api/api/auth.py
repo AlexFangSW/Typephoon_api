@@ -56,7 +56,7 @@ async def login_redirect(
         CookieNames.ACCESS_TOKEN,
         ret.data.access_token,
         path="/",
-        max_age=setting.token.access_duration,
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
     )
@@ -71,7 +71,8 @@ async def login_redirect(
     response.set_cookie(
         CookieNames.USERNAME,
         ret.data.username,
-        max_age=setting.token.access_duration,
+        path="/",
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
     )
@@ -86,6 +87,7 @@ async def logout(
         str, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
     ],
     service: AuthService = Depends(get_auth_service),
+    setting: Setting = Depends(get_setting),
 ):
     ret = await service.logout(access_token=access_token)
 
@@ -94,7 +96,9 @@ async def logout(
     response = JSONResponse(msg, status_code=200)
 
     response.delete_cookie(CookieNames.ACCESS_TOKEN)
-    response.delete_cookie(CookieNames.REFRESH_TOKEN)
+    response.delete_cookie(
+        CookieNames.REFRESH_TOKEN, path=setting.token.refresh_endpoint
+    )
     response.delete_cookie(CookieNames.USERNAME)
 
     return response

@@ -10,11 +10,11 @@ from uuid import uuid4
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pydantic_core import Url
 
 from ..types.common import LobbyUserInfo
 from ..types.enums import ErrorCode
-from ..types.errors import InvalidCookieToken
 from ..types.log import TRACE
 from ..types.responses.base import ErrorContext, ErrorResponse
 from ..types.setting import Setting
@@ -58,27 +58,19 @@ def load_setting(base: str, secret: str) -> Setting:
     return Setting.from_file(base, secret)
 
 
-def catch_error_sync(func: Callable):
-    @wraps(func)
-    def wrapped(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as ex:
-            logger.exception("something went wrong")
-            error = ErrorContext(message=str(ex))
-            msg = ErrorResponse(error=error).model_dump()
-            return JSONResponse(msg, status_code=500)
-
-    return wrapped
-
-
 def catch_error_async(func: Callable):
     @wraps(func)
     async def wrapped(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
 
-        except InvalidCookieToken as ex:
+        except ExpiredSignatureError as ex:
+            logger.warning("token expired: %s", str(ex))
+            error = ErrorContext(code=ErrorCode.TOKEN_EXPIRED, message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=400)
+
+        except PyJWTError as ex:
             logger.warning("token error: %s", str(ex))
             error = ErrorContext(code=ErrorCode.INVALID_TOKEN, message=str(ex))
             msg = ErrorResponse(error=error).model_dump()

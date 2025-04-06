@@ -15,7 +15,6 @@ from ..lib.util import catch_error_async
 from ..services.lobby import LobbyService
 from ..services.queue_in import QueueInService
 from ..types.enums import ErrorCode, QueueInType
-from ..types.errors import InvalidCookieToken
 from ..types.responses.base import ErrorResponse
 from ..types.responses.lobby import LobbyCountdownResponse, LobbyPlayersResponse
 
@@ -61,7 +60,7 @@ async def players(
     service: LobbyService = Depends(get_lobby_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload
     ret = await service.get_players(user_id=current_user.payload.sub, game_id=game_id)

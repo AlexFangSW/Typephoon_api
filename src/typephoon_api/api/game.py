@@ -14,7 +14,6 @@ from ..lib.util import catch_error_async
 from ..services.game import GameService
 from ..services.game_event import GameEventService
 from ..types.enums import ErrorCode
-from ..types.errors import InvalidCookieToken
 from ..types.requests.game import GameStatistics
 from ..types.responses.base import ErrorResponse, SuccessResponse
 from ..types.responses.game import (
@@ -87,7 +86,7 @@ async def write_statistics(
     - The ranking will be decided here by the server
     """
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload
     ret = await service.write_statistics(
@@ -124,7 +123,7 @@ async def players(
     service: GameService = Depends(get_game_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.get_players(game_id=game_id, user_id=current_user.payload.sub)

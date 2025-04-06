@@ -12,7 +12,6 @@ from ..lib.dependencies import (
 )
 from ..lib.util import catch_error_async
 from ..services.profile import ProfileService
-from ..types.errors import InvalidCookieToken
 from ..types.responses.base import ErrorResponse
 from ..types.responses.profile import (
     ProfileGraphResponse,
@@ -40,7 +39,7 @@ async def statistics(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.statistics(
@@ -77,7 +76,7 @@ async def graph(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.graph(
@@ -107,7 +106,7 @@ async def history(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.history(
@@ -142,8 +141,9 @@ async def user_info(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
+    assert current_user.payload
     msg = jsonable_encoder(
         ProfileUserInfoResponse(
             id=current_user.payload.sub, name=current_user.payload.name

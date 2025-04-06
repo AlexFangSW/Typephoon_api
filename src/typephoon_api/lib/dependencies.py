@@ -156,7 +156,7 @@ def get_setting(request: Request) -> Setting:
 @dataclass(slots=True)
 class GetAccessTokenInfoRet:
     payload: JWTPayload | None = None
-    error: str | None = None
+    error: Exception | None = None
 
 
 def get_access_token_info(
@@ -173,4 +173,4 @@ def get_access_token_info(
         token_validator = TokenValidator(app.setting)
         return GetAccessTokenInfoRet(payload=token_validator.validate(access_token))
     except PyJWTError as ex:
-        return GetAccessTokenInfoRet(error=str(ex))
+        return GetAccessTokenInfoRet(error=ex)
