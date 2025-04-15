@@ -1,4 +1,32 @@
 services:
+  backend: 
+    container_name: typephoon-api
+    environment:
+      AMQP_HOST: typephoon-rabbitmq
+      PG_HOST: typephoon-postgresql
+      REDIS_HOST: typephoon-redis
+      SERVER_NAME: server-1
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    ports:
+      - "8080:8080"
+    networks:
+      - backend_net
+    volumes:
+      - type: bind
+        source: ./setting.yaml
+        target: /app/setting.yaml
+        read_only: true
+      - type: bind
+        source: ./setting.secret.yaml
+        target: /app/setting.secret.yaml
+        read_only: true
+    depends_on:
+      - db
+      - cache
+      - message_queue
   db:
     image: postgres:16
     container_name: typephoon-postgresql

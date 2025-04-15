@@ -7,6 +7,8 @@ from typing import Any, Self
 import yaml
 from pydantic import BaseModel, Field
 
+from .envs import AMQP_HOST, PG_HOST, REDIS_HOST, SERVER_NAME
+
 
 def default_logger() -> dict:
     return {
@@ -49,6 +51,10 @@ class DBSetting(DBCredentialsSetting):
         self.username = inpt.username
         self.password = inpt.password
 
+    def model_post_init(self, _: Any) -> None:
+        if PG_HOST:
+            self.host = PG_HOST
+
 
 class RedisSetting(BaseModel):
     host: str = "localhost"
@@ -57,6 +63,10 @@ class RedisSetting(BaseModel):
     expire_time: int = 60
     in_game_cache_expire_time: int = 60 * 15
     result_cache_expire_time: int = 60 * 15
+
+    def model_post_init(self, _: Any) -> None:
+        if REDIS_HOST:
+            self.host = REDIS_HOST
 
 
 class CORSSetting(BaseModel):
@@ -154,12 +164,14 @@ class AMQPSetting(AMQPCredentials):
         self.password = inpt.password
 
     def model_post_init(self, _: Any) -> None:
+        if AMQP_HOST:
+            self.host = AMQP_HOST
+
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
-        server_name = get_server_name()
-        if server_name:
-            self.lobby_notify_queue = f"{self.lobby_notify_queue}.{server_name}"
-            self.game_keystroke_queue = f"{self.game_keystroke_queue}.{server_name}"
-            self.game_start_queue = f"{self.game_start_queue}.{server_name}"
+        if SERVER_NAME:
+            self.lobby_notify_queue = f"{self.lobby_notify_queue}.{SERVER_NAME}"
+            self.game_keystroke_queue = f"{self.game_keystroke_queue}.{SERVER_NAME}"
+            self.game_start_queue = f"{self.game_start_queue}.{SERVER_NAME}"
 
 
 class SecretSetting(BaseModel):
