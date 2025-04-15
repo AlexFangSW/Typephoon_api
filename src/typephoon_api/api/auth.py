@@ -84,14 +84,15 @@ async def login_redirect(
 @catch_error_async
 async def logout(
     access_token: Annotated[
-        str, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
-    ],
+        str | None, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
+    ] = None,
     service: AuthService = Depends(get_auth_service),
     setting: Setting = Depends(get_setting),
 ):
-    ret = await service.logout(access_token=access_token)
+    if access_token:
+        ret = await service.logout(access_token=access_token)
+        assert ret.ok
 
-    assert ret.ok
     msg = jsonable_encoder(SuccessResponse())
     response = JSONResponse(msg, status_code=200)
 
