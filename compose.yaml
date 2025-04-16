@@ -1,5 +1,10 @@
+# To start backend with along with all other services,
+# run "docker compose up backend".
+# Otherwise, 'backand' will be skiped.
 services:
   backend: 
+    profiles:
+      - "skip"
     container_name: typephoon-api
     environment:
       AMQP_HOST: typephoon-rabbitmq
