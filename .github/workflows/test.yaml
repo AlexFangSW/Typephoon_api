@@ -51,3 +51,5 @@ jobs:
           TP_DB__PASSWORD: "123"
           TP_REDIS__HOST: redis
           SERVER_NAME: server-1
+          TP_TOKEN__PUBLIC_KEY: ${{ secrets.TEST_TOKEN_PUBLIC_KEY }}
+          TP_TOKEN__PRIVATE_KEY: ${{ secrets.TEST_TOKEN_PRIVATE_KEY }}
