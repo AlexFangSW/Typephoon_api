@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from logging import getLogger
 from os import getenv
+from pathlib import Path
 from typing import Any, Self
 
 import yaml
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .envs import AMQP_HOST, PG_HOST, REDIS_HOST, SERVER_NAME
+SERVER_NAME = getenv("SERVER_NAME", None)
+LOG_LEVEL = getenv("LOG_LEVEL", "INFO")
+
+logger = getLogger(__name__)
 
 
 def default_logger() -> dict:
@@ -23,19 +29,16 @@ def default_logger() -> dict:
             }
         },
         "root": {"level": "INFO", "handlers": ["default"]},
-        "loggers": {"typephoon_api": {"level": "INFO"}},
+        "loggers": {"typephoon_api": {"level": LOG_LEVEL}},
     }
 
 
-class DBCredentialsSetting(BaseModel):
+class DBSetting(BaseModel):
     username: str = "user"
     password: str = "password"
-
-
-class DBSetting(DBCredentialsSetting):
     host: str = "localhost"
     port: int = 5432
-    db: str = "db"
+    db: str = "typephoon"
     pool_size: int = 5
     echo: bool = False
 
@@ -47,14 +50,6 @@ class DBSetting(DBCredentialsSetting):
     def async_dsn(self) -> str:
         return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"
 
-    def merge(self, inpt: DBCredentialsSetting):
-        self.username = inpt.username
-        self.password = inpt.password
-
-    def model_post_init(self, _: Any) -> None:
-        if PG_HOST:
-            self.host = PG_HOST
-
 
 class RedisSetting(BaseModel):
     host: str = "localhost"
@@ -63,10 +58,6 @@ class RedisSetting(BaseModel):
     expire_time: int = 60
     in_game_cache_expire_time: int = 60 * 15
     result_cache_expire_time: int = 60 * 15
-
-    def model_post_init(self, _: Any) -> None:
-        if REDIS_HOST:
-            self.host = REDIS_HOST
 
 
 class CORSSetting(BaseModel):
@@ -77,56 +68,32 @@ class ServerSetting(BaseModel):
     port: int = 8080
 
 
-class TokenPK(BaseModel):
-    """
-    Token public / private keys
-    """
-
-    public_key: str = ""
-    private_key: str = ""
-
-
-class TokenSetting(TokenPK):
+class TokenSetting(BaseModel):
     """
     JWT token
+    - Token public / private keys
     - access_duration: (seconds)
         - duration for the access token
     - refresh_duration: (seconds)
         - duration for the refresh token
     """
 
+    public_key: str = ""
+    private_key: str = ""
     refresh_endpoint: str = "/api/v1/auth/token-refresh"
     access_duration: int = int(timedelta(minutes=15).total_seconds())
     refresh_duration: int = int(timedelta(days=30).total_seconds())
 
-    def merge(self, inpt: TokenPK):
-        self.public_key = inpt.public_key
-        self.private_key = inpt.private_key
 
-
-class GoogleCredentials(BaseModel):
+class GoogleSetting(BaseModel):
     client_id: str = ""
     client_secret: str = ""
-
-
-class GoogleSetting(GoogleCredentials):
     redirect_url: str = "http://localhost:8080/api/v1/auth/login-redirect"
 
-    def merge(self, inpt: GoogleCredentials):
-        self.client_secret = inpt.client_secret
-        self.client_id = inpt.client_id
 
-
-class AMQPCredentials(BaseModel):
+class AMQPSetting(BaseModel):
     user: str = "guest"
     password: str = "guest"
-
-
-def get_server_name() -> str | None:
-    return getenv("SERVER_NAME", None)
-
-
-class AMQPSetting(AMQPCredentials):
     host: str = "localhost"
     vhost: str = "typephoon"
     prefetch_count: int = 50
@@ -159,26 +126,12 @@ class AMQPSetting(AMQPCredentials):
     game_start_wait_queue: str = "game.start.wait"
     game_cleanup_wait_queue: str = "game.cleanup.wait"
 
-    def merge(self, inpt: AMQPCredentials):
-        self.user = inpt.user
-        self.password = inpt.password
-
     def model_post_init(self, _: Any) -> None:
-        if AMQP_HOST:
-            self.host = AMQP_HOST
-
         # if there are multiple servers, each server needs to have a unique SERVER_NAME
         if SERVER_NAME:
             self.lobby_notify_queue = f"{self.lobby_notify_queue}.{SERVER_NAME}"
             self.game_keystroke_queue = f"{self.game_keystroke_queue}.{SERVER_NAME}"
             self.game_start_queue = f"{self.game_start_queue}.{SERVER_NAME}"
-
-
-class SecretSetting(BaseModel):
-    google_credential: GoogleCredentials = Field(default_factory=GoogleCredentials)
-    token_pk: TokenPK = Field(default_factory=TokenPK)
-    db: DBCredentialsSetting = Field(default_factory=DBCredentialsSetting)
-    amqp: AMQPCredentials = Field(default_factory=AMQPCredentials)
 
 
 class GameSetting(BaseModel):
@@ -196,11 +149,14 @@ class GameSetting(BaseModel):
     word_file: str = "./data/words.txt"
 
 
-class BGSetting(BaseModel):
-    ping_interval: float = 1
+class Setting(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="TP_",
+        env_nested_delimiter="__",
+        extra="ignore",
+    )
 
-
-class Setting(BaseModel):
     db: DBSetting = Field(default_factory=DBSetting)
     redis: RedisSetting = Field(default_factory=RedisSetting)
     cors: CORSSetting = Field(default_factory=CORSSetting)
@@ -210,36 +166,25 @@ class Setting(BaseModel):
     token: TokenSetting = Field(default_factory=TokenSetting)
     amqp: AMQPSetting = Field(default_factory=AMQPSetting)
     game: GameSetting = Field(default_factory=GameSetting)
-    bg: BGSetting = Field(default_factory=BGSetting)
 
     front_end_endpoint: str = "http://localhost:3000"
     error_redirect: str = "http://localhost:3000/error"
 
-    server_name: str | None = Field(default_factory=get_server_name)
-
-    def merge(self, inpt: SecretSetting):
-        self.google.merge(inpt.google_credential)
-        self.token.merge(inpt.token_pk)
-        self.db.merge(inpt.db)
-        self.amqp.merge(inpt.amqp)
+    server_name: str | None = SERVER_NAME
 
     @classmethod
-    def from_file(
-        cls, base: str = "setting.yaml", secret: str = "setting.secret.yaml"
-    ) -> Self:
-        with open(base, "r") as f:
-            loaded = yaml.safe_load(f)
-            base_setting = cls.model_validate(loaded)
-
-        with open(secret, "r") as f:
-            loaded = yaml.safe_load(f)
-            secret_setting = SecretSetting.model_validate(loaded)
-
-        base_setting.merge(secret_setting)
+    def from_file(cls, base: str = "setting.yaml") -> Self:
+        base_file = Path(base)
+        if base_file.exists():
+            with base_file.open("r") as f:
+                loaded = yaml.safe_load(f)
+                base_setting = cls.model_validate(loaded)
+        else:
+            logger.warning("base setting file not found at: %s, using default.", base)
+            base_setting = cls()
 
         return base_setting
 
 
 if __name__ == "__main__":
     print(yaml.safe_dump(Setting().model_dump()))
-    print(yaml.safe_dump(SecretSetting().model_dump()))

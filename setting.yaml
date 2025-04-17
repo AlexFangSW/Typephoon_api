@@ -1,40 +1,9 @@
-db:
-  host: localhost
-  port: 5432
-  db: typephoon
-  echo: false
-token:
-  refresh_endpoint: "/api/v1/auth/token-refresh"
 google:
   redirect_url: http://localhost:9090/api/v1/auth/google/login-redirect
 front_end_endpoint: "http://localhost:9090"
 error_redirect: "http://localhost:9090/error"
-game: 
-  word_file: ./data/words.txt
 amqp:
-  host: localhost 
   vhost: /
-redis:
-  host: localhost
-  port: 6379
-  db: 0
 cors:
   allow_origins:
   - http://localhost:9090
-logger:
-  disable_existing_loggers: false
-  version: 1
-  handlers:
-    default:
-      class: logging.StreamHandler
-      formatter: default
-  formatters:
-    default:
-      format: "%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s"
-  root:
-    level: INFO
-    handlers:
-    - default
-  loggers:
-    typephoon_api:
-      level: DEBUG

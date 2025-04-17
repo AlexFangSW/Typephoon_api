@@ -54,8 +54,8 @@ def init_logger(setting: Setting):
     logger.log(TRACE, "trace level activated")
 
 
-def load_setting(base: str, secret: str) -> Setting:
-    return Setting.from_file(base, secret)
+def load_setting(base: str) -> Setting:
+    return Setting.from_file(base)
 
 
 def catch_error_async(func: Callable):

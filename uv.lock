@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.13"
 
 [[package]]
@@ -557,6 +556,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pydantic-settings"
+version = "2.8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/82/c79424d7d8c29b994fb01d277da57b0a9b09cc03c3ff875f9bd8a86b2145/pydantic_settings-2.8.1.tar.gz", hash = "sha256:d5c663dfbe9db9d5e1c646b2e161da12f0d734d422ee56f567d0ea2cee4e8585", size = 83550 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/53/a64f03044927dc47aafe029c42a5b7aabc38dfb813475e0e1bf71c4a59d0/pydantic_settings-2.8.1-py3-none-any.whl", hash = "sha256:81942d5ac3d905f7f3ee1a70df5dfb62d5569c12f51a5a647defc1c3d9ee2e9c", size = 30839 },
+]
+
+[[package]]
 name = "pyjwt"
 version = "2.10.1"
 source = { registry = "https://pypi.org/simple" }
@@ -602,6 +614,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892 },
+]
+
+[[package]]
+name = "python-dotenv"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/2c/7bb1416c5620485aa793f2de31d3df393d3686aa8a8506d11e10e13c5baf/python_dotenv-1.1.0.tar.gz", hash = "sha256:41f90bc6f5f177fb41f53e87666db362025010eb28f60a01c9143bfa33a2b2d5", size = 39920 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/18/98a99ad95133c6a6e2005fe89faedf294a748bd5dc803008059409ac9b1e/python_dotenv-1.1.0-py3-none-any.whl", hash = "sha256:d7c01d9e2293916c18baf562d95698754b0dbbb5e74d457c45d4f6561fb9d55d", size = 20256 },
 ]
 
 [[package]]
@@ -707,49 +728,50 @@ name = "typephoon-api"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aio-pika", marker = "python_full_version < '4.0'" },
-    { name = "aiohappyeyeballs", marker = "python_full_version < '4.0'" },
-    { name = "aiohttp", marker = "python_full_version < '4.0'" },
-    { name = "aiormq", marker = "python_full_version < '4.0'" },
-    { name = "aiosignal", marker = "python_full_version < '4.0'" },
-    { name = "alembic", marker = "python_full_version < '4.0'" },
-    { name = "annotated-types", marker = "python_full_version < '4.0'" },
-    { name = "anyio", marker = "python_full_version < '4.0'" },
-    { name = "async-lru", marker = "python_full_version < '4.0'" },
-    { name = "asyncpg", marker = "python_full_version < '4.0'" },
-    { name = "attrs", marker = "python_full_version < '4.0'" },
-    { name = "certifi", marker = "python_full_version < '4.0'" },
-    { name = "cffi", marker = "python_full_version < '4.0' and platform_python_implementation != 'PyPy'" },
-    { name = "click", marker = "python_full_version < '4.0'" },
-    { name = "colorama", marker = "python_full_version < '4.0' and sys_platform == 'win32'" },
-    { name = "cryptography", marker = "python_full_version < '4.0'" },
-    { name = "exceptiongroup", marker = "python_full_version < '4.0'" },
-    { name = "fastapi", marker = "python_full_version < '4.0'" },
-    { name = "frozenlist", marker = "python_full_version < '4.0'" },
-    { name = "greenlet", marker = "python_full_version < '4.0'" },
-    { name = "h11", marker = "python_full_version < '4.0'" },
-    { name = "httpcore", marker = "python_full_version < '4.0'" },
-    { name = "httpx", marker = "python_full_version < '4.0'" },
-    { name = "idna", marker = "python_full_version < '4.0'" },
-    { name = "mako", marker = "python_full_version < '4.0'" },
-    { name = "markupsafe", marker = "python_full_version < '4.0'" },
-    { name = "multidict", marker = "python_full_version < '4.0'" },
-    { name = "pamqp", marker = "python_full_version < '4.0'" },
-    { name = "propcache", marker = "python_full_version < '4.0'" },
-    { name = "psycopg2-binary", marker = "python_full_version < '4.0'" },
-    { name = "pycparser", marker = "python_full_version < '4.0' and platform_python_implementation != 'PyPy'" },
-    { name = "pydantic", marker = "python_full_version < '4.0'" },
-    { name = "pydantic-core", marker = "python_full_version < '4.0'" },
-    { name = "pyjwt", marker = "python_full_version < '4.0'" },
-    { name = "pyyaml", marker = "python_full_version < '4.0'" },
-    { name = "redis", marker = "python_full_version < '4.0'" },
-    { name = "sniffio", marker = "python_full_version < '4.0'" },
-    { name = "sqlalchemy", marker = "python_full_version < '4.0'" },
-    { name = "starlette", marker = "python_full_version < '4.0'" },
-    { name = "typing-extensions", marker = "python_full_version < '4.0'" },
-    { name = "uvicorn", marker = "python_full_version < '4.0'" },
-    { name = "websockets", marker = "python_full_version < '4.0'" },
-    { name = "yarl", marker = "python_full_version < '4.0'" },
+    { name = "aio-pika" },
+    { name = "aiohappyeyeballs" },
+    { name = "aiohttp" },
+    { name = "aiormq" },
+    { name = "aiosignal" },
+    { name = "alembic" },
+    { name = "annotated-types" },
+    { name = "anyio" },
+    { name = "async-lru" },
+    { name = "asyncpg" },
+    { name = "attrs" },
+    { name = "certifi" },
+    { name = "cffi" },
+    { name = "click" },
+    { name = "colorama" },
+    { name = "cryptography" },
+    { name = "exceptiongroup" },
+    { name = "fastapi" },
+    { name = "frozenlist" },
+    { name = "greenlet" },
+    { name = "h11" },
+    { name = "httpcore" },
+    { name = "httpx" },
+    { name = "idna" },
+    { name = "mako" },
+    { name = "markupsafe" },
+    { name = "multidict" },
+    { name = "pamqp" },
+    { name = "propcache" },
+    { name = "psycopg2-binary" },
+    { name = "pycparser" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "pydantic-settings" },
+    { name = "pyjwt" },
+    { name = "pyyaml" },
+    { name = "redis" },
+    { name = "sniffio" },
+    { name = "sqlalchemy" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "uvicorn" },
+    { name = "websockets" },
+    { name = "yarl" },
 ]
 
 [package.dev-dependencies]
@@ -762,49 +784,50 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aio-pika", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==9.5.4" },
-    { name = "aiohappyeyeballs", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.4.4" },
-    { name = "aiohttp", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==3.11.11" },
-    { name = "aiormq", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==6.8.1" },
-    { name = "aiosignal", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.3.2" },
-    { name = "alembic", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.14.0" },
-    { name = "annotated-types", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.7.0" },
-    { name = "anyio", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==4.7.0" },
-    { name = "async-lru", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.0.4" },
-    { name = "asyncpg", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.30.0" },
-    { name = "attrs", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==24.3.0" },
-    { name = "certifi", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2024.12.14" },
-    { name = "cffi", marker = "python_full_version >= '3.13' and python_full_version < '4.0' and platform_python_implementation != 'PyPy'", specifier = "==1.17.1" },
-    { name = "click", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==8.1.7" },
-    { name = "colorama", marker = "python_full_version >= '3.13' and python_full_version < '4.0' and sys_platform == 'win32'", specifier = "==0.4.6" },
-    { name = "cryptography", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==44.0.0" },
-    { name = "exceptiongroup", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.2.2" },
-    { name = "fastapi", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.115.6" },
-    { name = "frozenlist", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.5.0" },
-    { name = "greenlet", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==3.1.1" },
-    { name = "h11", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.14.0" },
-    { name = "httpcore", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.0.7" },
-    { name = "httpx", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.28.1" },
-    { name = "idna", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==3.10" },
-    { name = "mako", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.3.8" },
-    { name = "markupsafe", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==3.0.2" },
-    { name = "multidict", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==6.1.0" },
-    { name = "pamqp", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==3.3.0" },
-    { name = "propcache", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.2.1" },
-    { name = "psycopg2-binary", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.9.10" },
-    { name = "pycparser", marker = "python_full_version >= '3.13' and python_full_version < '4.0' and platform_python_implementation != 'PyPy'", specifier = "==2.22" },
-    { name = "pydantic", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.10.4" },
-    { name = "pydantic-core", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.27.2" },
-    { name = "pyjwt", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.10.1" },
-    { name = "pyyaml", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==6.0.2" },
-    { name = "redis", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==5.2.1" },
-    { name = "sniffio", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.3.1" },
-    { name = "sqlalchemy", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==2.0.36" },
-    { name = "starlette", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.41.3" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==4.12.2" },
-    { name = "uvicorn", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==0.32.1" },
-    { name = "websockets", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==14.2" },
-    { name = "yarl", marker = "python_full_version >= '3.13' and python_full_version < '4.0'", specifier = "==1.18.3" },
+    { name = "aio-pika", specifier = ">=9.5.4" },
+    { name = "aiohappyeyeballs", specifier = ">=2.4.4" },
+    { name = "aiohttp", specifier = ">=3.11.11" },
+    { name = "aiormq", specifier = ">=6.8.1" },
+    { name = "aiosignal", specifier = ">=1.3.2" },
+    { name = "alembic", specifier = ">=1.14.0,<1.15" },
+    { name = "annotated-types", specifier = ">=0.7.0" },
+    { name = "anyio", specifier = ">=4.7.0" },
+    { name = "async-lru", specifier = ">=2.0.4" },
+    { name = "asyncpg", specifier = ">=0.30.0" },
+    { name = "attrs", specifier = ">=24.3.0" },
+    { name = "certifi", specifier = ">=2024.12.14" },
+    { name = "cffi", specifier = ">=1.17.1" },
+    { name = "click", specifier = ">=8.1.7" },
+    { name = "colorama", specifier = ">=0.4.6" },
+    { name = "cryptography", specifier = ">=44.0.0" },
+    { name = "exceptiongroup", specifier = ">=1.2.2" },
+    { name = "fastapi", specifier = ">=0.115.6" },
+    { name = "frozenlist", specifier = ">=1.5.0" },
+    { name = "greenlet", specifier = ">=3.1.1" },
+    { name = "h11", specifier = ">=0.14.0" },
+    { name = "httpcore", specifier = ">=1.0.7" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "idna", specifier = ">=3.10" },
+    { name = "mako", specifier = ">=1.3.8" },
+    { name = "markupsafe", specifier = ">=3.0.2" },
+    { name = "multidict", specifier = ">=6.1.0" },
+    { name = "pamqp", specifier = ">=3.3.0" },
+    { name = "propcache", specifier = ">=0.2.1" },
+    { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "pycparser", specifier = ">=2.22" },
+    { name = "pydantic", specifier = ">=2.10.4" },
+    { name = "pydantic-core", specifier = ">=2.27.2" },
+    { name = "pydantic-settings", specifier = ">=2.8.1" },
+    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "redis", specifier = ">=5.2.1" },
+    { name = "sniffio", specifier = ">=1.3.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.36" },
+    { name = "starlette", specifier = ">=0.41.3" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
+    { name = "uvicorn", specifier = ">=0.32.1" },
+    { name = "websockets", specifier = ">=14.2" },
+    { name = "yarl", specifier = ">=1.18.3" },
 ]
 
 [package.metadata.requires-dev]

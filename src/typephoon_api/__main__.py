@@ -35,7 +35,7 @@ def main():
     )
     args = parser.parse_args(namespace=CLIArgs)
 
-    setting = load_setting(args.setting, args.secret_setting)
+    setting = load_setting(args.setting)
     init_logger(setting)
 
     if args.init:
