@@ -6,6 +6,7 @@ services:
     profiles:
       - "skip"
     container_name: typephoon-api
+    env_file: .env
     environment:
       TP_AMQP__HOST: typephoon-rabbitmq
       TP_DB__HOST: typephoon-postgresql
@@ -26,10 +27,6 @@ services:
       - type: bind
         source: ./setting.yaml
         target: /app/setting.yaml
-        read_only: true
-      - type: bind
-        source: ./setting.secret.yaml
-        target: /app/setting.secret.yaml
         read_only: true
     depends_on:
       - db

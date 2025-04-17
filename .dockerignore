@@ -1,6 +1,10 @@
 __pycache__
 .*
+!.example.env
+!.gitignore
 !.dockerignore
+setting.secret.yaml
 jwt_rsa.key
 jwt_rsa.key.pub
 *.egg-info
+!.github
