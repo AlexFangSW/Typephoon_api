@@ -8,6 +8,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    container: "ubuntu:latest" 
+
     strategy:
       matrix:
         python-version:
