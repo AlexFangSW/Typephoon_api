@@ -13,6 +13,19 @@ jobs:
         python-version:
           - "3.13"
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: typephoon
+          POSTGRES_PASSWORD: 123
+
+      redis:
+        image: redis:7-alpine
+
+      rabbitmq:
+        image: rabbitmq:4.0-management
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,3 +41,8 @@ jobs:
 
       - name: Run tests
         run: uv run --dev pytest
+        env:
+          TP_AMQP__HOST: rabbitmq
+          TP_DB__HOST: postgres
+          TP_REDIS__HOST: redis
+          SERVER_NAME: server-1
