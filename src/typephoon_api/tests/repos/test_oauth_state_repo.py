@@ -1,6 +1,6 @@
-from ...repositories.oauth_state import OAuthStateRepo
-
 import pytest
+
+from ...repositories.oauth_state import OAuthStateRepo
 from ..helper import *
 
 

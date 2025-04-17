@@ -1,41 +1,32 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
+
+from aio_pika import Message
+from aio_pika.abc import AbstractExchange, DeliveryMode
 from fastapi import WebSocket
-from jwt import PyJWTError
+from jwt import ExpiredSignatureError, PyJWTError
 from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.sql.base import event
 
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.lobby import LobbyBG, LobbyBGMsg, LobbyBGMsgEvent
-
-from ..repositories.game_cache import GameCacheRepo
-
-from ..types.amqp import LobbyCountdownMsg, LobbyNotifyMsg
-
-from ..orm.game import Game, GameStatus, GameType
-
-from ..repositories.lobby_cache import LobbyCacheRepo
-
-from ..types.errors import PublishNotAcknowledged
-
-from ..repositories.game import GameRepo
-
-from ..repositories.guest_token import GuestTokenRepo
-
-from ..types.common import LobbyUserInfo
-
-from ..lib.util import gen_guest_user_info
-
-from ..types.enums import CookieNames, QueueInType, WSCloseReason
-
-
-from aio_pika.abc import AbstractExchange
-from aio_pika import Message
-
 from ..lib.token_generator import TokenGenerator, UserType
 from ..lib.token_validator import TokenValidator
+from ..lib.util import gen_guest_user_info
+from ..orm.game import Game, GameStatus, GameType
+from ..repositories.game import GameRepo
+from ..repositories.game_cache import GameCacheRepo
+from ..repositories.guest_token import GuestTokenRepo
+from ..repositories.lobby_cache import LobbyCacheRepo
+from ..types.amqp import (
+    GameCleanupMsg,
+    LobbyCountdownMsg,
+    LobbyNotifyMsg,
+)
+from ..types.common import LobbyUserInfo
+from ..types.enums import CookieNames, QueueInType, WSCloseReason
+from ..types.errors import PublishNotAcknowledged
 from ..types.setting import Setting
 
 logger = getLogger(__name__)
@@ -152,6 +143,20 @@ class QueueInService:
 
         return False
 
+    async def _send_cleanup_signal(self, game_id: int):
+        logger.debug("game_id: %s", game_id)
+
+        msg = GameCleanupMsg(game_id=game_id).model_dump_json().encode()
+        amqp_msg = Message(msg)
+
+        confirm = await self._amqp_default_exchange.publish(
+            message=amqp_msg,
+            routing_key=self._setting.amqp.game_cleanup_wait_queue,
+        )
+
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish cleanup message failed")
+
     async def _send_countdown_signal(self, game_id: int):
         logger.debug("game_id: %s", game_id)
 
@@ -181,8 +186,9 @@ class QueueInService:
 
         logger.debug("id: %s", game.id)
 
-        # send countdown signal
+        # send signals
         await self._send_countdown_signal(game.id)
+        await self._send_cleanup_signal(game.id)
 
         # set start time in redis for user countdown pooling
         await self._set_start_ts_cache(game.id)
@@ -195,7 +201,7 @@ class QueueInService:
         user_info: LobbyUserInfo,
         game_id: int,
         guest_token_key: str | None = None,
-    ):
+    ) -> LobbyBG:
         logger.debug(
             "user_info: %s, game_id: %s, guest_token_key: %s",
             user_info,
@@ -204,11 +210,11 @@ class QueueInService:
         )
 
         # notify user their game id
-        bg = LobbyBG(ws=websocket, user_id=user_info.id)
-        bg_group = await self._bg_manager.get(game_id)
-        assert bg_group
-        await bg_group.add(
-            bg=bg, init_msg=LobbyBGMsg(event=LobbyBGMsgEvent.INIT, game_id=game_id)
+        bg = LobbyBG(ws=websocket, user_id=user_info.id, game_id=game_id)
+        await self._bg_manager.add(
+            game_id=game_id,
+            bg=bg,
+            init_msg=LobbyBGMsg(event=LobbyBGMsgEvent.INIT, game_id=game_id),
         )
 
         # notify guest user to get their token
@@ -221,9 +227,13 @@ class QueueInService:
             )
             await bg.put_msg(
                 LobbyBGMsg(
-                    event=LobbyBGMsgEvent.GET_TOKEN, guest_token_key=guest_token_key
+                    event=LobbyBGMsgEvent.GET_TOKEN,
+                    guest_token_key=guest_token_key,
+                    game_id=game_id,
                 )
             )
+
+        return bg
 
     async def _notify_user_join(self, game_id: int):
         logger.debug("game_id: %s", game_id)
@@ -255,21 +265,59 @@ class QueueInService:
         if not isinstance(confirm, Basic.Ack):
             raise PublishNotAcknowledged("publish start msg failed")
 
+    async def _leave(
+        self,
+        user_id: str,
+        game_id: int,
+    ):
+        logger.debug("game_id: %s, user_id: %s", game_id, user_id)
+
+        async with self._lobby_cache_repo.lock(game_id):
+            did_delete = await self._lobby_cache_repo.remove_player(
+                game_id=game_id, user_id=user_id
+            )
+
+            if did_delete:
+                async with self._sessionmaker() as session:
+                    logger.debug("deleted player from cache, decrease player count")
+                    repo = GameRepo(session)
+                    await repo.decrease_player_count(game_id)
+                    await session.commit()
+
+        # notify all servers
+        msg = (
+            LobbyNotifyMsg(
+                notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
+            )
+            .model_dump_json()
+            .encode()
+        )
+        amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
+        confirm = await self._amqp_notify_exchange.publish(
+            message=amqp_msg, routing_key=""
+        )
+        if not isinstance(confirm, Basic.Ack):
+            raise PublishNotAcknowledged("publish user left message failed")
+
     async def queue_in(
         self,
         websocket: WebSocket,
         queue_in_type: QueueInType,
         prev_game_id: int | None = None,
-    ):
+    ) -> LobbyBG | None:
         logger.debug("queue_in_type: %s, prev_game_id: %s", queue_in_type, prev_game_id)
 
         try:
             access_token = websocket.cookies.get(CookieNames.ACCESS_TOKEN, None)
             process_token_ret = await self._process_token(access_token)
             await websocket.accept()
+        except ExpiredSignatureError as ex:
+            logger.warning("expired token: %s", str(ex))
+            await websocket.close(code=4001, reason=WSCloseReason.TOKEN_EXPIRED)
+            return
         except PyJWTError as ex:
             logger.warning("invalid token, error: %s", str(ex))
-            await websocket.close(reason=WSCloseReason.INVALID_TOKEN)
+            await websocket.close(code=4002, reason=WSCloseReason.INVALID_TOKEN)
             return
 
         # match making, find or create game
@@ -303,12 +351,17 @@ class QueueInService:
 
             await session.commit()
 
-        await self._add_bg_event_loop(
-            websocket=websocket,
-            user_info=process_token_ret.user_info,
-            game_id=game_id,
-            guest_token_key=process_token_ret.guest_token_key,
-        )
+        try:
+            bg = await self._add_bg_event_loop(
+                websocket=websocket,
+                user_info=process_token_ret.user_info,
+                game_id=game_id,
+                guest_token_key=process_token_ret.guest_token_key,
+            )
+        except Exception as ex:
+            logger.error("add event loop failed. error: %s", str(ex))
+            await self._leave(user_id=process_token_ret.user_info.id, game_id=game_id)
+            return
 
         await self._notify_user_join(game_id)
 
@@ -331,3 +384,11 @@ class QueueInService:
             )
 
             await self._send_start_msg(game_id)
+
+        return bg
+
+    async def close_wait(self, bg: LobbyBG):
+        # wait for disconnection
+        await bg.close_wait()
+        await self._bg_manager.remove_user(game_id=bg.game_id, user_id=bg.user_id)
+        await self._leave(user_id=bg.user_id, game_id=bg.game_id)

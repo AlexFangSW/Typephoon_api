@@ -1,22 +1,19 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Cookie, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
-
-from ..types.setting import Setting
-
-from ..types.responses.base import ErrorResponse, SuccessResponse
-
-from ..types.enums import CookieNames, ErrorCode
 
 from ..lib.dependencies import (
     get_auth_service,
     get_auth_service_with_provider,
     get_setting,
 )
-from ..services.auth import AuthService
-
 from ..lib.util import catch_error_async
+from ..services.auth import AuthService
+from ..types.enums import CookieNames, ErrorCode
+from ..types.responses.base import ErrorResponse, SuccessResponse
+from ..types.setting import Setting
 
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
@@ -35,7 +32,7 @@ async def login(
     if not ret.ok:
         return RedirectResponse(setting.error_redirect)
 
-    assert ret.data
+    assert ret.data is not None
     return RedirectResponse(ret.data)
 
 
@@ -47,20 +44,19 @@ async def login_redirect(
     setting: Setting = Depends(get_setting),
     service: AuthService = Depends(get_auth_service_with_provider),
 ):
-
     ret = await service.login_redirect(state, code)
 
     if not ret.ok:
         return RedirectResponse(setting.error_redirect)
 
-    assert ret.data
+    assert ret.data is not None
 
     response = RedirectResponse(ret.data.url)
     response.set_cookie(
         CookieNames.ACCESS_TOKEN,
         ret.data.access_token,
         path="/",
-        max_age=setting.token.access_duration,
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
     )
@@ -75,7 +71,8 @@ async def login_redirect(
     response.set_cookie(
         CookieNames.USERNAME,
         ret.data.username,
-        max_age=setting.token.access_duration,
+        path="/",
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
     )
@@ -87,19 +84,22 @@ async def login_redirect(
 @catch_error_async
 async def logout(
     access_token: Annotated[
-        str, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
-    ],
+        str | None, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
+    ] = None,
     service: AuthService = Depends(get_auth_service),
+    setting: Setting = Depends(get_setting),
 ):
+    if access_token:
+        ret = await service.logout(access_token=access_token)
+        assert ret.ok
 
-    ret = await service.logout(access_token=access_token)
-
-    assert ret.ok
     msg = jsonable_encoder(SuccessResponse())
     response = JSONResponse(msg, status_code=200)
 
     response.delete_cookie(CookieNames.ACCESS_TOKEN)
-    response.delete_cookie(CookieNames.REFRESH_TOKEN)
+    response.delete_cookie(
+        CookieNames.REFRESH_TOKEN, path=setting.token.refresh_endpoint
+    )
     response.delete_cookie(CookieNames.USERNAME)
 
     return response
@@ -117,7 +117,6 @@ async def token_refresh(
     setting: Setting = Depends(get_setting),
     service: AuthService = Depends(get_auth_service),
 ):
-
     ret = await service.token_refresh(refresh_token)
 
     if not ret.ok:
@@ -131,16 +130,48 @@ async def token_refresh(
         else:
             raise ValueError(f"unknown error code: {ret.error.code}")
 
-    assert ret.data
+    assert ret.data is not None
     msg = jsonable_encoder(SuccessResponse())
     response = JSONResponse(msg, status_code=200)
     response.set_cookie(
         CookieNames.ACCESS_TOKEN,
         ret.data,
         path="/",
-        max_age=setting.token.access_duration,
+        max_age=setting.token.refresh_duration,
         httponly=True,
         secure=True,
-        samesite="strict",
+    )
+    return response
+
+
+@router.get(
+    "/guest-token",
+    responses={200: {"model": SuccessResponse}, 400: {"model": ErrorResponse}},
+)
+@catch_error_async
+async def get_guest_token(
+    key: str,
+    setting: Setting = Depends(get_setting),
+    service: AuthService = Depends(get_auth_service),
+):
+    ret = await service.get_guest_token(key)
+    if not ret.ok:
+        assert ret.error is not None
+        if ret.error.code == ErrorCode.KEY_NOT_FOUND:
+            msg = jsonable_encoder(ErrorResponse(error=ret.error))
+            return JSONResponse(msg, status_code=400)
+        else:
+            raise ValueError(f"unknown error code: {ret.error.code}")
+
+    assert ret.data is not None
+    msg = jsonable_encoder(SuccessResponse())
+    response = JSONResponse(msg, status_code=200)
+    response.set_cookie(
+        CookieNames.ACCESS_TOKEN,
+        ret.data,
+        path="/",
+        max_age=setting.token.refresh_duration,
+        httponly=True,
+        secure=True,
     )
     return response

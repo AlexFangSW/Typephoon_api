@@ -1,26 +1,24 @@
+import json
 from dataclasses import dataclass
 from functools import wraps
+from hashlib import md5
 from logging import getLogger
 from logging.config import dictConfig
 from typing import Callable
+from uuid import uuid4
+
 from alembic import command
 from alembic.config import Config
 from fastapi.responses import JSONResponse
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pydantic_core import Url
-from uuid import uuid4
-
-from ..types.errors import InvalidCookieToken
-
-from ..types.enums import ErrorCode
-
-from .oauth_providers.base import OAuthProviders
 
 from ..types.common import LobbyUserInfo
-
+from ..types.enums import ErrorCode
 from ..types.log import TRACE
-from ..types.setting import Setting
-
 from ..types.responses.base import ErrorContext, ErrorResponse
+from ..types.setting import Setting
+from .oauth_providers.base import OAuthProviders
 
 logger = getLogger(__name__)
 
@@ -56,39 +54,29 @@ def init_logger(setting: Setting):
     logger.log(TRACE, "trace level activated")
 
 
-def load_setting(base: str, secret: str) -> Setting:
-    return Setting.from_file(base, secret)
-
-
-def catch_error_sync(func: Callable):
-
-    @wraps(func)
-    def wrapped(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as ex:
-            logger.exception("something went wrong")
-            error = ErrorContext(message=str(ex))
-            msg = ErrorResponse(error=error).model_dump()
-            return JSONResponse(msg, status_code=500)
-
-    return wrapped
+def load_setting(base: str) -> Setting:
+    return Setting.from_file(base)
 
 
 def catch_error_async(func: Callable):
-
     @wraps(func)
     async def wrapped(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
 
-        except InvalidCookieToken as ex:
+        except ExpiredSignatureError as ex:
+            logger.warning("token expired: %s", str(ex))
+            error = ErrorContext(code=ErrorCode.TOKEN_EXPIRED, message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=400)
+
+        except PyJWTError as ex:
             logger.warning("token error: %s", str(ex))
             error = ErrorContext(code=ErrorCode.INVALID_TOKEN, message=str(ex))
             msg = ErrorResponse(error=error).model_dump()
             return JSONResponse(msg, status_code=400)
 
-        except Exception as ex:
+        except Exception:
             logger.exception("something went wrong")
             # error = ErrorContext(message=str(ex))
             msg = ErrorResponse().model_dump()
@@ -115,3 +103,10 @@ def gen_guest_user_info() -> LobbyUserInfo:
     id = uuid4().hex
     first_part = id.split("-")[0]
     return LobbyUserInfo(id=f"guest-{id}", name=f"guest-{first_part}")
+
+
+def get_dict_hash(inpt: dict) -> str:
+    """
+    This is only used to check if the content of the input is identical
+    """
+    return md5(json.dumps(inpt).encode()).hexdigest()[:8]

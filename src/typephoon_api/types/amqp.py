@@ -1,4 +1,5 @@
 from enum import StrEnum
+
 from pydantic import BaseModel
 
 from ..lib.background_tasks.lobby import LobbyBGMsgEvent
@@ -37,6 +38,23 @@ class LobbyCountdownMsg(BaseModel):
     """
     This message is basically a trigger to let the server
     know when to start the game.
+    """
+
+    game_id: int
+
+
+class GameStartMsg(BaseModel):
+    """
+    This message is basically a trigger to let the server
+    know when to start the game.
+    """
+
+    game_id: int
+
+
+class GameCleanupMsg(BaseModel):
+    """
+    trigger server to cleanup the game
     """
 
     game_id: int

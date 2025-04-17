@@ -1,17 +1,15 @@
 import json
+
 import pytest
 from redis.asyncio import Redis
 
-from ...types.common import LobbyUserInfo
-
 from ...repositories.lobby_cache import LobbyCacheRepo, LobbyCacheType
-
+from ...types.common import LobbyUserInfo
 from ..helper import *
 
 
 @pytest.mark.asyncio
 async def test_lobby_cache_repo_add_players(redis_conn: Redis, setting: Setting):
-
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")

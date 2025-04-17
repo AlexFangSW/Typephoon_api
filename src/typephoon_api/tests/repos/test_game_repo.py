@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...orm.game import Game, GameStatus, GameType
-
 from ...repositories.game import GameRepo
 from ..helper import *
 
@@ -59,7 +58,6 @@ async def test_game_repo_player_count(sessionmaker: async_sessionmaker[AsyncSess
 
 @pytest.mark.asyncio
 async def test_game_repo_is_available(sessionmaker: async_sessionmaker[AsyncSession]):
-
     async with sessionmaker() as session:
         repo = GameRepo(session=session)
         game = await repo.create(GameType.MULTI, GameStatus.LOBBY)

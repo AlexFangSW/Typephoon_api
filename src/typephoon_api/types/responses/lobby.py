@@ -1,7 +1,7 @@
 from pydantic import Field
-from .base import SuccessResponse
 
 from ..common import LobbyUserInfo
+from .base import SuccessResponse
 
 
 class LobbyPlayersResponse(SuccessResponse):

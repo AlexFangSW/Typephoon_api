@@ -1,15 +1,15 @@
 """init
 
 Revision ID: 2e896f63cdef
-Revises: 
+Revises:
 Create Date: 2024-12-02 23:15:47.441516
 
 """
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 from typephoon_api.orm.custom import BigSerial
 

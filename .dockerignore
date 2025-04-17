@@ -1,0 +1,6 @@
+__pycache__
+.*
+!.dockerignore
+jwt_rsa.key
+jwt_rsa.key.pub
+*.egg-info

@@ -1,9 +1,9 @@
 from enum import StrEnum
 from typing import Self
+
 from pydantic import BaseModel
 
 from ..orm.game import GameType
-
 from .enums import ErrorCode
 
 
@@ -17,6 +17,9 @@ class LobbyUserInfo(BaseModel):
     name: str
 
 
+UNDEFINED_RANK = 99999
+
+
 class GameUserInfo(BaseModel):
     """
     - finished: ISO 8061 format timestamp
@@ -27,7 +30,7 @@ class GameUserInfo(BaseModel):
 
     # populate after finish
     finished: str | None = None
-    rank: int = -1
+    rank: int = UNDEFINED_RANK
     wpm: float | None = None
     wpm_raw: float | None = None
     acc: float | None = None

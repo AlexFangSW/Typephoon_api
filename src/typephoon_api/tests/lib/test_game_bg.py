@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock
 from aio_pika import Message
 from pamqp.commands import Basic
 
-from ...types.amqp import KeystrokeHeader, KeystrokeMsg
 from ...lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
+from ...types.amqp import KeystrokeHeader, KeystrokeMsg
 from ..helper import *
 
 
@@ -21,12 +21,16 @@ async def test_game_bg_send(setting: Setting):
     await bg.start()
 
     msg = GameBGMsg(
-        event=GameBGMsgEvent.KEY_STOKE, user_id="222", word_index=20, char_index=4
+        event=GameBGMsgEvent.KEY_STOKE,
+        user_id="222",
+        word_index=20,
+        char_index=4,
+        game_id=game_id,
     )
     await bg._send(msg)
 
-    assert ws.send_bytes.called
-    assert ws.send_bytes.call_args.args == (msg.model_dump_json().encode(),)
+    assert ws.send_text.called
+    assert ws.send_text.call_args.args == (msg.model_dump_json(),)
 
     await bg.stop()
 
@@ -56,6 +60,7 @@ async def test_game_bg_recv(setting: Setting):
         user_id=user_id,
         word_index=word_index,
         char_index=char_index,
+        game_id=game_id,
     )
     answer = KeystrokeMsg(
         game_id=game_id, user_id=user_id, word_index=word_index, char_index=char_index

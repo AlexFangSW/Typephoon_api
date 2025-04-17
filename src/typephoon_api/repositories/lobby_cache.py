@@ -1,12 +1,13 @@
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime
-from logging import getLogger
-from redis.asyncio import Redis
-import json
 from enum import StrEnum
+from logging import getLogger
 
-from ..types.setting import Setting
+from redis.asyncio import Redis
+
 from ..types.common import LobbyUserInfo
+from ..types.setting import Setting
 
 logger = getLogger(__name__)
 
@@ -17,7 +18,6 @@ class LobbyCacheType(StrEnum):
 
 
 class LobbyCacheRepo:
-
     def __init__(self, redis_conn: Redis, setting: Setting) -> None:
         self._redis_conn = redis_conn
         self._setting = setting
@@ -50,8 +50,8 @@ class LobbyCacheRepo:
         new_player = False
 
         # get current status
-        ret = await self._redis_conn.get(name=key)
-        if ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is not None:
             current_status = json.loads(ret)
         else:
             current_status = {}
@@ -114,8 +114,8 @@ class LobbyCacheRepo:
         """
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.COUNTDOWN)
 
-        ret: bytes = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
             return
 
@@ -134,23 +134,24 @@ class LobbyCacheRepo:
 
         await self._redis_conn.delete(player_cache_key, countdown_cache_key)
 
-    async def remove_player(self, game_id: int, user_id: str):
+    async def remove_player(self, game_id: int, user_id: str) -> bool:
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
-        ret = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
-            return
+            return False
 
         data: dict = json.loads(ret)
-        data.pop(user_id)
+        exist = data.pop(user_id)
         await self._redis_conn.set(
             name=key, value=json.dumps(data), ex=self._setting.redis.expire_time
         )
+        return True if exist is not None else False
 
     async def get_players(self, game_id: int) -> dict[str, LobbyUserInfo] | None:
         key = self._gen_cache_key(game_id=game_id, cache_type=LobbyCacheType.PLAYERS)
-        ret = await self._redis_conn.get(name=key)
-        if not ret:
+        ret: bytes | None = await self._redis_conn.get(name=key)
+        if ret is None:
             logger.warning("game not found, game_id: %s", game_id)
             return
 

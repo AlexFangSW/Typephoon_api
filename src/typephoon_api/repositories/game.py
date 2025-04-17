@@ -1,14 +1,14 @@
 from datetime import UTC, datetime
+
 from sqlalchemy import and_, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
 from ..orm.game import Game, GameStatus, GameType
 
 
 class GameRepo:
-
     def __init__(self, session: AsyncSession, player_limit: int = 5) -> None:
         self._session = session
         self._player_limit = player_limit
@@ -23,6 +23,15 @@ class GameRepo:
         query = (
             update(Game)
             .values({"status": GameStatus.IN_GAME, "start_at": datetime.now(UTC)})
+            .where(Game.id == id)
+        )
+
+        await self._session.execute(query)
+
+    async def set_finish(self, id: int):
+        query = (
+            update(Game)
+            .values({"status": GameStatus.FINISHED, "end_at": datetime.now(UTC)})
             .where(Game.id == id)
         )
 

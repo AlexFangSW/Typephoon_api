@@ -1,6 +1,7 @@
 from hashlib import sha256
 from logging import getLogger
 from os import urandom
+
 from redis.asyncio import Redis
 
 from ..lib.util import get_state_key
@@ -10,7 +11,6 @@ logger = getLogger(__name__)
 
 
 class OAuthStateRepo:
-
     def __init__(self, setting: Setting, redis_conn: Redis) -> None:
         self._setting = setting
         self._redis_conn = redis_conn
@@ -28,9 +28,9 @@ class OAuthStateRepo:
 
     async def state_exist(self, state: str) -> bool:
         key = get_state_key(state)
-        exist = await self._redis_conn.getdel(key)
+        exist: bytes | None = await self._redis_conn.getdel(key)
 
-        if not exist:
+        if exist is None:
             logger.warning("key not found, key: %s", key)
             return False
 

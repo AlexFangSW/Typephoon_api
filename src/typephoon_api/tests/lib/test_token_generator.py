@@ -1,14 +1,13 @@
 from datetime import timedelta
-from jwt.exceptions import ExpiredSignatureError
-import pytest
+
 import jwt
+import pytest
 import time_machine
+from jwt.exceptions import ExpiredSignatureError
 
 from ...lib.oauth_providers.base import OAuthProviders
-
-from ...lib.util import gen_user_id
-
 from ...lib.token_generator import TokenGenerator
+from ...lib.util import gen_user_id
 from ..helper import *
 
 

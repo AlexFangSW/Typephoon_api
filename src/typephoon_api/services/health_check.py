@@ -1,9 +1,8 @@
-from .base import ServiceRet
 from ..lib.server import TypephoonServer
+from .base import ServiceRet
 
 
 class HealthCheckService:
-
     def __init__(self, app: TypephoonServer) -> None:
         self._app = app
 

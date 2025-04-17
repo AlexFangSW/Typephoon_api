@@ -1,13 +1,11 @@
 from datetime import timedelta
+
 import pytest
 from redis.asyncio import Redis
 
 from ...repositories.game_cache import GameCacheRepo
-
-from ...types.common import GameUserInfo, LobbyUserInfo
-
 from ...repositories.lobby_cache import LobbyCacheRepo
-
+from ...types.common import GameUserInfo, LobbyUserInfo
 from ..helper import *
 
 
@@ -15,7 +13,6 @@ from ..helper import *
 async def test_game_cache_repo_populate_with_lobby_cache(
     redis_conn: Redis, setting: Setting
 ):
-
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")
@@ -49,7 +46,6 @@ async def test_game_cache_repo_populate_with_lobby_cache(
 async def test_game_cache_repo_populate_with_lobby_cache_auto_clean(
     redis_conn: Redis, setting: Setting
 ):
-
     dummy_game_id = 123123
     players = [
         LobbyUserInfo(id=f"{i}", name=f"player-{i}")

@@ -1,14 +1,13 @@
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ...repositories.user import UserRepo
 from ...repositories.token import TokenRepo
-import pytest
+from ...repositories.user import UserRepo
 from ..helper import *
 
 
 @pytest.mark.asyncio
 async def test_token_repo(sessionmaker: async_sessionmaker[AsyncSession]):
-
     dummy_token = "token"
     dummy_user_id = "user_id"
     dummy_username = "username"

@@ -1,26 +1,21 @@
 from dataclasses import dataclass
 from logging import getLogger
+
 from fastapi.datastructures import URL
 from jwt.exceptions import PyJWTError
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..lib.oauth_providers.base import OAuthProvider
-
+from ..lib.token_generator import TokenGenerator
+from ..lib.token_validator import TokenValidator
+from ..repositories.guest_token import GuestTokenRepo
+from ..repositories.token import TokenRepo
+from ..repositories.user import UserRepo
 from ..types.common import ErrorContext
 from ..types.enums import ErrorCode
-
-from ..lib.token_validator import TokenValidator
-
-from ..lib.token_generator import TokenGenerator
-
-from ..repositories.token import TokenRepo
-
-from ..repositories.user import UserRepo
-
 from ..types.setting import Setting
-
 from .base import ServiceRet
-from pydantic import BaseModel, ConfigDict
 
 logger = getLogger(__name__)
 
@@ -42,13 +37,13 @@ class LoginRedirectRet:
 
 
 class AuthService:
-
     def __init__(
         self,
         setting: Setting,
         sessionmaker: async_sessionmaker[AsyncSession],
         token_generator: TokenGenerator,
         token_validator: TokenValidator,
+        guest_token_repo: GuestTokenRepo,
         oauth_provider: OAuthProvider | None = None,
     ) -> None:
         self._setting = setting
@@ -56,6 +51,7 @@ class AuthService:
         self._token_generator = token_generator
         self._token_validator = token_validator
         self._oauth_provider = oauth_provider
+        self._guest_token_repo = guest_token_repo
 
     async def login(self) -> ServiceRet[URL]:
         logger.debug("login")
@@ -157,8 +153,8 @@ class AuthService:
 
         # check if refresh token is the same in DB
         async with self._sessionmaker() as session:
-            repo = TokenRepo(session)
-            token_in_db = await repo.get_refresh_token(info.sub)
+            token_in_db = await TokenRepo(session).get_refresh_token(info.sub)
+            user_info = await UserRepo(session).get(info.sub)
 
         if token_in_db != refresh_token:
             logger.warning(
@@ -169,7 +165,25 @@ class AuthService:
             error = ErrorContext(code=ErrorCode.REFRESH_TOKEN_MISSMATCH)
             return ServiceRet(ok=False, error=error)
 
+        if user_info is None:
+            logger.warning("user not found, id: %s", info.sub)
+            error = ErrorContext(code=ErrorCode.USER_NOT_FOUND)
+            return ServiceRet(ok=False, error=error)
+
         # generate access token
-        new_access_token = self._token_generator.gen_access_token(info.sub, info.name)
+        new_access_token = self._token_generator.gen_access_token(
+            info.sub, user_info.name
+        )
 
         return ServiceRet(ok=True, data=new_access_token)
+
+    async def get_guest_token(self, key: str) -> ServiceRet[str]:
+        logger.debug("key: %s", key)
+
+        token = await self._guest_token_repo.get(key)
+        if token is None:
+            logger.warning("guest token not found, key: %s", key)
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.KEY_NOT_FOUND)
+            )
+        return ServiceRet(ok=True, data=token)

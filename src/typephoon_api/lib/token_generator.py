@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import jwt
+
 from ..types.enums import UserType
 from ..types.jwt import JWTPayload
 from ..types.setting import Setting
-import jwt
 
 
 @dataclass(slots=True)
@@ -14,7 +15,6 @@ class GenTokenPairRet:
 
 
 class TokenGenerator:
-
     def __init__(self, setting: Setting) -> None:
         self._setting = setting
 

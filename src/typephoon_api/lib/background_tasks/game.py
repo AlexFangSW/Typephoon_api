@@ -1,16 +1,16 @@
 from __future__ import annotations
+
 from enum import StrEnum
 from logging import getLogger
 from typing import Type
+
 from aio_pika import DeliveryMode, Message
 from aio_pika.abc import AbstractExchange
 from fastapi import WebSocket
 from pamqp.commands import Basic
 
-from ...types.errors import PublishNotAcknowledged
-
 from ...types.amqp import KeystrokeHeader, KeystrokeMsg
-
+from ...types.errors import PublishNotAcknowledged
 from ...types.setting import Setting
 from .base import BG, BGMsg
 
@@ -23,6 +23,7 @@ class GameBGMsgEvent(StrEnum):
     RECONNECT = "RECONNECT"
 
     KEY_STOKE = "KEY_STOKE"
+    START = "START"
 
 
 class GameBGMsg(BGMsg[GameBGMsgEvent]):
@@ -32,7 +33,6 @@ class GameBGMsg(BGMsg[GameBGMsgEvent]):
 
 
 class GameBG(BG[GameBGMsg]):
-
     def __init__(
         self,
         ws: WebSocket,
@@ -43,10 +43,9 @@ class GameBG(BG[GameBGMsg]):
         server_name: str | None = None,
         msg_type: Type[GameBGMsg] = GameBGMsg,
     ) -> None:
-        super().__init__(ws, msg_type, user_id)
+        super().__init__(ws, msg_type, user_id, game_id)
         self._exchange = exchange
         self._setting = setting
-        self._game_id = game_id
         self._server_name = server_name
 
     async def _recv(self, msg: GameBGMsg):
@@ -57,8 +56,8 @@ class GameBG(BG[GameBGMsg]):
         if msg.event == GameBGMsgEvent.KEY_STOKE:
             logger.debug("broadcast keystroke, %s", msg)
 
-            assert msg.word_index
-            assert msg.char_index
+            assert msg.word_index is not None
+            assert msg.char_index is not None
 
             keystroke_msg = KeystrokeMsg(
                 game_id=self._game_id,
@@ -83,7 +82,12 @@ class GameBG(BG[GameBGMsg]):
 
     async def _send(self, msg: GameBGMsg):
         """
-        send key stroks from other player to user
+        send message to user
         """
         logger.debug("got msg: %s", msg)
-        await self._ws.send_bytes(msg.slim_dump_json().encode())
+
+        # ignore messages from same user
+        if msg.user_id == self._user_id:
+            return
+
+        await self._ws.send_text(msg.slim_dump_json())

@@ -2,38 +2,25 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging import getLogger
 
-from aio_pika import DeliveryMode, Message
 from aio_pika.abc import AbstractExchange
-from pamqp.commands import Basic
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ..lib.background_tasks.lobby import LobbyBGMsgEvent
-
-from ..types.errors import PublishNotAcknowledged
-
-from ..types.amqp import LobbyNotifyMsg
-
-from ..types.enums import ErrorCode
-
-from ..repositories.game import GameRepo
-
-from ..types.common import ErrorContext, LobbyUserInfo
-
-from .base import ServiceRet
 from ..repositories.lobby_cache import LobbyCacheRepo
+from ..types.common import ErrorContext, LobbyUserInfo
+from ..types.enums import ErrorCode
 from ..types.setting import Setting
+from .base import ServiceRet
 
 logger = getLogger(__name__)
 
 
 @dataclass(slots=True)
 class GetPlayersRet:
-    me: LobbyUserInfo | None = None
+    me: LobbyUserInfo
     others: list[LobbyUserInfo] = field(default_factory=list)
 
 
 class LobbyService:
-
     def __init__(
         self,
         setting: Setting,
@@ -50,7 +37,7 @@ class LobbyService:
         self,
         game_id: int,
     ) -> ServiceRet[float]:
-        logger.debug("game_id: %s, game_type: %s", game_id)
+        logger.debug("game_id: %s", game_id)
 
         start_time = await self._lobby_cache_repo.get_start_time(game_id)
         if not start_time:
@@ -60,45 +47,7 @@ class LobbyService:
             )
 
         seconds_left = (start_time - datetime.now(UTC)).total_seconds()
-        return ServiceRet(ok=True, data=seconds_left)
-
-    async def leave(
-        self,
-        user_id: str,
-        game_id: int,
-    ) -> ServiceRet:
-        logger.debug("game_id: %s, user_id: %s", game_id, user_id)
-
-        async with self._sessionmaker() as session:
-            repo = GameRepo(session)
-            game = await repo.decrease_player_count(game_id)
-
-            if not game:
-                logger.warning("game not found, game_id: %s", game_id)
-                return ServiceRet(
-                    ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
-                )
-
-            await session.commit()
-
-        await self._lobby_cache_repo.remove_player(game_id=game_id, user_id=user_id)
-
-        # notify all servers
-        msg = (
-            LobbyNotifyMsg(
-                notify_type=LobbyBGMsgEvent.USER_LEFT, game_id=game_id, user_id=user_id
-            )
-            .model_dump_json()
-            .encode()
-        )
-        amqp_msg = Message(msg, delivery_mode=DeliveryMode.PERSISTENT)
-        confirm = await self._amqp_notify_exchange.publish(
-            message=amqp_msg, routing_key=""
-        )
-        if not isinstance(confirm, Basic.Ack):
-            raise PublishNotAcknowledged("publish user join message failed")
-
-        return ServiceRet(ok=True)
+        return ServiceRet(ok=True, data=seconds_left if seconds_left >= 0 else 0)
 
     async def get_players(
         self,
@@ -107,7 +56,6 @@ class LobbyService:
     ) -> ServiceRet[GetPlayersRet]:
         logger.debug("game_id: %s, user_id: %s", game_id, user_id)
 
-        result = GetPlayersRet()
         players = await self._lobby_cache_repo.get_players(game_id)
 
         if not players:
@@ -116,10 +64,15 @@ class LobbyService:
                 ok=False, error=ErrorContext(code=ErrorCode.GAME_NOT_FOUND)
             )
 
-        for id, info in players.items():
-            if id == user_id:
-                result.me = info
-            else:
-                result.others.append(info)
+        me = players.pop(user_id, None)
+        if me is None:
+            logger.warning(
+                "not a participant, game_id: %s, user_id: %s", game_id, user_id
+            )
+            return ServiceRet(
+                ok=False, error=ErrorContext(code=ErrorCode.NOT_A_PARTICIPANT)
+            )
 
-        return ServiceRet(ok=True, data=result)
+        others = [info for _, info in players.items()]
+
+        return ServiceRet(ok=True, data=GetPlayersRet(me=me, others=others))

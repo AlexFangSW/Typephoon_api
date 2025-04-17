@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from logging import getLogger
+
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
 from ..lib.background_tasks.base import BGManager
 from ..lib.background_tasks.game import GameBG, GameBGMsg, GameBGMsgEvent
-
 from ..types.amqp import KeystrokeHeader, KeystrokeMsg
 from ..types.setting import Setting
 from .base import AbstractConsumer
@@ -20,7 +20,6 @@ class LoadMsgRet:
 
 
 class KeystrokeConsumer(AbstractConsumer):
-
     def __init__(
         self,
         setting: Setting,
@@ -33,22 +32,21 @@ class KeystrokeConsumer(AbstractConsumer):
     def _load_message(self, amqp_msg: AbstractIncomingMessage) -> LoadMsgRet:
         result = LoadMsgRet(body=KeystrokeMsg.model_validate_json(amqp_msg.body))
 
-        headers = KeystrokeHeader.model_validate(amqp_msg.headers)
-        if headers.source == self._setting.server_name:
-            result.skip = True
+        # headers = KeystrokeHeader.model_validate(amqp_msg.headers)
+        # if headers.source == self._setting.server_name:
+        #     result.skip = True
 
         return result
 
     async def _process(self, msg: KeystrokeMsg):
         bg_msg = GameBGMsg(
+            game_id=msg.game_id,
             event=GameBGMsgEvent.KEY_STOKE,
             user_id=msg.user_id,
             word_index=msg.word_index,
             char_index=msg.char_index,
         )
-        bg_group = await self._bg_manager.get(game_id=msg.game_id, auto_create=False)
-        if bg_group is not None:
-            await bg_group.broadcast(bg_msg)
+        await self._bg_manager.broadcast(game_id=msg.game_id, msg=bg_msg)
 
     async def on_message(self, amqp_msg: AbstractIncomingMessage):
         logger.debug("on message")

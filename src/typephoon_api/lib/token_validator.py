@@ -1,10 +1,10 @@
+import jwt
+
 from ..types.jwt import JWTPayload
 from ..types.setting import Setting
-import jwt
 
 
 class TokenValidator:
-
     def __init__(self, setting: Setting) -> None:
         self._setting = setting
 

@@ -1,43 +1,29 @@
 from dataclasses import dataclass
 from logging import getLogger
 from typing import Annotated
-from fastapi import Cookie, Request
+
+from fastapi import Cookie, Request, WebSocket
 from jwt.exceptions import PyJWTError
 
-from ..services.profile import ProfileService
-
-from ..services.game import GameService
-
-from ..services.game_event import GameEventService
-
-from ..repositories.game_cache import GameCacheRepo
-
-from ..types.jwt import JWTPayload
-
-from ..types.enums import CookieNames
-
-from ..services.lobby import LobbyService
-
-from ..repositories.lobby_cache import LobbyCacheRepo
-
-from ..repositories.guest_token import GuestTokenRepo
-
-from ..services.queue_in import QueueInService
-
-from .oauth_providers.base import OAuthProviders
-
-from ..types.setting import Setting
-
-from .token_validator import TokenValidator
-
 from ..lib.oauth_providers.google import GoogleOAuthProvider
+from ..repositories.game_cache import GameCacheRepo
+from ..repositories.guest_token import GuestTokenRepo
+from ..repositories.lobby_cache import LobbyCacheRepo
 from ..repositories.oauth_state import OAuthStateRepo
-
-from .token_generator import TokenGenerator
-
 from ..services.auth import AuthService
-from .server import TypephoonServer
+from ..services.game import GameService
+from ..services.game_event import GameEventService
 from ..services.health_check import HealthCheckService
+from ..services.lobby import LobbyService
+from ..services.profile import ProfileService
+from ..services.queue_in import QueueInService
+from ..types.enums import CookieNames
+from ..types.jwt import JWTPayload
+from ..types.setting import Setting
+from .oauth_providers.base import OAuthProviders
+from .server import TypephoonServer
+from .token_generator import TokenGenerator
+from .token_validator import TokenValidator
 
 logger = getLogger(__name__)
 
@@ -56,6 +42,7 @@ async def get_auth_service_with_provider(
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)
     oauth_state_repo = OAuthStateRepo(setting=app.setting, redis_conn=app.redis_conn)
+    guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn, setting=app.setting)
 
     if provider == OAuthProviders.GOOGLE:
         oauth_provider = GoogleOAuthProvider(
@@ -70,6 +57,7 @@ async def get_auth_service_with_provider(
         oauth_provider=oauth_provider,
         token_validator=token_validator,
         token_generator=token_generator,
+        guest_token_repo=guest_token_repo,
     )
     return service
 
@@ -79,12 +67,14 @@ async def get_auth_service(request: Request) -> AuthService:
 
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)
+    guest_token_repo = GuestTokenRepo(redis_conn=app.redis_conn, setting=app.setting)
 
     service = AuthService(
         setting=app.setting,
         sessionmaker=app.sessionmaker,
         token_validator=token_validator,
         token_generator=token_generator,
+        guest_token_repo=guest_token_repo,
     )
     return service
 
@@ -101,8 +91,8 @@ async def get_lobby_service(request: Request) -> LobbyService:
     return service
 
 
-async def get_queue_in_service(request: Request) -> QueueInService:
-    app: TypephoonServer = request.app
+async def get_queue_in_service(ws: WebSocket) -> QueueInService:
+    app: TypephoonServer = ws.app
 
     token_generator = TokenGenerator(app.setting)
     token_validator = TokenValidator(app.setting)
@@ -125,8 +115,8 @@ async def get_queue_in_service(request: Request) -> QueueInService:
     return service
 
 
-async def get_game_event_service(request: Request) -> GameEventService:
-    app: TypephoonServer = request.app
+async def get_game_event_service(ws: WebSocket) -> GameEventService:
+    app: TypephoonServer = ws.app
 
     token_validator = TokenValidator(app.setting)
     game_cache_repo = GameCacheRepo(redis_conn=app.redis_conn, setting=app.setting)
@@ -166,7 +156,7 @@ def get_setting(request: Request) -> Setting:
 @dataclass(slots=True)
 class GetAccessTokenInfoRet:
     payload: JWTPayload | None = None
-    error: str | None = None
+    error: Exception | None = None
 
 
 def get_access_token_info(
@@ -183,4 +173,4 @@ def get_access_token_info(
         token_validator = TokenValidator(app.setting)
         return GetAccessTokenInfoRet(payload=token_validator.validate(access_token))
     except PyJWTError as ex:
-        return GetAccessTokenInfoRet(error=str(ex))
+        return GetAccessTokenInfoRet(error=ex)

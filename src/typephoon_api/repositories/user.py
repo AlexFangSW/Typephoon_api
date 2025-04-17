@@ -1,12 +1,11 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
 from ..orm.user import User
 
 
 class UserRepo:
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

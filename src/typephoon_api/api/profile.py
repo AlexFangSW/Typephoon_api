@@ -1,22 +1,24 @@
 from logging import getLogger
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from ..services.profile import ProfileService
-from ..types.responses.profile import (
-    ProfileGraphResponse,
-    ProfileHistoryResponse,
-    ProfileStatisticsResponse,
-)
-from ..types.errors import InvalidCookieToken
-from ..types.responses.base import ErrorResponse
+
 from ..lib.dependencies import (
     GetAccessTokenInfoRet,
     get_access_token_info,
     get_profile_service,
 )
 from ..lib.util import catch_error_async
+from ..services.profile import ProfileService
+from ..types.responses.base import ErrorResponse
+from ..types.responses.profile import (
+    ProfileGraphResponse,
+    ProfileHistoryResponse,
+    ProfileStatisticsResponse,
+    ProfileUserInfoResponse,
+)
 
 logger = getLogger(__name__)
 
@@ -37,7 +39,7 @@ async def statistics(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.statistics(
@@ -74,7 +76,7 @@ async def graph(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.graph(
@@ -104,7 +106,7 @@ async def history(
     service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
-        raise InvalidCookieToken(current_user.error)
+        raise current_user.error
 
     assert current_user.payload is not None
     ret = await service.history(
@@ -121,6 +123,30 @@ async def history(
             has_prev_page=ret.data.has_prev_page,
             has_next_page=ret.data.has_next_page,
             data=ret.data.data,
+        )
+    )
+    return JSONResponse(msg, status_code=200)
+
+
+@router.get(
+    "/user-info",
+    responses={
+        200: {"model": ProfileUserInfoResponse},
+        400: {"model": ErrorResponse},
+    },
+)
+@catch_error_async
+async def user_info(
+    current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
+    service: ProfileService = Depends(get_profile_service),
+):
+    if current_user.error:
+        raise current_user.error
+
+    assert current_user.payload
+    msg = jsonable_encoder(
+        ProfileUserInfoResponse(
+            id=current_user.payload.sub, name=current_user.payload.name
         )
     )
     return JSONResponse(msg, status_code=200)

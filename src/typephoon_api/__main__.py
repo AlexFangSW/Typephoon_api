@@ -2,11 +2,9 @@ from argparse import ArgumentParser
 
 import uvicorn
 
-from .types.cli import CLIArgs
-
 from .lib.server_setup import create_server
-
 from .lib.util import db_migration, init_logger, load_setting
+from .types.cli import CLIArgs
 
 
 def main():
@@ -37,7 +35,7 @@ def main():
     )
     args = parser.parse_args(namespace=CLIArgs)
 
-    setting = load_setting(args.setting, args.secret_setting)
+    setting = load_setting(args.setting)
     init_logger(setting)
 
     if args.init:

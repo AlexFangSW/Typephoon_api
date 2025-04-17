@@ -1,29 +1,23 @@
 from datetime import timedelta
+from unittest.mock import AsyncMock
+
+import pytest
+import time_machine
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-import time_machine
-
-from ...repositories.token import TokenRepo
-
-from ...lib.token_validator import TokenValidator
 
 from ...lib.oauth_providers.base import OAuthProviders, VerifyTokenRet
-
 from ...lib.oauth_providers.google import GoogleOAuthProvider
-
 from ...lib.token_generator import TokenGenerator
-
-from ...repositories.oauth_state import OAuthStateRepo
-
-from ...types.enums import ErrorCode
-
-from ...repositories.user import UserRepo
-
-from ...types.setting import Setting
+from ...lib.token_validator import TokenValidator
 from ...lib.util import gen_user_id
+from ...repositories.guest_token import GuestTokenRepo
+from ...repositories.oauth_state import OAuthStateRepo
+from ...repositories.token import TokenRepo
+from ...repositories.user import UserRepo
 from ...services.auth import AuthService
-import pytest
-from unittest.mock import AsyncMock
+from ...types.enums import ErrorCode
+from ...types.setting import Setting
 from ..helper import *
 
 
@@ -31,7 +25,6 @@ from ..helper import *
 async def test_auth_service_login_redirect(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
@@ -42,6 +35,7 @@ async def test_auth_service_login_redirect(
     token_validator = TokenValidator(setting)
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
+    guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
 
     service = AuthService(
         setting=setting,
@@ -49,6 +43,7 @@ async def test_auth_service_login_redirect(
         token_generator=token_generator,
         token_validator=token_validator,
         oauth_provider=oauth_provider,
+        guest_token_repo=guest_token_repo,
     )
 
     # -------------------------------------------
@@ -90,7 +85,6 @@ async def test_auth_service_login_redirect(
 async def test_auth_service_logout(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
@@ -101,6 +95,7 @@ async def test_auth_service_logout(
     token_validator = TokenValidator(setting)
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
+    guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
 
     service = AuthService(
         setting=setting,
@@ -108,6 +103,7 @@ async def test_auth_service_logout(
         token_generator=token_generator,
         token_validator=token_validator,
         oauth_provider=oauth_provider,
+        guest_token_repo=guest_token_repo,
     )
 
     # login
@@ -134,7 +130,6 @@ async def test_auth_service_logout(
 async def test_auth_service_token_refresh(
     setting: Setting, sessionmaker: async_sessionmaker[AsyncSession], redis_conn: Redis
 ):
-
     dummy_google_user_id = "user_id"
     dummy_user_id = gen_user_id(dummy_google_user_id, OAuthProviders.GOOGLE)
     dummy_username = "username"
@@ -145,6 +140,7 @@ async def test_auth_service_token_refresh(
     token_validator = TokenValidator(setting)
     oauth_state_repo = OAuthStateRepo(setting, redis_conn)
     oauth_provider = GoogleOAuthProvider(setting, redis_conn, oauth_state_repo)
+    guest_token_repo = GuestTokenRepo(redis_conn=redis_conn, setting=setting)
 
     service = AuthService(
         setting=setting,
@@ -152,6 +148,7 @@ async def test_auth_service_token_refresh(
         token_generator=token_generator,
         token_validator=token_validator,
         oauth_provider=oauth_provider,
+        guest_token_repo=guest_token_repo,
     )
 
     # login
