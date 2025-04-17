@@ -7,9 +7,9 @@ services:
       - "skip"
     container_name: typephoon-api
     environment:
-      AMQP_HOST: typephoon-rabbitmq
-      PG_HOST: typephoon-postgresql
-      REDIS_HOST: typephoon-redis
+      TP_AMQP__HOST: typephoon-rabbitmq
+      TP_DB__HOST: typephoon-postgresql
+      TP_REDIS__HOST: typephoon-redis
       SERVER_NAME: server-1
     build:
       context: .
