@@ -43,6 +43,9 @@ jobs:
         run: uv run --dev pytest
         env:
           TP_AMQP__HOST: rabbitmq
+          TP_AMQP__VHOST: /
           TP_DB__HOST: postgres
+          TP_DB__USERNAME: typephoon
+          TP_DB__PASSWORD: "123"
           TP_REDIS__HOST: redis
           SERVER_NAME: server-1
