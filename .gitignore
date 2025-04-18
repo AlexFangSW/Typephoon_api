@@ -8,3 +8,4 @@ jwt_rsa.key
 jwt_rsa.key.pub
 *.egg-info
 !.github
+!.drone.yml

@@ -1,0 +1,126 @@
+appName: typephoon-api
+deployment:
+  image: "${IMAGE}:${IMAGE_TAG}"
+  version: "${IMAGE_TAG}"
+  pullsecret: "docker.cloud.alexfangsw.com"
+  replicas: 1
+  resources:
+    requests:
+      memory: "500Mi"
+    limits:
+      memory: "4Gi"
+  affinity: {}
+  tolerations: {}
+  nodeSelector: {}
+  podAnnotations: {}
+  podLabels:
+    typephoonComponent: api
+  strategy: {}
+  readinessProbe:
+    httpGet:
+      path: /healthcheck/ready
+      port: 8080
+      scheme: HTTP
+    failureThreshold: 4
+    successThreshold: 1
+    initialDelaySeconds: 20
+    timeoutSeconds: 1
+    periodSeconds: 5
+  livenessProbe:
+    httpGet:
+      path: /healthcheck/alive
+      port: 8080
+      scheme: HTTP
+    failureThreshold: 3
+    successThreshold: 1
+    initialDelaySeconds: 40
+    timeoutSeconds: 1
+    periodSeconds: 10
+
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+
+settings:
+  amqp:
+    game_cleanup_direct_exchange: game.cleanup
+    game_cleanup_queue: game.cleanup
+    game_cleanup_queue_routing_key: game.cleanup
+    game_cleanup_wait_queue: game.cleanup.wait
+    game_keystroke_fanout_exchange: game.keystroke
+    game_keystroke_queue: game.keystroke
+    game_start_fanout_exchange: game.start
+    game_start_queue: game.start
+    game_start_queue_routing_key: game.start
+    game_start_wait_queue: game.start.wait
+    host: localhost
+    lobby_countdown_direct_exchange: lobby.countdown
+    lobby_countdown_queue: lobby.countdown
+    lobby_countdown_queue_routing_key: lobby.countdown
+    lobby_multi_countdown_wait_queue: lobby.multi.countdown.wait
+    lobby_notify_fanout_exchange: lobby.notify
+    lobby_notify_queue: lobby.notify
+    lobby_notify_queue_routing_key: lobby.notify
+    password: ===REPLACE-ME===
+    prefetch_count: 50
+    user: ===REPLACE-ME===
+    vhost: typephoon
+  cors:
+    allow_origins: []
+  db:
+    db: typephoon
+    echo: false
+    host: localhost
+    password: ===REPLACE-ME===
+    pool_size: 5
+    port: 5432
+    username: ===REPLACE-ME===
+  error_redirect: http://localhost:3000/error
+  front_end_endpoint: http://localhost:3000
+  game:
+    cleanup_countdown: 900
+    lobby_countdown: 5
+    player_limit: 5
+    start_countdown: 5
+    word_file: ./data/words.txt
+  google:
+    client_id: ===REPLACE-ME===
+    client_secret: ===REPLACE-ME===
+    redirect_url: http://localhost:8080/api/v1/auth/login-redirect
+  logger:
+    disable_existing_loggers: false
+    formatters:
+      default:
+        format: '%(levelname)s %(name)s:%(funcName)s:%(lineno)d :: %(message)s'
+    handlers:
+      default:
+        class: logging.StreamHandler
+        formatter: default
+    loggers:
+      typephoon_api:
+        level: INFO
+    root:
+      handlers:
+      - default
+      level: INFO
+    version: 1
+  redis:
+    db: 0
+    expire_time: 60
+    host: localhost
+    in_game_cache_expire_time: 900
+    port: 6379
+    result_cache_expire_time: 900
+  server:
+    port: 8080
+  server_name: null
+  token:
+    access_duration: 900
+    private_key: |- 
+      -----BEGIN RSA PRIVATE KEY-----
+      ===REPLACE-ME===
+      -----END RSA PRIVATE KEY-----
+    public_key: ===REPLACE-ME===
+    refresh_duration: 2592000
+    refresh_endpoint: /api/v1/auth/token-refresh

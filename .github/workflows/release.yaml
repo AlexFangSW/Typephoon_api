@@ -25,4 +25,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: "alexfangsw/typephoon:${{ github.ref_name }}"
+          tags: "alexfangsw/typephoon-api:${{ github.ref_name }}"

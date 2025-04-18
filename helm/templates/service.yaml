@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.service.annotations }}
+  annotations: 
+  {{- range $k, $v := .Values.service.annotations }}
+    {{$k}}: {{$v | quote }}
+  {{- end }}
+  {{- end}}
+  {{- $baseLabels := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.deployment.version }}
+  {{- $mergedLabels :=  merge $baseLabels .Values.service.labels }}
+  labels:
+    {{- range $k, $v := $mergedLabels }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end}}
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: {{ .Values.settings.server.port }}
+    protocol: TCP
+    targetPort: {{ .Values.settings.server.port }}
+  selector:
+    {{- $baseSelector := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.deployment.version }}
+    {{- $mergedSelector :=  merge $baseSelector .Values.deployment.podLabels }}
+    {{- range $k, $v := $mergedSelector }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end}}
+  type: {{ .Values.service.type }}
