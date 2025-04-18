@@ -1,6 +1,8 @@
 name: Build-Dev
 on: 
   push:
+    tags-ignore:
+      - '**'
     branches:
       - master  
       - development
