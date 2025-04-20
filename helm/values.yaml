@@ -2,7 +2,7 @@ appName: typephoon-api
 deployment:
   image: "${IMAGE}:${IMAGE_TAG}"
   version: "${IMAGE_TAG}"
-  pullsecret: "docker.cloud.alexfangsw.com"
+  pullsecret: null
   replicas: 1
   resources:
     requests:
