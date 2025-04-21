@@ -4,5 +4,5 @@ metadata:
   name: "{{ .Release.Name }}-setting"
   namespace: {{ .Release.Namespace }}
 data:
-  settings.json: |-
-    {{ toJson .Values.settings }}
+  setting.yaml: |-
+    {{ toYaml .Values.settings }}
