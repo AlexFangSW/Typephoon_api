@@ -9,7 +9,7 @@ metadata:
     {{$k}}: {{$v | quote }}
   {{- end }}
   {{- end}}
-  {{- $baseLabels := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.deployment.version }}
+  {{- $baseLabels := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.statefulset.version }}
   {{- $mergedLabels :=  merge $baseLabels .Values.service.labels }}
   labels:
     {{- range $k, $v := $mergedLabels }}
@@ -25,8 +25,8 @@ spec:
     protocol: TCP
     targetPort: {{ .Values.settings.server.port }}
   selector:
-    {{- $baseSelector := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.deployment.version }}
-    {{- $mergedSelector :=  merge $baseSelector .Values.deployment.podLabels }}
+    {{- $baseSelector := dict "app" .Values.appName "releaseName" .Release.Name "version" .Values.statefulset.version }}
+    {{- $mergedSelector :=  merge $baseSelector .Values.statefulset.podLabels }}
     {{- range $k, $v := $mergedSelector }}
     {{ $k }}: {{ $v | quote }}
     {{- end}}

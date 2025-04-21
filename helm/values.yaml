@@ -1,5 +1,5 @@
 appName: typephoon-api
-deployment:
+statefulset:
   image: "${IMAGE}:${IMAGE_TAG}"
   version: "${IMAGE_TAG}"
   pullsecret: null
@@ -65,19 +65,19 @@ settings:
     password: ===REPLACE-ME===
     prefetch_count: 50
     user: ===REPLACE-ME===
-    vhost: typephoon
+    vhost: typephoon-dev
   cors:
     allow_origins: []
   db:
     db: typephoon
     echo: false
-    host: typephoon-db-pooler.pg-cluster
+    host: typephoon-dev-db.pg-clusters
     password: ===REPLACE-ME===
     pool_size: 5
     port: 5432
     username: ===REPLACE-ME===
-  error_redirect: https://typephoon.alexfangsw.com/error
-  front_end_endpoint: https://typephoon.alexfangsw.com
+  error_redirect: https://typephoon.cloud.alexfangsw.com/error
+  front_end_endpoint: https://typephoon.cloud.alexfangsw.com
   game:
     cleanup_countdown: 900
     lobby_countdown: 5
@@ -87,7 +87,7 @@ settings:
   google:
     client_id: ===REPLACE-ME===
     client_secret: ===REPLACE-ME===
-    redirect_url: https://typephoon.alexfangsw.com/api/v1/auth/login-redirect
+    redirect_url: https://typephoon.cloud.alexfangsw.com/api/v1/auth/login-redirect
   logger:
     disable_existing_loggers: false
     formatters:
@@ -108,13 +108,12 @@ settings:
   redis:
     db: 0
     expire_time: 60
-    host: typephoon-redis.redis
+    host: typephoon-dev-redis.redis
     in_game_cache_expire_time: 900
     port: 6379
     result_cache_expire_time: 900
   server:
     port: 8080
-  server_name: null
   token:
     access_duration: 900
     private_key: |- 
