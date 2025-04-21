@@ -5,4 +5,4 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   setting.yaml: |-
-    {{ toYaml .Values.settings }}
+    {{ toYaml .Values.settings | nindent 4 }}
