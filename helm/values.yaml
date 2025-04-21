@@ -108,7 +108,7 @@ settings:
   redis:
     db: 0
     expire_time: 60
-    host: localhost
+    host: typephoon-redis.redis
     in_game_cache_expire_time: 900
     port: 6379
     result_cache_expire_time: 900
