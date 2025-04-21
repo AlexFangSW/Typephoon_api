@@ -54,7 +54,7 @@ settings:
     game_start_queue: game.start
     game_start_queue_routing_key: game.start
     game_start_wait_queue: game.start.wait
-    host: localhost
+    host: amqp-cluster-nodes.amqp
     lobby_countdown_direct_exchange: lobby.countdown
     lobby_countdown_queue: lobby.countdown
     lobby_countdown_queue_routing_key: lobby.countdown
@@ -71,13 +71,13 @@ settings:
   db:
     db: typephoon
     echo: false
-    host: localhost
+    host: typephoon-db-pooler.pg-cluster
     password: ===REPLACE-ME===
     pool_size: 5
     port: 5432
     username: ===REPLACE-ME===
-  error_redirect: http://localhost:3000/error
-  front_end_endpoint: http://localhost:3000
+  error_redirect: https://typephoon.alexfangsw.com/error
+  front_end_endpoint: https://typephoon.alexfangsw.com
   game:
     cleanup_countdown: 900
     lobby_countdown: 5
@@ -87,7 +87,7 @@ settings:
   google:
     client_id: ===REPLACE-ME===
     client_secret: ===REPLACE-ME===
-    redirect_url: http://localhost:8080/api/v1/auth/login-redirect
+    redirect_url: https://typephoon.alexfangsw.com/api/v1/auth/login-redirect
   logger:
     disable_existing_loggers: false
     formatters:
