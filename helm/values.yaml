@@ -87,7 +87,7 @@ settings:
   google:
     client_id: ===REPLACE-ME===
     client_secret: ===REPLACE-ME===
-    redirect_url: https://typephoon.cloud.alexfangsw.com/api/v1/auth/login-redirect
+    redirect_url: https://typephoon.cloud.alexfangsw.com/api/v1/auth/google/login-redirect
   logger:
     disable_existing_loggers: false
     formatters:
