@@ -1,0 +1,61 @@
+kind: pipeline
+type: kubernetes
+name: development-build
+
+trigger:
+  branch: 
+  - development
+  event: 
+  - push
+
+steps:
+- name: helm
+  image: docker.cloud.alexfangsw.com/drone-plugin/helm
+  environment:
+    IMAGE: alexfangsw/typephoon-api
+    IMAGE_TAG: 0.0.1-dev
+  settings:
+    sourceDir: ./helm 
+    targetRepo: 
+      from_secret: helm-repo
+    targetBranch: development
+    gitUser:
+      from_secret: git-user
+    gitEmail:
+      from_secret: git-email
+    gitToken:
+      from_secret: git-helm-token
+    semver: 0.0.1+dev
+
+---
+kind: pipeline
+type: kubernetes
+name: release
+
+trigger:
+  event:
+    - tag
+  ref:
+    include:
+      - refs/tags/v*
+    exclude:
+      - refs/tags/**-dev
+
+steps:
+- name: helm
+  image: docker.cloud.alexfangsw.com/drone-plugin/helm
+  environment:
+    IMAGE: alexfangsw/typephoon-api
+    IMAGE_TAG: ${DRONE_TAG#v}
+  settings:
+    sourceDir: ./helm 
+    targetRepo: 
+      from_secret: helm-repo
+    targetBranch: release
+    gitUser:
+      from_secret: git-user
+    gitEmail:
+      from_secret: git-email
+    gitToken:
+      from_secret: git-helm-token
+    semver: ${DRONE_TAG#v}

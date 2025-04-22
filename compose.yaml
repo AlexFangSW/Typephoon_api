@@ -1,0 +1,69 @@
+# To start backend with along with all other services,
+# run "docker compose up backend".
+# Otherwise, 'backand' will be skiped.
+services:
+  backend: 
+    profiles:
+      - "skip"
+    container_name: typephoon-api
+    env_file: .env
+    environment:
+      TP_AMQP__HOST: typephoon-rabbitmq
+      TP_DB__HOST: typephoon-postgresql
+      TP_REDIS__HOST: typephoon-redis
+      SERVER_NAME: server-1
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    ports:
+      - "8080:8080"
+    dns: 
+      - 1.1.1.1
+      - 8.8.8.8
+    networks:
+      - backend_net
+    volumes:
+      - type: bind
+        source: ./setting.yaml
+        target: /app/setting.yaml
+        read_only: true
+    depends_on:
+      - db
+      - cache
+      - message_queue
+  db:
+    image: postgres:16
+    container_name: typephoon-postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - backend_net
+    command:
+      - -c 
+      - ssl=on
+      - -c 
+      - ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+      - -c
+      - ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+    environment:
+      - POSTGRES_USER=typephoon
+      - POSTGRES_PASSWORD=123
+  cache:
+    image: redis:7-alpine
+    container_name: typephoon-redis
+    networks:
+      - backend_net
+    ports:
+      - "6379:6379"
+  message_queue:
+    image: rabbitmq:4.0-management
+    container_name: typephoon-rabbitmq
+    networks:
+      - backend_net
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+networks:
+  backend_net: {}

@@ -1,0 +1,60 @@
+name: Test
+on: 
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - '**'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    container: ubuntu:latest
+
+    strategy:
+      matrix:
+        python-version:
+          - "3.13"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: typephoon
+          POSTGRES_PASSWORD: 123
+
+      redis:
+        image: redis:7-alpine
+
+      rabbitmq:
+        image: rabbitmq:4.0-management
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install the project
+        run: uv sync --dev --frozen
+
+      - name: Run tests
+        run: uv run --dev pytest
+        env:
+          TP_AMQP__HOST: rabbitmq
+          TP_AMQP__VHOST: /
+          TP_DB__HOST: postgres
+          TP_DB__USERNAME: typephoon
+          TP_DB__PASSWORD: "123"
+          TP_REDIS__HOST: redis
+          SERVER_NAME: server-1
+          TP_TOKEN__PUBLIC_KEY: ${{ secrets.TEST_TOKEN_PUBLIC_KEY }}
+          TP_TOKEN__PRIVATE_KEY: ${{ secrets.TEST_TOKEN_PRIVATE_KEY }}

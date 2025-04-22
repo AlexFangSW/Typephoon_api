@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.appName }}
+    releaseName: {{ .Release.Name }}
+    version: {{ .Values.statefulset.version }}
+spec:
+  serviceName: {{ .Release.Name }}
+  replicas: {{ .Values.statefulset.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+      releaseName: {{ .Release.Name }}
+  {{- if .Values.statefulset.strategy }}
+  strategy:
+  {{- toYaml .Values.statefulset.strategy | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        podRoll: {{ randAlphaNum 5 | quote }}
+      {{- if .Values.statefulset.podAnnotations }}
+        {{- range $k, $v := .Values.statefulset.podAnnotations }}
+        {{ $k }}: {{ $v | quote }}
+        {{- end }}
+      {{- end }}
+      {{- $baseLabels := dict "app" .Values.appName  "releaseName" .Release.Name "version" .Values.statefulset.version }}
+      {{- $mergedLabels := merge $baseLabels .Values.statefulset.podLabels }}
+      labels:
+        {{- range $k, $v := $mergedLabels }}
+        {{ $k }}: {{ $v | quote }}
+        {{- end}}
+    spec:
+      {{- if .Values.statefulset.affinity }}
+      affinity:
+      {{-  toYaml .Values.statefulset.affinity | nindent 8 }}
+      {{- end }}
+      {{- if .Values.statefulset.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.statefulset.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.statefulset.tolerations }}
+      tolerations:
+      {{- toYaml .Values.statefulset.tolerations | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: container-0
+        image: {{ .Values.statefulset.image }}
+        imagePullPolicy: Always
+        {{- if .Values.statefulset.resources }}
+        resources:
+        {{- toYaml .Values.statefulset.resources | nindent  10 }}
+        {{- end}}
+        {{- if .Values.statefulset.livenessProbe }}
+        livenessProbe:
+        {{- toYaml .Values.statefulset.livenessProbe | nindent  10 }}
+        {{- end }}
+        {{- if .Values.statefulset.readinessProbe }}
+        readinessProbe:
+        {{- toYaml .Values.statefulset.readinessProbe | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - mountPath: /app/setting.yaml
+          name: setting
+          subPath: ./setting.yaml
+        env:
+        - name: SERVER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        {{- if .Values.env }}
+        {{- range $k, $v := .Values.env }}
+        - name: {{ $k }}
+          value:  {{ $v | quote }}
+        {{- end }}
+        {{- end }}
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: {{ .Release.Name }}-setting
+        name: setting
