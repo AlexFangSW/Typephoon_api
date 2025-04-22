@@ -5,6 +5,7 @@ name: development-build
 trigger:
   branch: 
   - development
+  - master
   event: 
   - push
 
