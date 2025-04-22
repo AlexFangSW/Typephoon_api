@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Cookie, Depends
 from fastapi.encoders import jsonable_encoder
@@ -70,7 +71,7 @@ async def login_redirect(
     )
     response.set_cookie(
         CookieNames.USERNAME,
-        ret.data.username,
+        quote(ret.data.username),
         path="/",
         max_age=setting.token.refresh_duration,
         httponly=True,
