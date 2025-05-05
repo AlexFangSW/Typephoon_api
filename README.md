@@ -4,7 +4,7 @@
 ## About
 Typephoon is a real-time multiplayer typing game with a clean, 
 minimalistic interface inspired by [monkeytype](https://monkeytype.com/). 
-Challenge your friends or other players online, and track your typing progress over time.
+Challenge your friends or other players online, track your typing progress over time.
 
 ## Features
 - Multi-player gameplay

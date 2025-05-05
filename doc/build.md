@@ -1,5 +1,4 @@
 # Build
-TODO: provide links
 ## Technologies Used
 - Language: **Python**
 - Package Manager: **UV**
@@ -24,7 +23,20 @@ TODO: provide links
 ```
 
 ## Project Architecture
-That pic
+Pic
+
+### Message Queues
+The servers are horizontally scalable, servers communicate through message queues 
+to guarantee message delivery.
+Includes but not limited to:
+- aa
+- aa
+- aa
+- ... etc
+
+Messages queues are also used for 'timers' such as 'lobby countdown' and 'in-game countdown',
+this is achieved with RabbitMQ's 'Deadletter Policies'.   
+
 
 ## Development
 ### Install dependencies 
