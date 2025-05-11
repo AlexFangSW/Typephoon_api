@@ -111,5 +111,11 @@ typephoon-api --help
 pytest
 ```
 
+## Start for frontend development
+```
+docker compose up backend --build
+```
+Backend is hosted on http://locahost:8080
+
 ## Related Projects
 - [Typephoon Frontend](https://github.com/AlexFangSW/Typephoon)
