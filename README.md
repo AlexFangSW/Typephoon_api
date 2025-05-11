@@ -20,10 +20,10 @@ Challenge your friends or other players online, track your typing progress over 
 
 ## Previews
 ### Multi-player gameplay
-Video
+<video src="https://youtu.be/l1kkJKtrBEw" width="352" height="720"></video>
 
 ### Player history / progress tracking
-Video
+![player-profile](./doc/pics/screencapture-typephoon-alexfangsw-profile-2025-05-11-17_04_23.png)
 
 ## Build
 For implementation details, refer to [build.md](./doc/build.md)
