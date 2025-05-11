@@ -20,7 +20,7 @@ Challenge your friends or other players online, track your typing progress over 
 
 ## Previews
 ### Multi-player gameplay
-<iframe width="560" height="315" src="https://www.youtube.com/embed/l1kkJKtrBEw?si=frfKlDsZkCdO65VS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+https://github.com/user-attachments/assets/8d2cd119-49a7-4dac-9afd-0c92e0722c5f
 
 ### Player history / progress tracking
 ![player-profile](./doc/pics/screencapture-typephoon-alexfangsw-profile-2025-05-11-17_04_23.png)
