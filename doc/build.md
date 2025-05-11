@@ -110,3 +110,6 @@ typephoon-api --help
 ```
 pytest
 ```
+
+## Related Projects
+- [Typephoon Frontend](https://github.com/AlexFangSW/Typephoon)
