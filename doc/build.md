@@ -12,31 +12,78 @@
     - **GitHub Actions**: test and build docker image
     - **Drone ci**: helm packaging
 - Miscellaneous:
+    - **WebSockets**
     - **Docker**
     - **Docker compose** (Local development)
     - **Kubernetes**
     - **Helm**
 
-## Code Structure
+## Project Structure
+```
+.
+└── src
+    └── typephoon_api
+        ├── api/            # API routes
+        ├── consumers/      # RabbitMQ Consumers
+        ├── lib/            # Utilities used throughout the codebase
+        ├── __main__.py     # The main entrypoint
+        ├── orm/            # SQAlchemy classes
+        ├── repositories/   # Access to database and cache 
+        ├── services/       # API logic
+        ├── tests/
+        └── types/          # Type definitions (ex: pydantic models, dataclasses)
 ```
 
-```
+## Architecture
+![architecture-diagram](./pics/typing_game_design-Architecture.drawio.svg)
 
-## Project Architecture
-Pic
+### Frontend And Backend
+The frontend and backend share the same domain, requests that have a route prefix of 
+`/api/v1` are routed to the backend, while all other requsets are routed to the 
+frontend.  
+Frontend and backend comminicate through REST API and WebSockets.  
+- **REST API**: Typical reqests.  
+- **WebSockets**: Event triggers and real-time data transfer.  
+    - **Event triggers**
+        - User joins / leaves the lobby, frontend is triggered to request lobby info.
+        - Lobby countdown finishes, frontend recives a trigger to redirect users to the 'game' page.
+        - Game start countdown finishes, frontend is triggerd to set event listener for keystrokes.
+    - **Real-time data**
+        - User in game keystrokes.
 
-### Message Queues
-The servers are horizontally scalable, servers communicate through message queues 
-to guarantee message delivery.
-Includes but not limited to:
-- aa
-- aa
-- aa
-- ... etc
+### RabbitMQ
+The core purpose of RabbitMQ are:
+- Communication between servers
+- Distributed countdown timer
 
-Messages queues are also used for 'timers' such as 'lobby countdown' and 'in-game countdown',
-this is achieved with RabbitMQ's 'Deadletter Policies'.   
+#### Communication between servers
+Users in the same game might have their WebSockets connected to different servers.  
+For users in the same game to recive keystrokes from other players, when the server
+recives a keystroke from the user, it broadcasts it to other servers through a FANOUT
+exchange.
+> If we have a large amount of servers, FANOUT exchange
+will create a lot of unnecessary messages, improvements can be done here. Mabe include what server 
+the users have their WebSockets connected in the cache to remove the use of FANOUT exchange.  
 
+#### Distributed countdown timer
+This is use for 'delayed events' that needs to be exacuted after a certain timeout.  
+It is achieved through RabbitMQ's 'Deadletter Policies'
+- **Lobby Countdown**: Once the contdown ends, all users will be simultaneously redirected to the 'game' page
+- **Game Start**: Once the contdown ends, frontend is notified to set event listener for keystoke 
+- **Game Cleanup**: Games will be cleaned up after a set period of time (default 15 minutes)
+
+### Redis
+Used as a cache for lobby and in-game data.  
+- Player info for lobby and in-game
+- Timestamp for lobby and in-game countdown, this timestamp is the end time for those countdowns.
+    - While the actual trigger for countdown events are sent from the server, the countdown number themselves
+      are retrived by 'poolling' the server.
+
+### PostgreSQL
+Persists long lasting data.
+- User
+- Game
+- Game result for each user
 
 ## Development
 ### Install dependencies 
