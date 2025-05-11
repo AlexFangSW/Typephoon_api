@@ -46,8 +46,8 @@ Frontend and backend comminicate through REST API and WebSockets.
 - **WebSockets**: Event triggers and real-time data transfer.  
     - **Event triggers**
         - User joins / leaves the lobby, frontend is triggered to request lobby info.
-        - Lobby countdown finishes, frontend recives a trigger to redirect users to the 'game' page.
-        - Game start countdown finishes, frontend is triggerd to set event listener for keystrokes.
+        - When Lobby countdown finishes, frontend recives a trigger to redirect users to the 'game' page.
+        - On Game start, frontend is triggerd to set event listener for keystrokes.
     - **Real-time data**
         - User in game keystrokes.
 
@@ -66,7 +66,7 @@ will create a lot of unnecessary messages, improvements can be done here. Mabe i
 the users have their WebSockets connected in the cache to remove the use of FANOUT exchange.  
 
 #### Distributed countdown timer
-This is use for 'delayed events' that needs to be exacuted after a certain timeout.  
+This is used for 'delayed events' that needs to be exacuted after a certain timeout.  
 It is achieved through RabbitMQ's 'Deadletter Policies'
 - **Lobby Countdown**: Once the contdown ends, all users will be simultaneously redirected to the 'game' page
 - **Game Start**: Once the contdown ends, frontend is notified to set event listener for keystoke 
