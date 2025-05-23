@@ -8,10 +8,10 @@ COPY ./uv.lock \
   ./alembic.ini \
   /app/
 
+RUN uv sync --frozen
+
 COPY ./data/ /app/data
 COPY ./migration/ /app/migration
 COPY ./src/ /app/src
-
-RUN uv sync --frozen
 
 CMD [ "uv", "run", "typephoon-api", "--init" ]
