@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse
 from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pydantic_core import Url
 
+from typephoon_api.types.errors import TokenNotProvided
+
 from ..types.common import LobbyUserInfo
 from ..types.enums import ErrorCode
 from ..types.log import TRACE
@@ -63,6 +65,12 @@ def catch_error_async(func: Callable):
     async def wrapped(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
+
+        except TokenNotProvided as ex:
+            logger.warning("token not provided: %s", str(ex))
+            error = ErrorContext(code=ErrorCode.TOKEN_NOT_PROVIDED, message=str(ex))
+            msg = ErrorResponse(error=error).model_dump()
+            return JSONResponse(msg, status_code=401)
 
         except ExpiredSignatureError as ex:
             logger.warning("token expired: %s", str(ex))

@@ -49,6 +49,7 @@ async def queue_in(
     "/players",
     responses={
         200: {"model": LobbyPlayersResponse},
+        401: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
     },
