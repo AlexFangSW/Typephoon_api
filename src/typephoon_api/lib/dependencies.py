@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from logging import getLogger
-from typing import Annotated
 
-from fastapi import Cookie, Request, WebSocket
+from fastapi import Depends, Request, WebSocket
+from fastapi.security.api_key import APIKeyCookie
 from jwt.exceptions import PyJWTError
+
+from typephoon_api.types.enums import CookieNames
+from typephoon_api.types.errors import TokenNotProvided
 
 from ..lib.oauth_providers.google import GoogleOAuthProvider
 from ..repositories.game_cache import GameCacheRepo
@@ -17,13 +20,25 @@ from ..services.health_check import HealthCheckService
 from ..services.lobby import LobbyService
 from ..services.profile import ProfileService
 from ..services.queue_in import QueueInService
-from ..types.enums import CookieNames
 from ..types.jwt import JWTPayload
 from ..types.setting import Setting
 from .oauth_providers.base import OAuthProviders
 from .server import TypephoonServer
 from .token_generator import TokenGenerator
 from .token_validator import TokenValidator
+
+access_cookie = APIKeyCookie(
+    name=CookieNames.ACCESS_TOKEN,
+    auto_error=False,
+    description="Access token",
+    scheme_name="Access token",
+)
+refresh_cookie = APIKeyCookie(
+    name=CookieNames.REFRESH_TOKEN,
+    auto_error=False,
+    description="Refresh token",
+    scheme_name="Refresh token",
+)
 
 logger = getLogger(__name__)
 
@@ -161,13 +176,17 @@ class GetAccessTokenInfoRet:
 
 def get_access_token_info(
     request: Request,
-    access_token: Annotated[
-        str, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
-    ],
+    access_token: str | None = Depends(access_cookie),
 ) -> GetAccessTokenInfoRet:
     """
     validate 'access' token and return payload
     """
+    if access_token is None:
+        error = TokenNotProvided(
+            f"Access token '{CookieNames.ACCESS_TOKEN}' not present in cookie"
+        )
+        return GetAccessTokenInfoRet(error=error)
+
     app: TypephoonServer = request.app
     try:
         token_validator = TokenValidator(app.setting)

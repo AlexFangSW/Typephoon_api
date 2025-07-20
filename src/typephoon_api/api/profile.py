@@ -31,6 +31,7 @@ router = APIRouter(tags=["Profile"], prefix="/profile")
         200: {"model": ProfileStatisticsResponse},
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
     },
 )
 @catch_error_async
@@ -67,6 +68,7 @@ async def statistics(
         200: {"model": ProfileGraphResponse},
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
     },
 )
 @catch_error_async
@@ -96,6 +98,7 @@ async def graph(
         200: {"model": ProfileHistoryResponse},
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
     },
 )
 @catch_error_async
@@ -133,12 +136,12 @@ async def history(
     responses={
         200: {"model": ProfileUserInfoResponse},
         400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
     },
 )
 @catch_error_async
 async def user_info(
     current_user: GetAccessTokenInfoRet = Depends(get_access_token_info),
-    service: ProfileService = Depends(get_profile_service),
 ):
     if current_user.error:
         raise current_user.error

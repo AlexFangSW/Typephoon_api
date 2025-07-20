@@ -1,14 +1,17 @@
-from typing import Annotated
 from urllib.parse import quote
 
-from fastapi import APIRouter, Cookie, Depends
+from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from typephoon_api.types.errors import TokenNotProvided
+
 from ..lib.dependencies import (
+    access_cookie,
     get_auth_service,
     get_auth_service_with_provider,
     get_setting,
+    refresh_cookie,
 )
 from ..lib.util import catch_error_async
 from ..services.auth import AuthService
@@ -84,9 +87,7 @@ async def login_redirect(
 @router.post("/logout", responses={200: {"model": SuccessResponse}})
 @catch_error_async
 async def logout(
-    access_token: Annotated[
-        str | None, Cookie(alias=CookieNames.ACCESS_TOKEN, description="access token")
-    ] = None,
+    access_token: str | None = Depends(access_cookie),
     service: AuthService = Depends(get_auth_service),
     setting: Setting = Depends(get_setting),
 ):
@@ -108,16 +109,23 @@ async def logout(
 
 @router.post(
     "/token-refresh",
-    responses={200: {"model": SuccessResponse}, 400: {"model": ErrorResponse}},
+    responses={
+        200: {"model": SuccessResponse},
+        400: {"model": ErrorResponse},
+        401: {"model": ErrorResponse},
+    },
 )
 @catch_error_async
 async def token_refresh(
-    refresh_token: Annotated[
-        str, Cookie(alias=CookieNames.REFRESH_TOKEN, description="refresh token")
-    ],
+    refresh_token: str | None = Depends(refresh_cookie),
     setting: Setting = Depends(get_setting),
     service: AuthService = Depends(get_auth_service),
 ):
+    if refresh_token is None:
+        raise TokenNotProvided(
+            f"Refresh token {CookieNames.REFRESH_TOKEN} not present in cookie"
+        )
+
     ret = await service.token_refresh(refresh_token)
 
     if not ret.ok:
